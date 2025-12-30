@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import QuoteForm from "@/components/QuoteForm";
+import MultiStepQuoteForm from "@/components/MultiStepQuoteForm";
 
 const GetQuote = () => {
   return (
@@ -10,19 +10,19 @@ const GetQuote = () => {
       <main className="pt-24 pb-16">
         <div className="container-narrow">
           {/* Hero Text */}
-          <div className="text-center mb-12 max-w-2xl mx-auto">
+          <div className="text-center mb-10 max-w-2xl mx-auto">
             <h1 className="font-display font-bold text-4xl md:text-5xl text-foreground mb-4">
               Request a <span className="text-gradient">Free Quote</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              Tell us about your shipping needs and we'll find the best carrier at the most competitive rate. 
-              Our team responds within 1 business hour.
+              Complete the form below and our team will respond within 1 business hour 
+              with your customized shipping quote.
             </p>
           </div>
 
-          {/* Form */}
-          <div className="max-w-2xl mx-auto">
-            <QuoteForm showTitle={false} />
+          {/* Multi-Step Form */}
+          <div className="max-w-3xl mx-auto">
+            <MultiStepQuoteForm />
           </div>
 
           {/* Trust Signals */}
