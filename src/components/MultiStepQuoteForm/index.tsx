@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Send, CheckCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, Send, CheckCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProgressIndicator from "./ProgressIndicator";
 import Step1Contact from "./Step1Contact";
@@ -151,6 +151,13 @@ const MultiStepQuoteForm = () => {
     setIsLoading(false);
   };
 
+  const clearForm = () => {
+    setFormData(defaultFormData);
+    setCurrentStep(1);
+    setErrors({});
+    sessionStorage.removeItem(STORAGE_KEY);
+  };
+
   if (isSubmitted) {
     return (
       <motion.div
@@ -237,16 +244,26 @@ const MultiStepQuoteForm = () => {
       </AnimatePresence>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between mt-10 pt-6 border-t border-border">
-        <Button
-          variant="outline"
-          onClick={prevStep}
-          disabled={currentStep === 1}
-          className="gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </Button>
+      <div className="flex justify-between items-center mt-10 pt-6 border-t border-border">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={prevStep}
+            disabled={currentStep === 1}
+            className="gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={clearForm}
+            className="gap-2 text-muted-foreground hover:text-destructive"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Clear
+          </Button>
+        </div>
 
         {currentStep < 5 ? (
           <Button variant="hero" onClick={nextStep} className="gap-2">
