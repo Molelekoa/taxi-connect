@@ -1,12 +1,31 @@
 import { useState } from "react";
+import { z } from "zod";
 import { Truck, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+const carrierSchema = z.object({
+  contactName: z.string().min(2, "Name must be at least 2 characters"),
+  companyName: z.string().min(2, "Company name must be at least 2 characters"),
+  mcDotNumber: z
+    .string()
+    .min(5, "Please enter a valid MC or DOT number")
+    .regex(/^(MC|DOT)?-?\d+$/i, "Format: MC-123456 or DOT-123456"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits")
+    .regex(/^[\d\s\-\(\)\+]+$/, "Please enter a valid phone number"),
+  fleetSize: z.string().min(1, "Please select your fleet size"),
+});
+
+type CarrierFormData = z.infer<typeof carrierSchema>;
+
 const CarrierSignup = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [formData, setFormData] = useState({
+  const [errors, setErrors] = useState<Partial<Record<keyof CarrierFormData, string>>>({});
+  const [formData, setFormData] = useState<CarrierFormData>({
     contactName: "",
     companyName: "",
     mcDotNumber: "",
@@ -17,15 +36,35 @@ const CarrierSignup = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const result = carrierSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof CarrierFormData, string>> = {};
+      result.error.errors.forEach((error) => {
+        const field = error.path[0] as keyof CarrierFormData;
+        fieldErrors[field] = error.message;
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setErrors({});
     setIsSubmitted(true);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name as keyof CarrierFormData]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
+
+  const inputClassName = (field: keyof CarrierFormData) =>
+    `w-full h-12 px-4 rounded-lg bg-input border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all ${
+      errors[field] ? "border-destructive" : "border-border"
+    }`;
 
   const benefits = [
     "Access to quality, consistent loads",
@@ -111,10 +150,12 @@ const CarrierSignup = () => {
                       name="contactName"
                       value={formData.contactName}
                       onChange={handleChange}
-                      required
                       placeholder="Your full name"
-                      className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                      className={inputClassName("contactName")}
                     />
+                    {errors.contactName && (
+                      <p className="text-sm text-destructive mt-1">{errors.contactName}</p>
+                    )}
                   </div>
 
                   <div>
@@ -126,10 +167,12 @@ const CarrierSignup = () => {
                       name="companyName"
                       value={formData.companyName}
                       onChange={handleChange}
-                      required
                       placeholder="Trucking company name"
-                      className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                      className={inputClassName("companyName")}
                     />
+                    {errors.companyName && (
+                      <p className="text-sm text-destructive mt-1">{errors.companyName}</p>
+                    )}
                   </div>
 
                   <div>
@@ -141,10 +184,12 @@ const CarrierSignup = () => {
                       name="mcDotNumber"
                       value={formData.mcDotNumber}
                       onChange={handleChange}
-                      required
                       placeholder="MC-123456 or DOT-123456"
-                      className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                      className={inputClassName("mcDotNumber")}
                     />
+                    {errors.mcDotNumber && (
+                      <p className="text-sm text-destructive mt-1">{errors.mcDotNumber}</p>
+                    )}
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6">
@@ -157,10 +202,12 @@ const CarrierSignup = () => {
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        required
                         placeholder="you@company.com"
-                        className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                        className={inputClassName("email")}
                       />
+                      {errors.email && (
+                        <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
@@ -171,10 +218,12 @@ const CarrierSignup = () => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        required
                         placeholder="(555) 123-4567"
-                        className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                        className={inputClassName("phone")}
                       />
+                      {errors.phone && (
+                        <p className="text-sm text-destructive mt-1">{errors.phone}</p>
+                      )}
                     </div>
                   </div>
 
@@ -186,14 +235,16 @@ const CarrierSignup = () => {
                       name="fleetSize"
                       value={formData.fleetSize}
                       onChange={handleChange}
-                      required
-                      className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all appearance-none cursor-pointer"
+                      className={`${inputClassName("fleetSize")} appearance-none cursor-pointer`}
                     >
                       <option value="" disabled>Select fleet size...</option>
                       <option value="1-5">1-5 trucks</option>
                       <option value="6-10">6-10 trucks</option>
                       <option value="10+">10+ trucks</option>
                     </select>
+                    {errors.fleetSize && (
+                      <p className="text-sm text-destructive mt-1">{errors.fleetSize}</p>
+                    )}
                   </div>
 
                   <Button type="submit" variant="hero" size="xl" className="w-full">
