@@ -40,7 +40,26 @@ const commodityClasses = [
   { value: "unknown", label: "I don't know" },
 ];
 
+// Helper to parse dimension string into parts
+const parseDimensions = (dimensions: string | undefined): { length: string; width: string; height: string } => {
+  if (!dimensions) return { length: "", width: "", height: "" };
+  const parts = dimensions.split("x").map(p => p.trim());
+  return {
+    length: parts[0] || "",
+    width: parts[1] || "",
+    height: parts[2] || "",
+  };
+};
+
 const Step3LoadDetails = ({ data, onChange, errors }: Step3Props) => {
+  const dims = parseDimensions(data.dimensions);
+
+  const updateDimension = (field: "length" | "width" | "height", value: string) => {
+    const newDims = { ...dims, [field]: value };
+    const dimensionString = `${newDims.length} x ${newDims.width} x ${newDims.height}`;
+    onChange({ dimensions: dimensionString });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -66,13 +85,13 @@ const Step3LoadDetails = ({ data, onChange, errors }: Step3Props) => {
 
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="weight">Weight (lbs) *</Label>
+            <Label htmlFor="weight">Weight (kg) *</Label>
             <Input
               id="weight"
               type="text"
               value={data.weight}
               onChange={(e) => onChange({ weight: e.target.value })}
-              placeholder="e.g., 5000"
+              placeholder="e.g., 2500"
               className={errors.weight ? "border-destructive" : ""}
             />
             {errors.weight && (
@@ -92,14 +111,40 @@ const Step3LoadDetails = ({ data, onChange, errors }: Step3Props) => {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="dimensions">Dimensions (L x W x H)</Label>
-          <Input
-            id="dimensions"
-            value={data.dimensions || ""}
-            onChange={(e) => onChange({ dimensions: e.target.value })}
-            placeholder="e.g., 48 x 40 x 48 inches"
-          />
+        <div className="space-y-3">
+          <Label>Dimensions (cm)</Label>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="length" className="text-xs text-muted-foreground">Length</Label>
+              <Input
+                id="length"
+                type="text"
+                value={dims.length}
+                onChange={(e) => updateDimension("length", e.target.value)}
+                placeholder="L"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="width" className="text-xs text-muted-foreground">Width</Label>
+              <Input
+                id="width"
+                type="text"
+                value={dims.width}
+                onChange={(e) => updateDimension("width", e.target.value)}
+                placeholder="W"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="height" className="text-xs text-muted-foreground">Height</Label>
+              <Input
+                id="height"
+                type="text"
+                value={dims.height}
+                onChange={(e) => updateDimension("height", e.target.value)}
+                placeholder="H"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">
