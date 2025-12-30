@@ -2,11 +2,41 @@
 // Get your token from: https://mapbox.com/account/access-tokens
 // Since this is a PUBLIC/PUBLISHABLE token, it's safe to embed in client code
 
-// Read from environment variable (set via Lovable Secrets as VITE_MAPBOX_TOKEN)
-const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+const LOCAL_STORAGE_KEY = 'mapbox_token_override';
 
-// Export the token - will be undefined if not configured
-export const MAPBOX_TOKEN = envToken;
+// Runtime getter for Mapbox token
+// Priority: 1) localStorage override (for admin/debug), 2) env variable
+export function getMapboxToken(): string | undefined {
+  // Check localStorage first (allows runtime updates without rebuild)
+  if (typeof window !== 'undefined') {
+    const localToken = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (localToken) return localToken;
+  }
+  
+  // Fall back to environment variable (baked at build time)
+  return import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+}
+
+// Admin helpers for setting token via localStorage
+export function setMapboxTokenOverride(token: string): void {
+  localStorage.setItem(LOCAL_STORAGE_KEY, token);
+}
+
+export function clearMapboxTokenOverride(): void {
+  localStorage.removeItem(LOCAL_STORAGE_KEY);
+}
+
+export function hasMapboxTokenOverride(): boolean {
+  return !!localStorage.getItem(LOCAL_STORAGE_KEY);
+}
+
+// Check if we're in admin/dev mode
+export function isAdminMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  // Dev mode or ?admin=1 query param
+  return import.meta.env.DEV || new URLSearchParams(window.location.search).has('admin');
+}
 
 export const MAPBOX_STYLES = {
   dark: 'mapbox://styles/mapbox/dark-v11',

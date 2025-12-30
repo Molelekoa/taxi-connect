@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getDistanceFromAddresses, Coordinates } from '@/lib/mapbox';
+import { getMapboxToken } from '@/config/mapbox';
 
 interface DistanceResult {
   distance: number;
@@ -37,10 +38,13 @@ export function useMapboxDistance(
       clearTimeout(debounceRef.current);
     }
 
-    // Reset if inputs are empty or skip is enabled
-    if (!pickupLocation || !deliveryLocation || skipApiCall) {
+    // Check if token is available
+    const token = getMapboxToken();
+
+    // Reset if inputs are empty, skip is enabled, or no token
+    if (!pickupLocation || !deliveryLocation || skipApiCall || !token) {
       setResult(null);
-      setError(null);
+      setError(null); // Don't show error to users when token is missing
       setIsLoading(false);
       return;
     }
@@ -72,12 +76,16 @@ export function useMapboxDistance(
           setResult(distanceResult);
           setError(null);
         } else {
-          setError('Could not calculate distance. Please check your addresses.');
+          // Only show error if we actually tried (token was present)
+          if (getMapboxToken()) {
+            setError('Could not calculate distance. Please check your addresses.');
+          }
           setResult(null);
         }
       } catch (err) {
         console.error('Distance calculation error:', err);
-        setError('Failed to calculate distance');
+        // Don't expose technical errors to users
+        setError(null);
         setResult(null);
       } finally {
         setIsLoading(false);

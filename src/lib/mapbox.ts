@@ -1,4 +1,4 @@
-import { MAPBOX_TOKEN } from '@/config/mapbox';
+import { getMapboxToken } from '@/config/mapbox';
 
 export interface Coordinates {
   lng: number;
@@ -12,19 +12,23 @@ export interface GeocodeResult {
 
 // Geocode an address to coordinates
 export async function geocodeAddress(address: string): Promise<GeocodeResult | null> {
-  if (!MAPBOX_TOKEN) {
-    console.error('Mapbox token is not configured');
+  const token = getMapboxToken();
+  if (!token) {
+    // Silent fail - no token configured
     return null;
   }
 
   try {
     // Bias search towards South Africa
     const encodedAddress = encodeURIComponent(address);
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${MAPBOX_TOKEN}&country=ZA,BW,LS,MZ,NA,SZ,ZM,ZW&limit=1`;
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${token}&country=ZA,BW,LS,MZ,NA,SZ,ZM,ZW&limit=1`;
 
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Geocoding failed: ${response.status}`);
+      if (response.status === 401 || response.status === 403) {
+        console.warn('Mapbox token rejected - check token validity and URL restrictions');
+      }
+      return null;
     }
 
     const data = await response.json();
@@ -52,17 +56,20 @@ export async function getDrivingDistance(
   origin: Coordinates,
   destination: Coordinates
 ): Promise<number | null> {
-  if (!MAPBOX_TOKEN) {
-    console.error('Mapbox token is not configured');
+  const token = getMapboxToken();
+  if (!token) {
     return null;
   }
 
   try {
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?access_token=${MAPBOX_TOKEN}&overview=false`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?access_token=${token}&overview=false`;
 
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Directions failed: ${response.status}`);
+      if (response.status === 401 || response.status === 403) {
+        console.warn('Mapbox token rejected - check token validity and URL restrictions');
+      }
+      return null;
     }
 
     const data = await response.json();
