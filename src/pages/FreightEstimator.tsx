@@ -31,9 +31,61 @@ const sadcCountries = [
   "Mozambique",
   "Namibia",
   "Eswatini",
+  "Zambia",
   "Zimbabwe",
   "Other SADC",
 ];
+
+// Predefined domestic distances (in km)
+const PREDEFINED_DISTANCES: Record<string, number> = {
+  'johannesburg-cape': 1400,
+  'johannesburg-durban': 570,
+  'johannesburg-pretoria': 60,
+  'johannesburg-port': 580,
+  'cape-durban': 1660,
+  'cape-port': 770,
+  'durban-port': 1050,
+  'pretoria-durban': 630,
+  'pretoria-cape': 1460,
+};
+
+// SADC country distances from Johannesburg (in km)
+const SADC_DISTANCES: Record<string, number> = {
+  'botswana': 356,
+  'lesotho': 410.7,
+  'mozambique': 545.1,
+  'namibia': 1625.4,
+  'eswatini': 398.2,
+  'zambia': 1732.6,
+  'zimbabwe': 1121.3
+};
+
+// Cross-border cost constants
+const CROSS_BORDER_RATE_PER_KM = { min: 7, max: 18 }; // R7–R18 per km
+const CROSS_BORDER_ADMIN_FEE = 1200; // R1,200 fixed fee
+
+// Distance estimation function
+function estimateDistance(pickup: string, delivery: string, sadcCountry?: string): number {
+  const pickupLower = pickup.toLowerCase();
+  const deliveryLower = delivery.toLowerCase();
+
+  // 1. First, check for a direct match in the original domestic routes
+  const route1 = `${pickupLower.split(' ')[0]}-${deliveryLower.split(' ')[0]}`;
+  const route2 = `${deliveryLower.split(' ')[0]}-${pickupLower.split(' ')[0]}`;
+
+  if (PREDEFINED_DISTANCES[route1]) return PREDEFINED_DISTANCES[route1];
+  if (PREDEFINED_DISTANCES[route2]) return PREDEFINED_DISTANCES[route2];
+
+  // 2. Check if the delivery location is a SADC country
+  for (const [country, distance] of Object.entries(SADC_DISTANCES)) {
+    if (deliveryLower.includes(country) || (sadcCountry && sadcCountry.toLowerCase().includes(country))) {
+      return distance;
+    }
+  }
+
+  // 3. Fallback: Assume a domestic route if no match is found
+  return 500;
+}
 
 const FreightEstimator = () => {
   const [formData, setFormData] = useState({
@@ -56,56 +108,96 @@ const FreightEstimator = () => {
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-
-    // Estimate distance when both locations are provided
-    if (field === "pickupLocation" || field === "deliveryLocation") {
-      const pickup = field === "pickupLocation" ? value : formData.pickupLocation;
-      const delivery = field === "deliveryLocation" ? value : formData.deliveryLocation;
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
       
-      if (pickup && delivery && typeof pickup === "string" && typeof delivery === "string") {
-        // Simple distance estimation based on string length difference (mock)
-        const mockDistance = Math.abs(pickup.length - delivery.length) * 50 + 150;
-        setEstimatedDistance(Math.min(Math.max(mockDistance, 50), 2500));
+      // Update distance when locations or SADC country changes
+      if (field === "pickupLocation" || field === "deliveryLocation" || field === "sadcCountry") {
+        const pickup = field === "pickupLocation" ? value : prev.pickupLocation;
+        const delivery = field === "deliveryLocation" ? value : prev.deliveryLocation;
+        const sadc = field === "sadcCountry" ? value : prev.sadcCountry;
+        
+        if (pickup && delivery && typeof pickup === "string" && typeof delivery === "string") {
+          const distance = estimateDistance(pickup, delivery, typeof sadc === "string" ? sadc : undefined);
+          setEstimatedDistance(distance);
+        }
       }
-    }
+      
+      return newData;
+    });
   };
 
   const calculateEstimate = () => {
     const weight = parseFloat(formData.weight) || 0;
     if (weight <= 0 || !formData.cargoType) return;
 
-    // Base rate calculation
-    const baseRatePerKg = 12; // ZAR per kg
-    const distanceRate = 0.85; // ZAR per km
-    const distance = estimatedDistance || 500;
+    // Recalculate distance with SADC country if cross-border
+    const distance = formData.crossBorder && formData.sadcCountry
+      ? estimateDistance(formData.pickupLocation, formData.deliveryLocation, formData.sadcCountry)
+      : estimateDistance(formData.pickupLocation, formData.deliveryLocation);
+    
+    setEstimatedDistance(distance);
 
     // Get cargo multiplier
     const cargo = cargoTypes.find((c) => c.value === formData.cargoType);
     const cargoMultiplier = cargo?.multiplier || 1.0;
 
-    // Calculate base cost
-    let baseCost = weight * baseRatePerKg + distance * distanceRate;
-    baseCost *= cargoMultiplier;
+    // Use cross-border rates if applicable
+    const isCrossBorder = formData.crossBorder;
+    const baseRatePerKm = isCrossBorder ? CROSS_BORDER_RATE_PER_KM : { min: 4.5, max: 12 };
+
+    // Calculate base cost range
+    let minCost = distance * baseRatePerKm.min * cargoMultiplier;
+    let maxCost = distance * baseRatePerKm.max * cargoMultiplier;
+
+    // Weight factor (heavier loads cost more)
+    const weightFactor = 1 + (weight / 10000) * 0.3;
+    minCost *= weightFactor;
+    maxCost *= weightFactor;
 
     // Apply full truckload discount
     if (formData.isFullTruckload) {
-      baseCost *= 0.85;
+      minCost *= 0.85;
+      maxCost *= 0.9;
+    }
+
+    // Add cross-border admin fee
+    if (isCrossBorder) {
+      minCost += CROSS_BORDER_ADMIN_FEE;
+      maxCost += CROSS_BORDER_ADMIN_FEE;
     }
 
     // Add special requirements
-    if (formData.liftgate) baseCost += 650;
-    if (formData.crossBorder) baseCost += 2500;
-    if (formData.express) baseCost *= 1.35;
-    if (formData.tempControlled) baseCost *= 1.25;
-    if (formData.securityEscort) baseCost += 4500;
-    if (formData.extraInsurance) baseCost += weight * 2.5;
+    if (formData.liftgate) {
+      minCost += 650;
+      maxCost += 650;
+    }
+    if (formData.crossBorder) {
+      minCost += 1500;
+      maxCost += 1500;
+    }
+    if (formData.express) {
+      minCost *= 1.25;
+      maxCost *= 1.25;
+    }
+    if (formData.tempControlled) {
+      minCost *= 1.3;
+      maxCost *= 1.3;
+    }
+    if (formData.securityEscort) {
+      minCost += 2500;
+      maxCost += 2500;
+    }
+    if (formData.extraInsurance) {
+      minCost *= 1.08;
+      maxCost *= 1.08;
+    }
 
-    // Calculate range
-    const minPrice = Math.round(baseCost * 0.9);
-    const maxPrice = Math.round(baseCost * 1.15);
+    // Minimum charge
+    minCost = Math.max(minCost, 1500);
+    maxCost = Math.max(maxCost, 2500);
 
-    setPriceRange({ min: minPrice, max: maxPrice });
+    setPriceRange({ min: Math.round(minCost), max: Math.round(maxCost) });
     setShowResult(true);
   };
 
@@ -258,7 +350,7 @@ const FreightEstimator = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {sadcCountries.map((country) => (
-                          <SelectItem key={country} value={country}>
+                          <SelectItem key={country} value={country.toLowerCase()}>
                             {country}
                           </SelectItem>
                         ))}
