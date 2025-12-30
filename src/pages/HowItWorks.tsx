@@ -1,13 +1,11 @@
 import { Link } from "react-router-dom";
-import { ClipboardList, Handshake, Navigation, Timer, BadgeCheck, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const steps = [
   {
-    step: "1",
-    icon: ClipboardList,
+    step: "01",
     title: "Submit Your Load",
     description: "Tell us about your load in under 60 seconds. Simply fill out our quick online form with your pickup and delivery locations, freight details, and any special requirements.",
     details: [
@@ -17,8 +15,7 @@ const steps = [
     ],
   },
   {
-    step: "2",
-    icon: Handshake,
+    step: "02",
     title: "We Match & Negotiate",
     description: "Our logistics experts get to work immediately. We search our extensive carrier network to find the best match for your shipment, negotiating competitive rates on your behalf.",
     details: [
@@ -28,8 +25,7 @@ const steps = [
     ],
   },
   {
-    step: "3",
-    icon: Navigation,
+    step: "03",
     title: "Track & Deliver",
     description: "Once your carrier is confirmed, you'll receive real-time tracking updates. Our team monitors every shipment and proactively communicates any updates until delivery is complete.",
     details: [
@@ -68,12 +64,13 @@ const HowItWorks = () => {
                 }`}
               >
                 <div className={index % 2 === 1 ? "lg:order-2" : ""}>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center">
-                      <step.icon className="w-7 h-7 text-primary-foreground" />
+                  <div className="flex items-center gap-6 mb-4">
+                    {/* Large Step Number */}
+                    <div className="font-display font-black text-6xl md:text-7xl text-primary/30 leading-none">
+                      {step.step}
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-primary">STEP {step.step}</div>
+                      <div className="text-sm font-semibold uppercase tracking-wider text-primary mb-1">STEP {step.step}</div>
                       <h2 className="font-display font-bold text-2xl text-foreground">
                         {step.title}
                       </h2>
@@ -83,7 +80,7 @@ const HowItWorks = () => {
                   <ul className="space-y-3">
                     {step.details.map((detail) => (
                       <li key={detail} className="flex items-center gap-3">
-                        <BadgeCheck className="w-5 h-5 text-primary shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                         <span className="text-foreground">{detail}</span>
                       </li>
                     ))}
@@ -92,7 +89,10 @@ const HowItWorks = () => {
 
                 <div className={`card-elevated p-8 ${index % 2 === 1 ? "lg:order-1" : ""}`}>
                   <div className="aspect-video bg-gradient-to-br from-primary/20 via-secondary to-primary/10 rounded-xl flex items-center justify-center">
-                    <step.icon className="w-20 h-20 text-primary/50" />
+                    {/* Large decorative number */}
+                    <span className="font-display font-black text-8xl md:text-9xl text-primary/20">
+                      {step.step}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -102,8 +102,9 @@ const HowItWorks = () => {
           {/* CTA Section */}
           <div className="mt-20 text-center">
             <div className="card-elevated p-8 md:p-12 max-w-2xl mx-auto">
-              <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-6">
-                <Timer className="w-8 h-8 text-primary" />
+              {/* Decorative element */}
+              <div className="font-display font-black text-6xl text-primary/20 mb-4 leading-none">
+                60<span className="text-3xl align-top">sec</span>
               </div>
               <h3 className="font-display font-bold text-2xl text-foreground mb-3">
                 Ready to Get Started?
@@ -119,7 +120,6 @@ const HowItWorks = () => {
                 </Link>
                 <a href="tel:+18005551234">
                   <Button variant="outline" size="lg">
-                    <PhoneCall className="w-4 h-4 mr-2" />
                     (800) 555-1234
                   </Button>
                 </a>

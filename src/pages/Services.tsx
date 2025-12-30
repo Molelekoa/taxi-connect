@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Container, Boxes, Rocket, ShieldCheck, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -7,7 +6,7 @@ import Footer from "@/components/Footer";
 const services = [
   {
     id: "ftl",
-    icon: Container,
+    number: "01",
     title: "Full Truckload (FTL)",
     description: "Dedicated trucks for your large shipments requiring exclusive capacity.",
     features: [
@@ -20,7 +19,7 @@ const services = [
   },
   {
     id: "ltl",
-    icon: Boxes,
+    number: "02",
     title: "Less Than Truckload (LTL)",
     description: "Cost-effective shipping for smaller loads that don't require a full trailer.",
     features: [
@@ -33,7 +32,7 @@ const services = [
   },
   {
     id: "expedited",
-    icon: Rocket,
+    number: "03",
     title: "Expedited Shipping",
     description: "Time-critical deliveries with guaranteed transit times and priority handling.",
     features: [
@@ -46,7 +45,7 @@ const services = [
   },
   {
     id: "specialized",
-    icon: ShieldCheck,
+    number: "04",
     title: "Specialized Freight",
     description: "Custom solutions for unique freight requirements and complex shipments.",
     features: [
@@ -82,11 +81,12 @@ const Services = () => {
             {services.map((service) => (
               <div
                 key={service.id}
-                className="card-elevated p-8 hover:border-primary/50 transition-all duration-300"
+                className="card-elevated p-8 hover:border-primary/50 transition-all duration-300 group"
               >
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <service.icon className="w-7 h-7 text-primary" />
+                <div className="flex items-start gap-6 mb-6">
+                  {/* Large Number */}
+                  <div className="font-display font-black text-5xl md:text-6xl text-primary/30 group-hover:text-primary/50 transition-colors leading-none shrink-0">
+                    {service.number}
                   </div>
                   <div>
                     <h2 className="font-display font-bold text-xl text-foreground">
@@ -96,10 +96,10 @@ const Services = () => {
                   </div>
                 </div>
 
-                <ul className="space-y-3 mb-6">
+                <ul className="space-y-3 mb-6 pl-2">
                   {service.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-3">
-                      <BadgeCheck className="w-4 h-4 text-primary shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                       <span className="text-sm text-muted-foreground">{feature}</span>
                     </li>
                   ))}

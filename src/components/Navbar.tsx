@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Gauge, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
@@ -20,13 +20,11 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-lg border-b border-border">
       <div className="container-narrow flex items-center justify-between h-16">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Gauge className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-display font-bold text-xl text-foreground">
-            DYNO <span className="text-primary">DASH</span>
+        {/* Logo - Typography Only */}
+        <Link to="/" className="flex items-center gap-1">
+          <span className="font-display font-black text-2xl tracking-tight">
+            <span className="text-foreground">DYNO</span>
+            <span className="text-primary">DASH</span>
           </span>
         </Link>
 
