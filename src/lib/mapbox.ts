@@ -84,7 +84,13 @@ export async function getDrivingDistance(
 export async function getDistanceFromAddresses(
   pickupAddress: string,
   deliveryAddress: string
-): Promise<{ distance: number; pickupPlace: string; deliveryPlace: string } | null> {
+): Promise<{ 
+  distance: number; 
+  pickupPlace: string; 
+  deliveryPlace: string;
+  pickupCoordinates: Coordinates;
+  deliveryCoordinates: Coordinates;
+} | null> {
   const [pickupResult, deliveryResult] = await Promise.all([
     geocodeAddress(pickupAddress),
     geocodeAddress(deliveryAddress),
@@ -107,5 +113,7 @@ export async function getDistanceFromAddresses(
     distance,
     pickupPlace: pickupResult.placeName,
     deliveryPlace: deliveryResult.placeName,
+    pickupCoordinates: pickupResult.coordinates,
+    deliveryCoordinates: deliveryResult.coordinates,
   };
 }

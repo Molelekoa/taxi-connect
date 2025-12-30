@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
+import RouteMap from "@/components/RouteMap";
 
 const cargoTypes = [
   { value: "general", label: "General Dry Goods", multiplier: 1.0 },
@@ -78,7 +79,9 @@ const FreightEstimator = () => {
     isLoading: isCalculatingDistance, 
     error: distanceError,
     pickupPlace,
-    deliveryPlace 
+    deliveryPlace,
+    pickupCoordinates,
+    deliveryCoordinates
   } = useMapboxDistance(
     formData.pickupLocation,
     formData.deliveryLocation,
@@ -268,6 +271,16 @@ const FreightEstimator = () => {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {/* Route Map */}
+                  {!formData.crossBorder && (
+                    <RouteMap
+                      pickupCoordinates={pickupCoordinates}
+                      deliveryCoordinates={deliveryCoordinates}
+                      pickupLabel={pickupPlace || 'Pickup'}
+                      deliveryLabel={deliveryPlace || 'Delivery'}
+                    />
                   )}
 
                   <div className="space-y-2">
