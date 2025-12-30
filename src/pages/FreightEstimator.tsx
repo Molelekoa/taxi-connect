@@ -222,7 +222,8 @@ const FreightEstimator = () => {
     formData.deliveryLocation &&
     formData.weight &&
     parseFloat(formData.weight) > 0 &&
-    formData.cargoType;
+    formData.cargoType &&
+    (!formData.crossBorder || formData.sadcCountry);
 
   const selectedCargo = cargoTypes.find((c) => c.value === formData.cargoType);
 
