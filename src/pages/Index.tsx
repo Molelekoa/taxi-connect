@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Truck, Package, Zap, Shield, FileText, Users, MapPin } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -55,26 +55,43 @@ const scaleIn = {
 
 const Index = () => {
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const heroRef = useRef<HTMLElement>(null);
+  
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  
+  const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const backgroundScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
+  const overlayOpacity = useTransform(scrollYProgress, [0, 0.5], [0.5, 0.8]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-        {/* Background Image */}
-        <div className="absolute inset-0">
+      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+        {/* Background Image with Parallax */}
+        <motion.div 
+          className="absolute inset-0"
+          style={{ y: backgroundY }}
+        >
           <motion.img
             src={heroImage}
             alt="Modern truck on highway"
-            className="w-full h-full object-cover opacity-50"
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
+            className="w-full h-full object-cover"
+            style={{ scale: backgroundScale }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
             transition={{ duration: 1.5, ease: "easeOut" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background/50" />
-        </div>
+        </motion.div>
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background"
+          style={{ opacity: overlayOpacity }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background/50" />
 
         {/* Glow Effect */}
         <motion.div
