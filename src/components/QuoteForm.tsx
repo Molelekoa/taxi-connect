@@ -1,6 +1,22 @@
 import { useState } from "react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
+
+const quoteSchema = z.object({
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  companyName: z.string().min(2, "Company name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits")
+    .regex(/^[\d\s\-\(\)\+]+$/, "Please enter a valid phone number"),
+  origin: z.string().min(2, "Please enter a valid origin location"),
+  destination: z.string().min(2, "Please enter a valid destination"),
+  loadType: z.string().min(1, "Please select a load type"),
+});
+
+type QuoteFormData = z.infer<typeof quoteSchema>;
 
 interface QuoteFormProps {
   showTitle?: boolean;
@@ -9,7 +25,8 @@ interface QuoteFormProps {
 
 const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [formData, setFormData] = useState({
+  const [errors, setErrors] = useState<Partial<Record<keyof QuoteFormData, string>>>({});
+  const [formData, setFormData] = useState<QuoteFormData>({
     fullName: "",
     companyName: "",
     email: "",
@@ -21,15 +38,30 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the data to a backend
+    
+    const result = quoteSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof QuoteFormData, string>> = {};
+      result.error.errors.forEach((error) => {
+        const field = error.path[0] as keyof QuoteFormData;
+        fieldErrors[field] = error.message;
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setErrors({});
     setIsSubmitted(true);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (errors[name as keyof QuoteFormData]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   if (isSubmitted) {
@@ -47,6 +79,11 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
       </div>
     );
   }
+
+  const inputClassName = (field: keyof QuoteFormData) =>
+    `w-full h-12 px-4 rounded-lg bg-input border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all ${
+      errors[field] ? "border-destructive" : "border-border"
+    }`;
 
   return (
     <div>
@@ -72,10 +109,12 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              required
               placeholder="John Smith"
-              className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+              className={inputClassName("fullName")}
             />
+            {errors.fullName && (
+              <p className="text-sm text-destructive mt-1">{errors.fullName}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -86,10 +125,12 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
               name="companyName"
               value={formData.companyName}
               onChange={handleChange}
-              required
               placeholder="Your Company Inc."
-              className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+              className={inputClassName("companyName")}
             />
+            {errors.companyName && (
+              <p className="text-sm text-destructive mt-1">{errors.companyName}</p>
+            )}
           </div>
         </div>
 
@@ -103,10 +144,12 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
               name="email"
               value={formData.email}
               onChange={handleChange}
-              required
               placeholder="you@company.com"
-              className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+              className={inputClassName("email")}
             />
+            {errors.email && (
+              <p className="text-sm text-destructive mt-1">{errors.email}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -117,10 +160,12 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              required
               placeholder="(555) 123-4567"
-              className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+              className={inputClassName("phone")}
             />
+            {errors.phone && (
+              <p className="text-sm text-destructive mt-1">{errors.phone}</p>
+            )}
           </div>
         </div>
 
@@ -134,10 +179,12 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
               name="origin"
               value={formData.origin}
               onChange={handleChange}
-              required
               placeholder="City, State"
-              className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+              className={inputClassName("origin")}
             />
+            {errors.origin && (
+              <p className="text-sm text-destructive mt-1">{errors.origin}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -148,10 +195,12 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
               name="destination"
               value={formData.destination}
               onChange={handleChange}
-              required
               placeholder="City, State"
-              className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+              className={inputClassName("destination")}
             />
+            {errors.destination && (
+              <p className="text-sm text-destructive mt-1">{errors.destination}</p>
+            )}
           </div>
         </div>
 
@@ -163,8 +212,7 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
             name="loadType"
             value={formData.loadType}
             onChange={handleChange}
-            required
-            className="w-full h-12 px-4 rounded-lg bg-input border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all appearance-none cursor-pointer"
+            className={`${inputClassName("loadType")} appearance-none cursor-pointer`}
           >
             <option value="" disabled>Select...</option>
             <option value="ftl">Full Truckload (FTL)</option>
@@ -172,6 +220,9 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
             <option value="expedited">Expedited</option>
             <option value="specialized">Specialized</option>
           </select>
+          {errors.loadType && (
+            <p className="text-sm text-destructive mt-1">{errors.loadType}</p>
+          )}
         </div>
 
         <Button type="submit" variant="hero" size="xl" className="w-full">
