@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Truck, Package, Zap, Shield, FileText, Users, MapPin } from "lucide-react";
+import { Container, Boxes, Rocket, ShieldCheck, ClipboardList, Handshake, Navigation } from "lucide-react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
@@ -11,25 +11,25 @@ import heroImage from "@/assets/hero-truck.jpg";
 const services = [
   {
     id: "ftl",
-    icon: Truck,
+    icon: Container,
     title: "Full Truckload",
     description: "Dedicated capacity for large shipments. Your freight gets exclusive use of the entire trailer, ensuring fast transit times and reduced handling. Ideal for shipments over 10,000 lbs or 10+ pallets.",
   },
   {
     id: "ltl",
-    icon: Package,
+    icon: Boxes,
     title: "Less Than Truckload",
     description: "Cost-effective shipping for smaller loads. Share trailer space with other shippers to reduce costs while still getting reliable service. Perfect for shipments between 150–10,000 lbs.",
   },
   {
     id: "expedited",
-    icon: Zap,
+    icon: Rocket,
     title: "Expedited",
     description: "Time-critical deliveries when every hour counts. Dedicated equipment, direct routes, and priority handling ensure your urgent freight arrives on schedule. Available 24/7.",
   },
   {
     id: "specialized",
-    icon: Shield,
+    icon: ShieldCheck,
     title: "Specialized",
     description: "Custom solutions for unique freight requirements. Temperature-controlled, hazmat, oversized, or high-value cargo—we have the expertise and carrier network to handle it safely.",
   },
@@ -255,19 +255,19 @@ const Index = () => {
             {[
               {
                 step: "1",
-                icon: FileText,
+                icon: ClipboardList,
                 title: "Submit",
                 description: "Tell us about your load in under 60 seconds.",
               },
               {
                 step: "2",
-                icon: Users,
+                icon: Handshake,
                 title: "Match",
                 description: "Our system finds the ideal carrier from our network.",
               },
               {
                 step: "3",
-                icon: MapPin,
+                icon: Navigation,
                 title: "Track",
                 description: "Receive updates and track your shipment seamlessly.",
               },

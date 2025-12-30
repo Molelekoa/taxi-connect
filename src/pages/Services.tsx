@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Truck, Package, Zap, Shield, CheckCircle } from "lucide-react";
+import { Container, Boxes, Rocket, ShieldCheck, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 const services = [
   {
     id: "ftl",
-    icon: Truck,
+    icon: Container,
     title: "Full Truckload (FTL)",
     description: "Dedicated trucks for your large shipments requiring exclusive capacity.",
     features: [
@@ -20,7 +20,7 @@ const services = [
   },
   {
     id: "ltl",
-    icon: Package,
+    icon: Boxes,
     title: "Less Than Truckload (LTL)",
     description: "Cost-effective shipping for smaller loads that don't require a full trailer.",
     features: [
@@ -33,7 +33,7 @@ const services = [
   },
   {
     id: "expedited",
-    icon: Zap,
+    icon: Rocket,
     title: "Expedited Shipping",
     description: "Time-critical deliveries with guaranteed transit times and priority handling.",
     features: [
@@ -46,7 +46,7 @@ const services = [
   },
   {
     id: "specialized",
-    icon: Shield,
+    icon: ShieldCheck,
     title: "Specialized Freight",
     description: "Custom solutions for unique freight requirements and complex shipments.",
     features: [
@@ -99,7 +99,7 @@ const Services = () => {
                 <ul className="space-y-3 mb-6">
                   {service.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-3">
-                      <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                      <BadgeCheck className="w-4 h-4 text-primary shrink-0" />
                       <span className="text-sm text-muted-foreground">{feature}</span>
                     </li>
                   ))}
