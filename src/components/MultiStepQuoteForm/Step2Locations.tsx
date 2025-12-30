@@ -1,7 +1,16 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -9,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { Step2Data } from "./types";
 
 interface Step2Props {
@@ -25,6 +35,24 @@ const locationTypes = [
 ];
 
 const Step2Locations = ({ data, onChange, errors }: Step2Props) => {
+  const [pickupCalendarOpen, setPickupCalendarOpen] = useState(false);
+  const [deliveryCalendarOpen, setDeliveryCalendarOpen] = useState(false);
+
+  const parseDate = (dateString: string | undefined): Date | undefined => {
+    if (!dateString) return undefined;
+    return new Date(dateString);
+  };
+
+  const handlePickupDateSelect = (date: Date | undefined) => {
+    onChange({ pickupDate: date ? format(date, "yyyy-MM-dd") : "" });
+    setPickupCalendarOpen(false);
+  };
+
+  const handleDeliveryDateSelect = (date: Date | undefined) => {
+    onChange({ deliveryDate: date ? format(date, "yyyy-MM-dd") : "" });
+    setDeliveryCalendarOpen(false);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -56,7 +84,7 @@ const Step2Locations = ({ data, onChange, errors }: Step2Props) => {
               id="pickupAddress"
               value={data.pickupAddress}
               onChange={(e) => onChange({ pickupAddress: e.target.value })}
-              placeholder="123 Main St, City, State"
+              placeholder="123 Main St, City, Province"
               className={errors.pickupAddress ? "border-destructive" : ""}
             />
             {errors.pickupAddress && (
@@ -65,17 +93,32 @@ const Step2Locations = ({ data, onChange, errors }: Step2Props) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="pickupDate">Date</Label>
-            <div className="relative">
-              <Input
-                id="pickupDate"
-                type="date"
-                value={data.pickupDate || ""}
-                onChange={(e) => onChange({ pickupDate: e.target.value })}
-                className="pl-10"
-              />
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            </div>
+            <Label>Date</Label>
+            <Popover open={pickupCalendarOpen} onOpenChange={setPickupCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !data.pickupDate && "text-muted-foreground"
+                  )}
+                >
+                  {data.pickupDate
+                    ? format(parseDate(data.pickupDate)!, "PPP")
+                    : "Select pickup date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+                <Calendar
+                  mode="single"
+                  selected={parseDate(data.pickupDate)}
+                  onSelect={handlePickupDateSelect}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">
@@ -114,7 +157,7 @@ const Step2Locations = ({ data, onChange, errors }: Step2Props) => {
               id="deliveryAddress"
               value={data.deliveryAddress}
               onChange={(e) => onChange({ deliveryAddress: e.target.value })}
-              placeholder="456 Oak Ave, City, State"
+              placeholder="456 Oak Ave, City, Province"
               className={errors.deliveryAddress ? "border-destructive" : ""}
             />
             {errors.deliveryAddress && (
@@ -123,17 +166,32 @@ const Step2Locations = ({ data, onChange, errors }: Step2Props) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="deliveryDate">Required Date</Label>
-            <div className="relative">
-              <Input
-                id="deliveryDate"
-                type="date"
-                value={data.deliveryDate || ""}
-                onChange={(e) => onChange({ deliveryDate: e.target.value })}
-                className="pl-10"
-              />
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            </div>
+            <Label>Required Date</Label>
+            <Popover open={deliveryCalendarOpen} onOpenChange={setDeliveryCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !data.deliveryDate && "text-muted-foreground"
+                  )}
+                >
+                  {data.deliveryDate
+                    ? format(parseDate(data.deliveryDate)!, "PPP")
+                    : "Select delivery date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+                <Calendar
+                  mode="single"
+                  selected={parseDate(data.deliveryDate)}
+                  onSelect={handleDeliveryDateSelect}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">

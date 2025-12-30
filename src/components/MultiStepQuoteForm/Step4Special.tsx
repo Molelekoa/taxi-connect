@@ -18,6 +18,22 @@ interface Step4Props {
   onChange: (data: Partial<Step4Data>) => void;
 }
 
+const africanCountries = [
+  { value: "south-africa", label: "South Africa" },
+  { value: "namibia", label: "Namibia" },
+  { value: "botswana", label: "Botswana" },
+  { value: "zimbabwe", label: "Zimbabwe" },
+  { value: "mozambique", label: "Mozambique" },
+  { value: "zambia", label: "Zambia" },
+  { value: "malawi", label: "Malawi" },
+  { value: "lesotho", label: "Lesotho" },
+  { value: "eswatini", label: "Eswatini" },
+  { value: "tanzania", label: "Tanzania" },
+  { value: "kenya", label: "Kenya" },
+  { value: "drc", label: "Democratic Republic of Congo" },
+  { value: "angola", label: "Angola" },
+];
+
 const ToggleCard = ({
   icon: Icon,
   title,
@@ -72,6 +88,16 @@ const ToggleCard = ({
 };
 
 const Step4Special = ({ data, onChange }: Step4Props) => {
+  // Parse selected countries from comma-separated string
+  const selectedCountries = data.countries ? data.countries.split(", ").filter(Boolean) : [];
+
+  const toggleCountry = (countryLabel: string) => {
+    const newSelection = selectedCountries.includes(countryLabel)
+      ? selectedCountries.filter(c => c !== countryLabel)
+      : [...selectedCountries, countryLabel];
+    onChange({ countries: newSelection.join(", ") });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -152,12 +178,12 @@ const Step4Special = ({ data, onChange }: Step4Props) => {
         >
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tempRange">Temperature Range</Label>
+              <Label htmlFor="tempRange">Temperature Range (°C)</Label>
               <Input
                 id="tempRange"
                 value={data.tempRange || ""}
                 onChange={(e) => onChange({ tempRange: e.target.value })}
-                placeholder="e.g., 34-38°F"
+                placeholder="e.g., 2-8°C"
               />
             </div>
             <div className="space-y-2">
@@ -182,20 +208,43 @@ const Step4Special = ({ data, onChange }: Step4Props) => {
         {/* International */}
         <ToggleCard
           icon={Globe}
-          title="International / Cross-Border"
-          description="Shipments crossing international borders"
+          title="Cross-Border / SADC"
+          description="Shipments crossing African borders"
           isOpen={data.international || false}
           onToggle={() => onChange({ international: !data.international })}
         >
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="countries">Countries Involved</Label>
-              <Input
-                id="countries"
-                value={data.countries || ""}
-                onChange={(e) => onChange({ countries: e.target.value })}
-                placeholder="e.g., USA, Canada, Mexico"
-              />
+              <Label>Countries Involved (select up to 3)</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {africanCountries.map((country) => (
+                  <div
+                    key={country.value}
+                    className="flex items-center space-x-2"
+                  >
+                    <Checkbox
+                      id={country.value}
+                      checked={selectedCountries.includes(country.label)}
+                      onCheckedChange={() => toggleCountry(country.label)}
+                      disabled={
+                        selectedCountries.length >= 3 &&
+                        !selectedCountries.includes(country.label)
+                      }
+                    />
+                    <Label
+                      htmlFor={country.value}
+                      className="font-normal cursor-pointer text-sm"
+                    >
+                      {country.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              {selectedCountries.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {selectedCountries.join(", ")}
+                </p>
+              )}
             </div>
             <div className="flex items-center space-x-3">
               <Checkbox
@@ -219,12 +268,12 @@ const Step4Special = ({ data, onChange }: Step4Props) => {
           onToggle={() => onChange({ additionalInsurance: !data.additionalInsurance })}
         >
           <div className="space-y-2">
-            <Label htmlFor="insuranceCoverage">Desired Coverage Amount</Label>
+            <Label htmlFor="insuranceCoverage">Desired Coverage Amount (ZAR)</Label>
             <Input
               id="insuranceCoverage"
               value={data.insuranceCoverage || ""}
               onChange={(e) => onChange({ insuranceCoverage: e.target.value })}
-              placeholder="e.g., $100,000"
+              placeholder="e.g., R 500,000"
             />
           </div>
         </ToggleCard>
