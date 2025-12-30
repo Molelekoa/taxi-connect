@@ -178,13 +178,18 @@ const Index = () => {
                 onClick={() => setSelectedService(selectedService === service.id ? null : service.id)}
                 className={`p-6 md:p-8 rounded-2xl border-2 transition-all duration-300 text-center ${
                   selectedService === service.id
-                    ? "border-primary bg-primary/10"
+                    ? "border-primary bg-primary/10 shadow-lg shadow-primary/20"
                     : "border-border bg-card hover:border-primary/50 hover:bg-secondary/50"
                 }`}
                 variants={scaleIn}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                whileHover={{ scale: 1.03 }}
+                whileHover={{ 
+                  y: -8, 
+                  scale: 1.02,
+                  boxShadow: "0 20px 40px -15px hsl(var(--primary) / 0.3)",
+                  transition: { type: "spring", stiffness: 400, damping: 15 }
+                }}
                 whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
               >
                 <div className={`w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4 transition-colors ${
                   selectedService === service.id ? "bg-primary" : "bg-secondary"
