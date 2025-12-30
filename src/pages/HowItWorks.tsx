@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FileText, Users, MapPin, Clock, CheckCircle, Phone } from "lucide-react";
+import { ClipboardList, Handshake, Navigation, Timer, BadgeCheck, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 const steps = [
   {
     step: "1",
-    icon: FileText,
+    icon: ClipboardList,
     title: "Submit Your Load",
     description: "Tell us about your load in under 60 seconds. Simply fill out our quick online form with your pickup and delivery locations, freight details, and any special requirements.",
     details: [
@@ -18,7 +18,7 @@ const steps = [
   },
   {
     step: "2",
-    icon: Users,
+    icon: Handshake,
     title: "We Match & Negotiate",
     description: "Our logistics experts get to work immediately. We search our extensive carrier network to find the best match for your shipment, negotiating competitive rates on your behalf.",
     details: [
@@ -29,7 +29,7 @@ const steps = [
   },
   {
     step: "3",
-    icon: MapPin,
+    icon: Navigation,
     title: "Track & Deliver",
     description: "Once your carrier is confirmed, you'll receive real-time tracking updates. Our team monitors every shipment and proactively communicates any updates until delivery is complete.",
     details: [
@@ -83,7 +83,7 @@ const HowItWorks = () => {
                   <ul className="space-y-3">
                     {step.details.map((detail) => (
                       <li key={detail} className="flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-primary shrink-0" />
+                        <BadgeCheck className="w-5 h-5 text-primary shrink-0" />
                         <span className="text-foreground">{detail}</span>
                       </li>
                     ))}
@@ -103,7 +103,7 @@ const HowItWorks = () => {
           <div className="mt-20 text-center">
             <div className="card-elevated p-8 md:p-12 max-w-2xl mx-auto">
               <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-6">
-                <Clock className="w-8 h-8 text-primary" />
+                <Timer className="w-8 h-8 text-primary" />
               </div>
               <h3 className="font-display font-bold text-2xl text-foreground mb-3">
                 Ready to Get Started?
@@ -119,7 +119,7 @@ const HowItWorks = () => {
                 </Link>
                 <a href="tel:+18005551234">
                   <Button variant="outline" size="lg">
-                    <Phone className="w-4 h-4 mr-2" />
+                    <PhoneCall className="w-4 h-4 mr-2" />
                     (800) 555-1234
                   </Button>
                 </a>

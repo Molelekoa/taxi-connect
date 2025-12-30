@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Truck, Mail, Phone, MapPin } from "lucide-react";
+import { Gauge, Send, PhoneCall, Building2 } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -10,7 +10,7 @@ const Footer = () => {
           <div className="md:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Truck className="w-5 h-5 text-primary-foreground" />
+                <Gauge className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="font-display font-bold text-xl text-foreground">
                 DYNO <span className="text-primary">DASH</span>
@@ -53,19 +53,19 @@ const Footer = () => {
             <h4 className="font-display font-semibold text-foreground mb-4">Contact</h4>
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="w-4 h-4 text-primary" />
+                <Send className="w-4 h-4 text-primary" />
                 <a href="mailto:info@dynodash.com" className="hover:text-primary transition-colors">
                   info@dynodash.com
                 </a>
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="w-4 h-4 text-primary" />
+                <PhoneCall className="w-4 h-4 text-primary" />
                 <a href="tel:+18005551234" className="hover:text-primary transition-colors">
                   (800) 555-1234
                 </a>
               </li>
               <li className="flex items-start gap-2 text-muted-foreground">
-                <MapPin className="w-4 h-4 text-primary mt-0.5" />
+                <Building2 className="w-4 h-4 text-primary mt-0.5" />
                 <span>Dallas, TX</span>
               </li>
             </ul>
