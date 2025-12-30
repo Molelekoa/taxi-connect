@@ -18,26 +18,14 @@ interface Step3Props {
   errors: Record<string, string>;
 }
 
-const commodityClasses = [
-  { value: "50", label: "Class 50 (Lowest)" },
-  { value: "55", label: "Class 55" },
-  { value: "60", label: "Class 60" },
-  { value: "65", label: "Class 65" },
-  { value: "70", label: "Class 70" },
-  { value: "77.5", label: "Class 77.5" },
-  { value: "85", label: "Class 85" },
-  { value: "92.5", label: "Class 92.5" },
-  { value: "100", label: "Class 100" },
-  { value: "110", label: "Class 110" },
-  { value: "125", label: "Class 125" },
-  { value: "150", label: "Class 150" },
-  { value: "175", label: "Class 175" },
-  { value: "200", label: "Class 200" },
-  { value: "250", label: "Class 250" },
-  { value: "300", label: "Class 300" },
-  { value: "400", label: "Class 400" },
-  { value: "500", label: "Class 500 (Highest)" },
-  { value: "unknown", label: "I don't know" },
+const goodsCategories = [
+  { value: "light-bulky", label: "Clothing, Footwear, Bedding, Pillows (Light & Bulky)" },
+  { value: "average-boxed", label: "Paper Goods, Books, Boxed Cereal/Pasta (Average Boxed Goods)" },
+  { value: "electronics", label: "Electronics, Toys, Plastic Household Items" },
+  { value: "dense-heavy", label: "Auto Parts, Machinery, Metal Products (Dense & Heavy)" },
+  { value: "furniture", label: "Furniture, Cabinets, Large Fixtures" },
+  { value: "fragile", label: "Wine, Glass, Ceramics, Fragile Items" },
+  { value: "bagged-goods", label: "Bagged/Boxed Grains, Powdered Goods" },
 ];
 
 // Helper to parse dimension string into parts
@@ -148,18 +136,21 @@ const Step3LoadDetails = ({ data, onChange, errors }: Step3Props) => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="commodityClass">Commodity Class</Label>
+          <Label htmlFor="commodityClass">What best describes your goods?</Label>
+          <p className="text-xs text-muted-foreground mb-1">
+            Select the closest match. This helps us calculate the safest and most accurate rate.
+          </p>
           <Select
             value={data.commodityClass || ""}
             onValueChange={(value) => onChange({ commodityClass: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select freight class" />
+              <SelectValue placeholder="-- Please select a category --" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border max-h-60">
-              {commodityClasses.map((cls) => (
-                <SelectItem key={cls.value} value={cls.value}>
-                  {cls.label}
+              {goodsCategories.map((category) => (
+                <SelectItem key={category.value} value={category.value}>
+                  {category.label}
                 </SelectItem>
               ))}
             </SelectContent>
