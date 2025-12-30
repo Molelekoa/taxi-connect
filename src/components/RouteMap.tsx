@@ -215,13 +215,21 @@ const RouteMap = ({
 
   if (!MAPBOX_TOKEN) {
     return (
-      <div className="h-64 bg-muted rounded-lg flex flex-col items-center justify-center gap-3 border border-border">
-        <MapPin className="h-8 w-8 text-muted-foreground" />
-        <div className="text-center px-4">
-          <p className="text-muted-foreground text-sm font-medium">Map not configured</p>
-          <p className="text-muted-foreground/70 text-xs mt-1">
-            Add VITE_MAPBOX_TOKEN to Lovable Secrets
+      <div className="w-full h-64 bg-muted/30 rounded-lg flex items-center justify-center border border-dashed border-muted-foreground/30">
+        <div className="text-center text-muted-foreground p-4">
+          <MapPin className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm font-medium">Mapbox token required</p>
+          <p className="text-xs mt-1 max-w-xs">
+            Add your Mapbox public token as <code className="bg-muted px-1 rounded">VITE_MAPBOX_TOKEN</code> in Lovable Secrets, then refresh the page.
           </p>
+          <a 
+            href="https://mapbox.com/account/access-tokens" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-xs text-primary hover:underline mt-2 inline-block"
+          >
+            Get your token →
+          </a>
         </div>
       </div>
     );

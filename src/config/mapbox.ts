@@ -1,9 +1,12 @@
 // Mapbox Configuration
-// The public token is stored as a Lovable secret (VITE_MAPBOX_TOKEN)
-// To add your token: Go to Lovable Secrets and add VITE_MAPBOX_TOKEN
 // Get your token from: https://mapbox.com/account/access-tokens
+// Since this is a PUBLIC/PUBLISHABLE token, it's safe to embed in client code
 
-export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+// Read from environment variable (set via Lovable Secrets as VITE_MAPBOX_TOKEN)
+const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+
+// Export the token - will be undefined if not configured
+export const MAPBOX_TOKEN = envToken;
 
 export const MAPBOX_STYLES = {
   dark: 'mapbox://styles/mapbox/dark-v11',
