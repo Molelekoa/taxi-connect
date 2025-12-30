@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { z } from "zod";
-import { Truck, CheckCircle } from "lucide-react";
+import { Truck, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -24,6 +25,7 @@ type CarrierFormData = z.infer<typeof carrierSchema>;
 
 const CarrierSignup = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof CarrierFormData, string>>>({});
   const [formData, setFormData] = useState<CarrierFormData>({
     contactName: "",
@@ -34,7 +36,7 @@ const CarrierSignup = () => {
     fleetSize: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const result = carrierSchema.safeParse(formData);
@@ -50,7 +52,18 @@ const CarrierSignup = () => {
     }
 
     setErrors({});
+    setIsLoading(true);
+    
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    
+    setIsLoading(false);
     setIsSubmitted(true);
+    
+    toast({
+      title: "Application Submitted!",
+      description: "We'll review your application and contact you within 1-2 business days.",
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -247,8 +260,15 @@ const CarrierSignup = () => {
                     )}
                   </div>
 
-                  <Button type="submit" variant="hero" size="xl" className="w-full">
-                    Apply to Join
+                  <Button type="submit" variant="hero" size="xl" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Apply to Join"
+                    )}
                   </Button>
 
                   <p className="text-center text-sm text-muted-foreground">
