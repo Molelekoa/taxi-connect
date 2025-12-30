@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Container, Boxes, Rocket, ShieldCheck, ClipboardList, Handshake, Navigation } from "lucide-react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
@@ -11,25 +10,25 @@ import heroImage from "@/assets/hero-truck.jpg";
 const services = [
   {
     id: "ftl",
-    icon: Container,
+    abbr: "FTL",
     title: "Full Truckload",
     description: "Dedicated capacity for large shipments. Your freight gets exclusive use of the entire trailer, ensuring fast transit times and reduced handling. Ideal for shipments over 10,000 lbs or 10+ pallets.",
   },
   {
     id: "ltl",
-    icon: Boxes,
+    abbr: "LTL",
     title: "Less Than Truckload",
     description: "Cost-effective shipping for smaller loads. Share trailer space with other shippers to reduce costs while still getting reliable service. Perfect for shipments between 150–10,000 lbs.",
   },
   {
     id: "expedited",
-    icon: Rocket,
+    abbr: "EXP",
     title: "Expedited",
     description: "Time-critical deliveries when every hour counts. Dedicated equipment, direct routes, and priority handling ensure your urgent freight arrives on schedule. Available 24/7.",
   },
   {
     id: "specialized",
-    icon: ShieldCheck,
+    abbr: "SPEC",
     title: "Specialized",
     description: "Custom solutions for unique freight requirements. Temperature-controlled, hazmat, oversized, or high-value cargo—we have the expertise and carrier network to handle it safely.",
   },
@@ -164,7 +163,7 @@ const Index = () => {
             </h2>
           </motion.div>
 
-          {/* Service Cards */}
+          {/* Service Cards - Typography Based */}
           <motion.div
             className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
             initial="hidden"
@@ -191,14 +190,13 @@ const Index = () => {
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
               >
-                <div className={`w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4 transition-colors ${
-                  selectedService === service.id ? "bg-primary" : "bg-secondary"
+                {/* Bold Abbreviation */}
+                <div className={`font-display font-black text-4xl md:text-5xl mb-3 transition-colors ${
+                  selectedService === service.id ? "text-primary" : "text-primary/70"
                 }`}>
-                  <service.icon className={`w-7 h-7 ${
-                    selectedService === service.id ? "text-primary-foreground" : "text-primary"
-                  }`} />
+                  {service.abbr}
                 </div>
-                <h3 className="font-display font-semibold text-foreground">
+                <h3 className="font-display font-semibold text-foreground text-sm md:text-base">
                   {service.title}
                 </h3>
               </motion.button>
@@ -254,20 +252,17 @@ const Index = () => {
           >
             {[
               {
-                step: "1",
-                icon: ClipboardList,
+                step: "01",
                 title: "Submit",
                 description: "Tell us about your load in under 60 seconds.",
               },
               {
-                step: "2",
-                icon: Handshake,
+                step: "02",
                 title: "Match",
                 description: "Our system finds the ideal carrier from our network.",
               },
               {
-                step: "3",
-                icon: Navigation,
+                step: "03",
                 title: "Track",
                 description: "Receive updates and track your shipment seamlessly.",
               },
@@ -278,16 +273,14 @@ const Index = () => {
                 variants={fadeInUp}
                 transition={{ duration: 0.5, delay: index * 0.15 }}
               >
+                {/* Large Number */}
                 <motion.div
-                  className="w-20 h-20 mx-auto rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center mb-6"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  className="font-display font-black text-7xl md:text-8xl text-primary/20 mb-2 leading-none"
+                  whileHover={{ scale: 1.05, color: "hsl(var(--primary) / 0.4)" }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <item.icon className="w-8 h-8 text-primary" />
+                  {item.step}
                 </motion.div>
-                <div className="font-display font-bold text-sm text-primary mb-2">
-                  STEP {item.step}
-                </div>
                 <h3 className="font-display font-bold text-xl text-foreground mb-3">
                   {item.title}
                 </h3>

@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Gauge, Send, PhoneCall, Building2 } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -8,12 +7,10 @@ const Footer = () => {
         <div className="grid md:grid-cols-4 gap-12">
           {/* Logo & Description */}
           <div className="md:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Gauge className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-display font-bold text-xl text-foreground">
-                DYNO <span className="text-primary">DASH</span>
+            <Link to="/" className="inline-block mb-4">
+              <span className="font-display font-black text-2xl tracking-tight">
+                <span className="text-foreground">DYNO</span>
+                <span className="text-primary">DASH</span>
               </span>
             </Link>
             <p className="text-muted-foreground max-w-sm">
@@ -52,21 +49,21 @@ const Footer = () => {
           <div>
             <h4 className="font-display font-semibold text-foreground mb-4">Contact</h4>
             <ul className="space-y-3">
-              <li className="flex items-center gap-2 text-muted-foreground">
-                <Send className="w-4 h-4 text-primary" />
-                <a href="mailto:info@dynodash.com" className="hover:text-primary transition-colors">
+              <li>
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">Email</span>
+                <a href="mailto:info@dynodash.com" className="text-muted-foreground hover:text-primary transition-colors">
                   info@dynodash.com
                 </a>
               </li>
-              <li className="flex items-center gap-2 text-muted-foreground">
-                <PhoneCall className="w-4 h-4 text-primary" />
-                <a href="tel:+18005551234" className="hover:text-primary transition-colors">
+              <li>
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">Phone</span>
+                <a href="tel:+18005551234" className="text-muted-foreground hover:text-primary transition-colors">
                   (800) 555-1234
                 </a>
               </li>
-              <li className="flex items-start gap-2 text-muted-foreground">
-                <Building2 className="w-4 h-4 text-primary mt-0.5" />
-                <span>Dallas, TX</span>
+              <li>
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">Location</span>
+                <span className="text-muted-foreground">Dallas, TX</span>
               </li>
             </ul>
           </div>
