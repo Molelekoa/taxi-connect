@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 
 const cargoTypes = [
   { value: "general", label: "General Dry Goods", multiplier: 1.0 },
@@ -35,20 +37,7 @@ const sadcCountries = [
   { value: "zimbabwe", label: "Zimbabwe (Harare)" },
 ];
 
-// Predefined domestic distances (in km)
-const PREDEFINED_DISTANCES: Record<string, number> = {
-  'johannesburg-cape': 1400,
-  'johannesburg-durban': 570,
-  'johannesburg-pretoria': 60,
-  'johannesburg-port': 580,
-  'cape-durban': 1660,
-  'cape-port': 770,
-  'durban-port': 1050,
-  'pretoria-durban': 630,
-  'pretoria-cape': 1460,
-};
-
-// SADC country distances from Johannesburg (in km)
+// SADC country distances from Johannesburg (in km) - used as fallback for cross-border
 const SADC_DISTANCES: Record<string, number> = {
   'botswana': 356,
   'lesotho': 410.7,
@@ -62,29 +51,6 @@ const SADC_DISTANCES: Record<string, number> = {
 // Cross-border cost constants
 const CROSS_BORDER_RATE_PER_KM = { min: 7, max: 18 }; // R7–R18 per km
 const CROSS_BORDER_ADMIN_FEE = 1200; // R1,200 fixed fee
-
-// Distance estimation function
-function estimateDistance(pickup: string, delivery: string, sadcCountry?: string): number {
-  const pickupLower = pickup.toLowerCase();
-  const deliveryLower = delivery.toLowerCase();
-
-  // 1. First, check for a direct match in the original domestic routes
-  const route1 = `${pickupLower.split(' ')[0]}-${deliveryLower.split(' ')[0]}`;
-  const route2 = `${deliveryLower.split(' ')[0]}-${pickupLower.split(' ')[0]}`;
-
-  if (PREDEFINED_DISTANCES[route1]) return PREDEFINED_DISTANCES[route1];
-  if (PREDEFINED_DISTANCES[route2]) return PREDEFINED_DISTANCES[route2];
-
-  // 2. Check if the delivery location is a SADC country
-  for (const [country, distance] of Object.entries(SADC_DISTANCES)) {
-    if (deliveryLower.includes(country) || (sadcCountry && sadcCountry.toLowerCase().includes(country))) {
-      return distance;
-    }
-  }
-
-  // 3. Fallback: Assume a domestic route if no match is found
-  return 500;
-}
 
 const FreightEstimator = () => {
   const [formData, setFormData] = useState({
@@ -102,28 +68,31 @@ const FreightEstimator = () => {
     sadcCountry: "",
   });
 
-  const [estimatedDistance, setEstimatedDistance] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
+  const [finalDistance, setFinalDistance] = useState(0);
+
+  // Use Mapbox for domestic routes (skip for cross-border)
+  const { 
+    distance: mapboxDistance, 
+    isLoading: isCalculatingDistance, 
+    error: distanceError,
+    pickupPlace,
+    deliveryPlace 
+  } = useMapboxDistance(
+    formData.pickupLocation,
+    formData.deliveryLocation,
+    formData.crossBorder // Skip API when cross-border is selected
+  );
+
+  // Calculate the effective distance
+  const effectiveDistance = formData.crossBorder && formData.sadcCountry
+    ? SADC_DISTANCES[formData.sadcCountry] || 0
+    : mapboxDistance;
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => {
-      const newData = { ...prev, [field]: value };
-      
-      // Update distance when locations or SADC country changes
-      if (field === "pickupLocation" || field === "deliveryLocation" || field === "sadcCountry") {
-        const pickup = field === "pickupLocation" ? value : prev.pickupLocation;
-        const delivery = field === "deliveryLocation" ? value : prev.deliveryLocation;
-        const sadc = field === "sadcCountry" ? value : prev.sadcCountry;
-        
-        if (pickup && delivery && typeof pickup === "string" && typeof delivery === "string") {
-          const distance = estimateDistance(pickup, delivery, typeof sadc === "string" ? sadc : undefined);
-          setEstimatedDistance(distance);
-        }
-      }
-      
-      return newData;
-    });
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setShowResult(false); // Hide result when form changes
   };
 
   const calculateEstimate = () => {
@@ -140,8 +109,8 @@ const FreightEstimator = () => {
     // Base LTL rates (per kg)
     const BASE_RATES = { ltlPerKg: { min: 8, max: 15 } };
 
-    // Calculate initial distance
-    let distance = estimateDistance(formData.pickupLocation, formData.deliveryLocation);
+    // Use Mapbox distance for domestic, SADC predefined for cross-border
+    let distance = effectiveDistance || 500; // Fallback to 500km if no distance
     
     // Domestic base cost calculation
     const baseRatePerKm = { min: 4.5, max: 12 };
@@ -172,7 +141,7 @@ const FreightEstimator = () => {
       }
     }
 
-    setEstimatedDistance(distance);
+    setFinalDistance(distance);
 
     // Weight factor (heavier loads cost more) - only for domestic
     if (!formData.crossBorder) {
@@ -272,9 +241,32 @@ const FreightEstimator = () => {
                     />
                   </div>
 
-                  {estimatedDistance > 0 && (
+                  {/* Distance calculation status */}
+                  {isCalculatingDistance && (
+                    <div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Calculating distance...
+                    </div>
+                  )}
+                  
+                  {distanceError && !formData.crossBorder && (
+                    <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
+                      {distanceError}
+                    </div>
+                  )}
+                  
+                  {effectiveDistance && effectiveDistance > 0 && !isCalculatingDistance && (
                     <div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground">
-                      Estimated distance: <span className="font-semibold text-foreground">{estimatedDistance} km</span>
+                      <div className="flex items-center justify-between">
+                        <span>Estimated distance:</span>
+                        <span className="font-semibold text-foreground">{effectiveDistance} km</span>
+                      </div>
+                      {pickupPlace && deliveryPlace && !formData.crossBorder && (
+                        <div className="text-xs mt-2 space-y-1">
+                          <div>From: {pickupPlace}</div>
+                          <div>To: {deliveryPlace}</div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -425,7 +417,7 @@ const FreightEstimator = () => {
                     </ul>
                     <p className="font-semibold text-foreground mt-4">Key factors affecting your quote:</p>
                     <ul className="space-y-1 text-muted-foreground">
-                      <li>• Distance: ~{estimatedDistance} km</li>
+                      <li>• Distance: ~{finalDistance} km</li>
                       <li>• Load size: {formData.weight} kg</li>
                       {formData.isFullTruckload && <li>• Full truckload discount applied</li>}
                       {formData.express && <li>• Express delivery surcharge</li>}
