@@ -1,4 +1,4 @@
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+import { MAPBOX_TOKEN } from '@/config/mapbox';
 
 export interface Coordinates {
   lng: number;
