@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Truck, Package, Zap, Shield, FileText, Users, MapPin } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -34,6 +35,24 @@ const services = [
   },
 ];
 
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15 },
+  },
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: { opacity: 1, scale: 1 },
+};
+
 const Index = () => {
   const [selectedService, setSelectedService] = useState<string | null>(null);
 
@@ -45,60 +64,99 @@ const Index = () => {
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
         {/* Background Image */}
         <div className="absolute inset-0">
-          <img
+          <motion.img
             src={heroImage}
             alt="Modern truck on highway"
             className="w-full h-full object-cover opacity-50"
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background/50" />
         </div>
 
         {/* Glow Effect */}
-        <div
+        <motion.div
           className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full opacity-20 blur-3xl"
           style={{ background: "var(--gradient-glow)" }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 0.2, scale: 1 }}
+          transition={{ duration: 1.2, delay: 0.3 }}
         />
 
         <div className="container-narrow relative z-10 text-center">
-          <h1 className="font-display font-extrabold text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight animate-fade-up">
+          <motion.h1
+            className="font-display font-extrabold text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+          >
             Powerful Logistics.
             <br />
             <span className="text-gradient">Simple Process.</span>
-          </h1>
-          <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: "100ms" }}>
+          </motion.h1>
+          <motion.p
+            className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
+          >
             Dyno Dash connects your freight with our vetted carrier network. Fast, reliable, and transparent.
-          </p>
-          <div className="mt-10 animate-fade-up" style={{ animationDelay: "200ms" }}>
+          </motion.p>
+          <motion.div
+            className="mt-10"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+          >
             <Link to="/get-quote">
               <Button variant="hero" size="xl">
                 Get a Free Quote
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-float">
-          <div className="w-6 h-10 border-2 border-muted-foreground/50 rounded-full flex items-start justify-center pt-2">
+        <motion.div
+          className="absolute bottom-10 left-1/2 -translate-x-1/2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1, duration: 0.5 }}
+        >
+          <div className="w-6 h-10 border-2 border-muted-foreground/50 rounded-full flex items-start justify-center pt-2 animate-float">
             <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Interactive Service Selector */}
       <section className="section-padding">
         <div className="container-narrow">
-          <div className="text-center mb-12">
+          <motion.div
+            className="text-center mb-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+            transition={{ duration: 0.6 }}
+          >
             <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground">
               What are you <span className="text-gradient">shipping?</span>
             </h2>
-          </div>
+          </motion.div>
 
           {/* Service Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {services.map((service) => (
-              <button
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={staggerContainer}
+          >
+            {services.map((service, index) => (
+              <motion.button
                 key={service.id}
                 onClick={() => setSelectedService(selectedService === service.id ? null : service.id)}
                 className={`p-6 md:p-8 rounded-2xl border-2 transition-all duration-300 text-center ${
@@ -106,6 +164,10 @@ const Index = () => {
                     ? "border-primary bg-primary/10"
                     : "border-border bg-card hover:border-primary/50 hover:bg-secondary/50"
                 }`}
+                variants={scaleIn}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <div className={`w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4 transition-colors ${
                   selectedService === service.id ? "bg-primary" : "bg-secondary"
@@ -117,13 +179,19 @@ const Index = () => {
                 <h3 className="font-display font-semibold text-foreground">
                   {service.title}
                 </h3>
-              </button>
+              </motion.button>
             ))}
-          </div>
+          </motion.div>
 
           {/* Selected Service Description */}
           {selectedService && (
-            <div className="mt-8 p-6 md:p-8 rounded-2xl bg-secondary/50 border border-border animate-fade-up">
+            <motion.div
+              className="mt-8 p-6 md:p-8 rounded-2xl bg-secondary/50 border border-border"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
               <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-6">
                 {services.find((s) => s.id === selectedService)?.description}
               </p>
@@ -134,7 +202,7 @@ const Index = () => {
                   </Button>
                 </Link>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </section>
@@ -142,13 +210,26 @@ const Index = () => {
       {/* How It Works */}
       <section className="section-padding bg-secondary/30">
         <div className="container-narrow">
-          <div className="text-center mb-16">
+          <motion.div
+            className="text-center mb-16"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+            transition={{ duration: 0.6 }}
+          >
             <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground">
               How It <span className="text-gradient">Works</span>
             </h2>
-          </div>
+          </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-12">
+          <motion.div
+            className="grid md:grid-cols-3 gap-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={staggerContainer}
+          >
             {[
               {
                 step: "1",
@@ -168,11 +249,20 @@ const Index = () => {
                 title: "Track",
                 description: "Receive updates and track your shipment seamlessly.",
               },
-            ].map((item) => (
-              <div key={item.step} className="text-center">
-                <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center mb-6">
+            ].map((item, index) => (
+              <motion.div
+                key={item.step}
+                className="text-center"
+                variants={fadeInUp}
+                transition={{ duration: 0.5, delay: index * 0.15 }}
+              >
+                <motion.div
+                  className="w-20 h-20 mx-auto rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center mb-6"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
                   <item.icon className="w-8 h-8 text-primary" />
-                </div>
+                </motion.div>
                 <div className="font-display font-bold text-sm text-primary mb-2">
                   STEP {item.step}
                 </div>
@@ -182,28 +272,43 @@ const Index = () => {
                 <p className="text-muted-foreground">
                   {item.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
-          <div className="text-center mt-12">
+          <motion.div
+            className="text-center mt-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
             <Link to="/how-it-works">
               <Button variant="outline" size="lg">
                 Learn More
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Quote Form Section */}
-      <section id="quote-form" className="section-padding">
+      <motion.section
+        id="quote-form"
+        className="section-padding"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={fadeInUp}
+        transition={{ duration: 0.6 }}
+      >
         <div className="container-narrow">
           <div className="max-w-2xl mx-auto">
             <QuoteForm />
           </div>
         </div>
-      </section>
+      </motion.section>
 
       <Footer />
     </div>
