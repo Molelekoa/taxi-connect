@@ -26,14 +26,13 @@ const cargoTypes = [
 ];
 
 const sadcCountries = [
-  "Botswana",
-  "Lesotho",
-  "Mozambique",
-  "Namibia",
-  "Eswatini",
-  "Zambia",
-  "Zimbabwe",
-  "Other SADC",
+  { value: "botswana", label: "Botswana (Gaborone)" },
+  { value: "lesotho", label: "Lesotho (Maseru)" },
+  { value: "mozambique", label: "Mozambique (Maputo)" },
+  { value: "namibia", label: "Namibia (Windhoek)" },
+  { value: "eswatini", label: "Eswatini (Manzini)" },
+  { value: "zambia", label: "Zambia (Lusaka)" },
+  { value: "zimbabwe", label: "Zimbabwe (Harare)" },
 ];
 
 // Predefined domestic distances (in km)
@@ -339,23 +338,28 @@ const FreightEstimator = () => {
                 </div>
 
                 {formData.crossBorder && (
-                  <div className="space-y-2">
-                    <Label>Select SADC Country</Label>
+                  <div className="space-y-2 mt-4">
+                    <Label>Select SADC Country *</Label>
                     <Select
                       value={formData.sadcCountry}
                       onValueChange={(value) => handleInputChange("sadcCountry", value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select country" />
+                        <SelectValue placeholder="-- Choose a country --" />
                       </SelectTrigger>
                       <SelectContent>
                         {sadcCountries.map((country) => (
-                          <SelectItem key={country} value={country.toLowerCase()}>
-                            {country}
+                          <SelectItem key={country.value} value={country.value}>
+                            {country.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {formData.sadcCountry && SADC_DISTANCES[formData.sadcCountry] && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Distance from Johannesburg: <span className="font-semibold text-foreground">{SADC_DISTANCES[formData.sadcCountry]} km</span>
+                      </p>
+                    )}
                   </div>
                 )}
               </section>
