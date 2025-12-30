@@ -11,6 +11,7 @@ const Navbar = () => {
     { label: "Home", path: "/" },
     { label: "Services", path: "/services" },
     { label: "How It Works", path: "/how-it-works" },
+    { label: "Get Estimate", path: "/freight-estimator" },
     { label: "Get Quote", path: "/get-quote" },
     { label: "Carrier Signup", path: "/carrier-signup" },
   ];
@@ -30,7 +31,7 @@ const Navbar = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center gap-8">
-          {navLinks.slice(0, 4).map((link) => (
+          {navLinks.slice(0, 5).map((link) => (
             <Link
               key={link.path}
               to={link.path}

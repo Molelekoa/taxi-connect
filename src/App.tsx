@@ -8,6 +8,7 @@ import GetQuote from "./pages/GetQuote";
 import CarrierSignup from "./pages/CarrierSignup";
 import HowItWorks from "./pages/HowItWorks";
 import Services from "./pages/Services";
+import FreightEstimator from "./pages/FreightEstimator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/get-quote" element={<GetQuote />} />
+          <Route path="/freight-estimator" element={<FreightEstimator />} />
           <Route path="/carrier-signup" element={<CarrierSignup />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/services" element={<Services />} />
