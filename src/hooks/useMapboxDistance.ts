@@ -1,18 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
-import { getDistanceFromAddresses } from '@/lib/mapbox';
+import { getDistanceFromAddresses, Coordinates } from '@/lib/mapbox';
 
 interface DistanceResult {
   distance: number;
   pickupPlace: string;
   deliveryPlace: string;
+  pickupCoordinates: Coordinates;
+  deliveryCoordinates: Coordinates;
 }
 
-interface UseMapboxDistanceResult {
+export interface UseMapboxDistanceResult {
   distance: number | null;
   isLoading: boolean;
   error: string | null;
   pickupPlace: string | null;
   deliveryPlace: string | null;
+  pickupCoordinates: Coordinates | null;
+  deliveryCoordinates: Coordinates | null;
 }
 
 export function useMapboxDistance(
@@ -93,5 +97,7 @@ export function useMapboxDistance(
     error,
     pickupPlace: result?.pickupPlace ?? null,
     deliveryPlace: result?.deliveryPlace ?? null,
+    pickupCoordinates: result?.pickupCoordinates ?? null,
+    deliveryCoordinates: result?.deliveryCoordinates ?? null,
   };
 }
