@@ -1,20 +1,20 @@
 // Mapbox Configuration
-// Get your token from: https://mapbox.com/account/access-tokens
-// Since this is a PUBLIC/PUBLISHABLE token, it's safe to embed in client code
+// Public token embedded for seamless user experience
+
+const MAPBOX_PUBLIC_TOKEN = 'pk.eyJ1IjoibW9yYW1vbGxvIiwiYSI6ImNtanN2emF5ejJhZGQzZnNlcmUxZnV4NjUifQ.EQSIcEZQUFhV6mCchcJyKg';
 
 const LOCAL_STORAGE_KEY = 'mapbox_token_override';
 
 // Runtime getter for Mapbox token
-// Priority: 1) localStorage override (for admin/debug), 2) env variable
-export function getMapboxToken(): string | undefined {
-  // Check localStorage first (allows runtime updates without rebuild)
+// Priority: 1) localStorage override (for dev/testing), 2) embedded token
+export function getMapboxToken(): string {
+  // Check localStorage first (allows testing different tokens)
   if (typeof window !== 'undefined') {
     const localToken = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (localToken) return localToken;
   }
   
-  // Fall back to environment variable (baked at build time)
-  return import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+  return MAPBOX_PUBLIC_TOKEN;
 }
 
 // Admin helpers for setting token via localStorage
