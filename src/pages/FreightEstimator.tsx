@@ -130,50 +130,67 @@ const FreightEstimator = () => {
     const weight = parseFloat(formData.weight) || 0;
     if (weight <= 0 || !formData.cargoType) return;
 
-    // Recalculate distance with SADC country if cross-border
-    const distance = formData.crossBorder && formData.sadcCountry
-      ? estimateDistance(formData.pickupLocation, formData.deliveryLocation, formData.sadcCountry)
-      : estimateDistance(formData.pickupLocation, formData.deliveryLocation);
-    
-    setEstimatedDistance(distance);
-
     // Get cargo multiplier
     const cargo = cargoTypes.find((c) => c.value === formData.cargoType);
     const cargoMultiplier = cargo?.multiplier || 1.0;
 
-    // Use cross-border rates if applicable
-    const isCrossBorder = formData.crossBorder;
-    const baseRatePerKm = isCrossBorder ? CROSS_BORDER_RATE_PER_KM : { min: 4.5, max: 12 };
+    // Check if this is a full truckload
+    const isFTL = formData.isFullTruckload;
 
-    // Calculate base cost range
+    // Base LTL rates (per kg)
+    const BASE_RATES = { ltlPerKg: { min: 8, max: 15 } };
+
+    // Calculate initial distance
+    let distance = estimateDistance(formData.pickupLocation, formData.deliveryLocation);
+    
+    // Domestic base cost calculation
+    const baseRatePerKm = { min: 4.5, max: 12 };
     let minCost = distance * baseRatePerKm.min * cargoMultiplier;
     let maxCost = distance * baseRatePerKm.max * cargoMultiplier;
 
-    // Weight factor (heavier loads cost more)
-    const weightFactor = 1 + (weight / 10000) * 0.3;
-    minCost *= weightFactor;
-    maxCost *= weightFactor;
+    // APPLY CROSS-BORDER COSTS (if selected)
+    if (formData.crossBorder) {
+      const selectedCountry = formData.sadcCountry;
+      if (selectedCountry && SADC_DISTANCES[selectedCountry]) {
+        // Use cross-border per-km rate instead of domestic rate
+        const crossBorderDistance = SADC_DISTANCES[selectedCountry];
+        distance = crossBorderDistance;
 
-    // Apply full truckload discount
-    if (formData.isFullTruckload) {
-      minCost *= 0.85;
-      maxCost *= 0.9;
+        // Override the base cost calculation for cross-border
+        if (isFTL) {
+          minCost = crossBorderDistance * CROSS_BORDER_RATE_PER_KM.min * cargoMultiplier;
+          maxCost = crossBorderDistance * CROSS_BORDER_RATE_PER_KM.max * cargoMultiplier;
+        } else {
+          // For LTL, still use per-kg but with a cross-border multiplier
+          minCost = weight * BASE_RATES.ltlPerKg.min * 1.5 * cargoMultiplier;
+          maxCost = weight * BASE_RATES.ltlPerKg.max * 1.5 * cargoMultiplier;
+        }
+
+        // Add the fixed admin fee
+        minCost += CROSS_BORDER_ADMIN_FEE;
+        maxCost += CROSS_BORDER_ADMIN_FEE;
+      }
     }
 
-    // Add cross-border admin fee
-    if (isCrossBorder) {
-      minCost += CROSS_BORDER_ADMIN_FEE;
-      maxCost += CROSS_BORDER_ADMIN_FEE;
+    setEstimatedDistance(distance);
+
+    // Weight factor (heavier loads cost more) - only for domestic
+    if (!formData.crossBorder) {
+      const weightFactor = 1 + (weight / 10000) * 0.3;
+      minCost *= weightFactor;
+      maxCost *= weightFactor;
+    }
+
+    // Apply full truckload discount
+    if (isFTL) {
+      minCost *= 0.85;
+      maxCost *= 0.9;
     }
 
     // Add special requirements
     if (formData.liftgate) {
       minCost += 650;
       maxCost += 650;
-    }
-    if (formData.crossBorder) {
-      minCost += 1500;
-      maxCost += 1500;
     }
     if (formData.express) {
       minCost *= 1.25;
