@@ -43,6 +43,11 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                   Carrier Signup
                 </Link>
               </li>
+              <li>
+                <Link to="/faq" className="text-muted-foreground hover:text-primary transition-colors">
+                  FAQ
+                </Link>
+              </li>
             </ul>
           </div>
 
