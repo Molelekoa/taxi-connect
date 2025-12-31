@@ -2,8 +2,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin } from "lucide-react";
 import { format } from "date-fns";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AddressInput } from "@/components/ui/address-input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -80,10 +80,10 @@ const Step2Locations = ({ data, onChange, errors }: Step2Props) => {
 
           <div className="space-y-2">
             <Label htmlFor="pickupAddress">Address *</Label>
-            <Input
+            <AddressInput
               id="pickupAddress"
               value={data.pickupAddress}
-              onChange={(e) => onChange({ pickupAddress: e.target.value })}
+              onChange={(value) => onChange({ pickupAddress: value })}
               placeholder="123 Main St, City, Province"
               className={errors.pickupAddress ? "border-destructive" : ""}
             />
@@ -153,10 +153,10 @@ const Step2Locations = ({ data, onChange, errors }: Step2Props) => {
 
           <div className="space-y-2">
             <Label htmlFor="deliveryAddress">Address *</Label>
-            <Input
+            <AddressInput
               id="deliveryAddress"
               value={data.deliveryAddress}
-              onChange={(e) => onChange({ deliveryAddress: e.target.value })}
+              onChange={(value) => onChange({ deliveryAddress: value })}
               placeholder="456 Oak Ave, City, Province"
               className={errors.deliveryAddress ? "border-destructive" : ""}
             />
