@@ -58,13 +58,13 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               </li>
               <li>
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">Phone</span>
-                <a href="tel:+18005551234" className="text-muted-foreground hover:text-primary transition-colors">
-                  (800) 555-1234
+                <a href="tel:+27115685343" className="text-muted-foreground hover:text-primary transition-colors">
+                  (011) 568 5343
                 </a>
               </li>
               <li>
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">Location</span>
-                <span className="text-muted-foreground">Dallas, TX</span>
+                <span className="text-muted-foreground">Johannesburg, South Africa</span>
               </li>
             </ul>
           </div>
@@ -76,8 +76,8 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
             © {new Date().getFullYear()} Dyno Dash. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
+            <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+            <Link to="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>
