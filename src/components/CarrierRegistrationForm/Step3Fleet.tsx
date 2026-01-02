@@ -1,4 +1,4 @@
-import { CarrierFormData, VehicleEntry } from "./types";
+import { CarrierFormData, VehicleEntry, VehiclePhotos } from "./types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Truck, Upload, X } from "lucide-react";
+import { Plus, Trash2, Truck, Upload, X, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRef } from "react";
+
+const photoViews: { key: keyof VehiclePhotos; label: string }[] = [
+  { key: "front", label: "Front View" },
+  { key: "side", label: "Side View" },
+  { key: "back", label: "Back View" },
+];
 
 interface Step3Props {
   formData: CarrierFormData;
@@ -60,24 +65,32 @@ const Step3Fleet = ({ formData, updateFormData, errors }: Step3Props) => {
       dimensionWidth: "",
       dimensionHeight: "",
       features: [],
-      photo: "",
+      photos: { front: "", side: "", back: "" },
     };
     updateFormData({ vehicles: [...formData.vehicles, newVehicle] });
   };
 
-  const handlePhotoUpload = (vehicleId: string, file: File) => {
+  const handlePhotoUpload = (vehicleId: string, viewKey: keyof VehiclePhotos, file: File) => {
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64 = e.target?.result as string;
-        updateVehicle(vehicleId, { photo: base64 });
+        const vehicle = formData.vehicles.find((v) => v.id === vehicleId);
+        if (vehicle) {
+          const updatedPhotos = { ...vehicle.photos, [viewKey]: base64 };
+          updateVehicle(vehicleId, { photos: updatedPhotos });
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const removePhoto = (vehicleId: string) => {
-    updateVehicle(vehicleId, { photo: "" });
+  const removePhoto = (vehicleId: string, viewKey: keyof VehiclePhotos) => {
+    const vehicle = formData.vehicles.find((v) => v.id === vehicleId);
+    if (vehicle) {
+      const updatedPhotos = { ...vehicle.photos, [viewKey]: "" };
+      updateVehicle(vehicleId, { photos: updatedPhotos });
+    }
   };
 
   const removeVehicle = (id: string) => {
@@ -244,39 +257,48 @@ const Step3Fleet = ({ formData, updateFormData, errors }: Step3Props) => {
             </div>
 
             <div className="mt-4">
-              <Label className="mb-3 block">Vehicle Photo</Label>
-              {vehicle.photo ? (
-                <div className="relative inline-block">
-                  <img
-                    src={vehicle.photo}
-                    alt="Vehicle"
-                    className="w-32 h-24 object-cover rounded-lg border border-border"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute -top-2 -right-2 h-6 w-6"
-                    onClick={() => removePhoto(vehicle.id)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center w-32 h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                  <Upload className="w-6 h-6 text-muted-foreground mb-1" />
-                  <span className="text-xs text-muted-foreground">Upload</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handlePhotoUpload(vehicle.id, file);
-                    }}
-                  />
-                </label>
-              )}
+              <Label className="mb-3 block">Vehicle Photos</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {photoViews.map(({ key, label }) => {
+                  const photoUrl = vehicle.photos?.[key];
+                  return (
+                    <div key={key} className="flex flex-col items-center">
+                      {photoUrl ? (
+                        <div className="relative">
+                          <img
+                            src={photoUrl}
+                            alt={label}
+                            className="w-full h-20 object-cover rounded-lg border border-border"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-5 w-5"
+                            onClick={() => removePhoto(vehicle.id, key)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                          <Camera className="w-5 h-5 text-muted-foreground mb-1" />
+                          <span className="text-xs text-muted-foreground">{label}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handlePhotoUpload(vehicle.id, key, file);
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="mt-4">

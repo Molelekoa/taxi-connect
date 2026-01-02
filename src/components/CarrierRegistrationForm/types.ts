@@ -33,6 +33,13 @@ export const step2Schema = z.object({
   bbeeStatus: z.string().optional(),
 });
 
+// Vehicle photos schema
+export const vehiclePhotosSchema = z.object({
+  front: z.string().optional(),
+  side: z.string().optional(),
+  back: z.string().optional(),
+});
+
 // Vehicle entry for Step 3
 export const vehicleSchema = z.object({
   id: z.string(),
@@ -44,8 +51,10 @@ export const vehicleSchema = z.object({
   dimensionWidth: z.string().min(1, "Width is required"),
   dimensionHeight: z.string().min(1, "Height is required"),
   features: z.array(z.string()).optional(),
-  photo: z.string().optional(), // Base64 or file name
+  photos: vehiclePhotosSchema.optional(),
 });
+
+export type VehiclePhotos = z.infer<typeof vehiclePhotosSchema>;
 
 // Step 3: Fleet Details
 export const step3Schema = z.object({
@@ -118,7 +127,7 @@ export const initialFormData: CarrierFormData = {
       dimensionWidth: "",
       dimensionHeight: "",
       features: [],
-      photo: "",
+      photos: { front: "", side: "", back: "" },
     },
   ],
   trailerPreference: "no",
