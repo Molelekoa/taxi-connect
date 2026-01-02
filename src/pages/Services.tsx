@@ -13,7 +13,7 @@ const services = [
       "Exclusive use of entire trailer",
       "Fastest transit times",
       "Reduced handling and risk",
-      "Ideal for 10,000+ lbs or 10+ pallets",
+      "Ideal for 4,500+ kg or 10+ pallets",
       "Dry van, flatbed, and refrigerated options",
     ],
   },
@@ -24,7 +24,7 @@ const services = [
     description: "Cost-effective shipping for smaller loads that don't require a full trailer.",
     features: [
       "Share trailer space to reduce costs",
-      "Ideal for 150–10,000 lbs",
+      "Ideal for 70–4,500 kg",
       "Flexible pickup schedules",
       "Perfect for routine shipments",
       "Nationwide coverage",
@@ -125,9 +125,9 @@ const Services = () => {
                   Get a Free Quote
                 </Button>
               </Link>
-              <a href="tel:+18005551234">
+              <a href="tel:+27115685343">
                 <Button variant="outline" size="lg">
-                  Call (800) 555-1234
+                  Call (011) 568 5343
                 </Button>
               </a>
             </div>
