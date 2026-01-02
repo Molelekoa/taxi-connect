@@ -12,13 +12,13 @@ const services = [
     id: "ftl",
     abbr: "FTL",
     title: "Full Truckload",
-    description: "Dedicated capacity for large shipments. Your freight gets exclusive use of the entire trailer, ensuring fast transit times and reduced handling. Ideal for shipments over 10,000 lbs or 10+ pallets.",
+    description: "Dedicated capacity for large shipments. Your freight gets exclusive use of the entire trailer, ensuring fast transit times and reduced handling. Ideal for shipments over 4,500 kg or 10+ pallets.",
   },
   {
     id: "ltl",
     abbr: "LTL",
     title: "Less Than Truckload",
-    description: "Cost-effective shipping for smaller loads. Share trailer space with other shippers to reduce costs while still getting reliable service. Perfect for shipments between 150–10,000 lbs.",
+    description: "Cost-effective shipping for smaller loads. Share trailer space with other shippers to reduce costs while still getting reliable service. Perfect for shipments between 70–4,500 kg.",
   },
   {
     id: "expedited",
