@@ -157,18 +157,27 @@ const Step5Review = ({ formData, updateFormData, errors }: Step5Props) => {
         </div>
         <div className="space-y-3">
           {formData.vehicles.map((vehicle, index) => (
-            <div key={vehicle.id} className="text-sm p-3 rounded-lg bg-background/50">
-              <p className="font-medium text-foreground">
-                {vehicle.quantity}x {vehicle.vehicleType || "Not specified"}
-              </p>
-              <p className="text-muted-foreground">
-                Load: {vehicle.minPayloadCapacity}–{vehicle.maxPayloadCapacity} kg | Dimensions: {vehicle.dimensionLength}m × {vehicle.dimensionWidth}m × {vehicle.dimensionHeight}m
-              </p>
-              {vehicle.features && vehicle.features.length > 0 && (
-                <p className="text-muted-foreground">
-                  Features: {vehicle.features.join(", ")}
-                </p>
+            <div key={vehicle.id} className="text-sm p-3 rounded-lg bg-background/50 flex gap-4">
+              {vehicle.photo && (
+                <img
+                  src={vehicle.photo}
+                  alt={`Vehicle ${index + 1}`}
+                  className="w-20 h-16 object-cover rounded-md border border-border flex-shrink-0"
+                />
               )}
+              <div>
+                <p className="font-medium text-foreground">
+                  {vehicle.quantity}x {vehicle.vehicleType || "Not specified"}
+                </p>
+                <p className="text-muted-foreground">
+                  Load: {vehicle.minPayloadCapacity}–{vehicle.maxPayloadCapacity} kg | Dimensions: {vehicle.dimensionLength}m × {vehicle.dimensionWidth}m × {vehicle.dimensionHeight}m
+                </p>
+                {vehicle.features && vehicle.features.length > 0 && (
+                  <p className="text-muted-foreground">
+                    Features: {vehicle.features.join(", ")}
+                  </p>
+                )}
+              </div>
             </div>
           ))}
         </div>

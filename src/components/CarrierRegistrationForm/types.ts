@@ -44,6 +44,7 @@ export const vehicleSchema = z.object({
   dimensionWidth: z.string().min(1, "Width is required"),
   dimensionHeight: z.string().min(1, "Height is required"),
   features: z.array(z.string()).optional(),
+  photo: z.string().optional(), // Base64 or file name
 });
 
 // Step 3: Fleet Details
@@ -117,6 +118,7 @@ export const initialFormData: CarrierFormData = {
       dimensionWidth: "",
       dimensionHeight: "",
       features: [],
+      photo: "",
     },
   ],
   trailerPreference: "no",
