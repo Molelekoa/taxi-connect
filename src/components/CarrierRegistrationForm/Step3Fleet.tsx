@@ -11,8 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Truck } from "lucide-react";
+import { Plus, Trash2, Truck, Upload, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRef } from "react";
 
 interface Step3Props {
   formData: CarrierFormData;
@@ -59,8 +60,24 @@ const Step3Fleet = ({ formData, updateFormData, errors }: Step3Props) => {
       dimensionWidth: "",
       dimensionHeight: "",
       features: [],
+      photo: "",
     };
     updateFormData({ vehicles: [...formData.vehicles, newVehicle] });
+  };
+
+  const handlePhotoUpload = (vehicleId: string, file: File) => {
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        updateVehicle(vehicleId, { photo: base64 });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = (vehicleId: string) => {
+    updateVehicle(vehicleId, { photo: "" });
   };
 
   const removeVehicle = (id: string) => {
@@ -224,6 +241,42 @@ const Step3Fleet = ({ formData, updateFormData, errors }: Step3Props) => {
                   placeholder="e.g., 2.6"
                 />
               </div>
+            </div>
+
+            <div className="mt-4">
+              <Label className="mb-3 block">Vehicle Photo</Label>
+              {vehicle.photo ? (
+                <div className="relative inline-block">
+                  <img
+                    src={vehicle.photo}
+                    alt="Vehicle"
+                    className="w-32 h-24 object-cover rounded-lg border border-border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={() => removePhoto(vehicle.id)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-32 h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                  <span className="text-xs text-muted-foreground">Upload</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handlePhotoUpload(vehicle.id, file);
+                    }}
+                  />
+                </label>
+              )}
             </div>
 
             <div className="mt-4">
