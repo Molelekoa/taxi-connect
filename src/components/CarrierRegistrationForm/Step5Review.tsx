@@ -156,30 +156,54 @@ const Step5Review = ({ formData, updateFormData, errors }: Step5Props) => {
           <h3 className="font-semibold text-foreground">Fleet Details</h3>
         </div>
         <div className="space-y-3">
-          {formData.vehicles.map((vehicle, index) => (
-            <div key={vehicle.id} className="text-sm p-3 rounded-lg bg-background/50 flex gap-4">
-              {vehicle.photo && (
-                <img
-                  src={vehicle.photo}
-                  alt={`Vehicle ${index + 1}`}
-                  className="w-20 h-16 object-cover rounded-md border border-border flex-shrink-0"
-                />
-              )}
-              <div>
-                <p className="font-medium text-foreground">
-                  {vehicle.quantity}x {vehicle.vehicleType || "Not specified"}
-                </p>
-                <p className="text-muted-foreground">
-                  Load: {vehicle.minPayloadCapacity}–{vehicle.maxPayloadCapacity} kg | Dimensions: {vehicle.dimensionLength}m × {vehicle.dimensionWidth}m × {vehicle.dimensionHeight}m
-                </p>
-                {vehicle.features && vehicle.features.length > 0 && (
-                  <p className="text-muted-foreground">
-                    Features: {vehicle.features.join(", ")}
-                  </p>
-                )}
+          {formData.vehicles.map((vehicle, index) => {
+            const photos = vehicle.photos;
+            const hasPhotos = photos?.front || photos?.side || photos?.back;
+            return (
+              <div key={vehicle.id} className="text-sm p-3 rounded-lg bg-background/50">
+                <div className="flex gap-4">
+                  {hasPhotos && (
+                    <div className="flex gap-2 flex-shrink-0">
+                      {photos?.front && (
+                        <img
+                          src={photos.front}
+                          alt={`Vehicle ${index + 1} front`}
+                          className="w-16 h-12 object-cover rounded-md border border-border"
+                        />
+                      )}
+                      {photos?.side && (
+                        <img
+                          src={photos.side}
+                          alt={`Vehicle ${index + 1} side`}
+                          className="w-16 h-12 object-cover rounded-md border border-border"
+                        />
+                      )}
+                      {photos?.back && (
+                        <img
+                          src={photos.back}
+                          alt={`Vehicle ${index + 1} back`}
+                          className="w-16 h-12 object-cover rounded-md border border-border"
+                        />
+                      )}
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {vehicle.quantity}x {vehicle.vehicleType || "Not specified"}
+                    </p>
+                    <p className="text-muted-foreground">
+                      Load: {vehicle.minPayloadCapacity}–{vehicle.maxPayloadCapacity} kg | Dimensions: {vehicle.dimensionLength}m × {vehicle.dimensionWidth}m × {vehicle.dimensionHeight}m
+                    </p>
+                    {vehicle.features && vehicle.features.length > 0 && (
+                      <p className="text-muted-foreground">
+                        Features: {vehicle.features.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
