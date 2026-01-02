@@ -118,9 +118,9 @@ const HowItWorks = () => {
                     Get a Free Quote
                   </Button>
                 </Link>
-                <a href="tel:+18005551234">
+              <a href="tel:+27115685343">
                   <Button variant="outline" size="lg">
-                    (800) 555-1234
+                    (011) 568 5343
                   </Button>
                 </a>
               </div>
