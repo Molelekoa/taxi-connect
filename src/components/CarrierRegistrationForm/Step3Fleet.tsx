@@ -53,8 +53,11 @@ const Step3Fleet = ({ formData, updateFormData, errors }: Step3Props) => {
       id: crypto.randomUUID(),
       vehicleType: "",
       quantity: 1,
-      payloadCapacity: "",
-      dimensions: "",
+      minPayloadCapacity: "",
+      maxPayloadCapacity: "",
+      dimensionLength: "",
+      dimensionWidth: "",
+      dimensionHeight: "",
       features: [],
     };
     updateFormData({ vehicles: [...formData.vehicles, newVehicle] });
@@ -158,22 +161,67 @@ const Step3Fleet = ({ formData, updateFormData, errors }: Step3Props) => {
               </div>
 
               <div>
-                <Label>Payload Capacity *</Label>
+                <Label>Minimum Load (kg) *</Label>
                 <Input
-                  value={vehicle.payloadCapacity}
+                  type="number"
+                  value={vehicle.minPayloadCapacity}
                   onChange={(e) =>
-                    updateVehicle(vehicle.id, { payloadCapacity: e.target.value })
+                    updateVehicle(vehicle.id, { minPayloadCapacity: e.target.value })
                   }
-                  placeholder="e.g., 5 tons, 8 pallets"
+                  placeholder="e.g., 500"
                 />
               </div>
 
               <div>
-                <Label>Dimensions (L x W x H) *</Label>
+                <Label>Maximum Load (kg) *</Label>
                 <Input
-                  value={vehicle.dimensions}
-                  onChange={(e) => updateVehicle(vehicle.id, { dimensions: e.target.value })}
-                  placeholder="e.g., 6m x 2.4m x 2.6m"
+                  type="number"
+                  value={vehicle.maxPayloadCapacity}
+                  onChange={(e) =>
+                    updateVehicle(vehicle.id, { maxPayloadCapacity: e.target.value })
+                  }
+                  placeholder="e.g., 5000"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              <div>
+                <Label>Length (m) *</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={vehicle.dimensionLength}
+                  onChange={(e) =>
+                    updateVehicle(vehicle.id, { dimensionLength: e.target.value })
+                  }
+                  placeholder="e.g., 6"
+                />
+              </div>
+
+              <div>
+                <Label>Width (m) *</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={vehicle.dimensionWidth}
+                  onChange={(e) =>
+                    updateVehicle(vehicle.id, { dimensionWidth: e.target.value })
+                  }
+                  placeholder="e.g., 2.4"
+                />
+              </div>
+
+              <div>
+                <Label>Height (m) *</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={vehicle.dimensionHeight}
+                  onChange={(e) =>
+                    updateVehicle(vehicle.id, { dimensionHeight: e.target.value })
+                  }
+                  placeholder="e.g., 2.6"
                 />
               </div>
             </div>
