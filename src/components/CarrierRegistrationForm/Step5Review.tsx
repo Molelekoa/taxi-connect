@@ -162,7 +162,7 @@ const Step5Review = ({ formData, updateFormData, errors }: Step5Props) => {
                 {vehicle.quantity}x {vehicle.vehicleType || "Not specified"}
               </p>
               <p className="text-muted-foreground">
-                Capacity: {vehicle.payloadCapacity} | Dimensions: {vehicle.dimensions}
+                Load: {vehicle.minPayloadCapacity}–{vehicle.maxPayloadCapacity} kg | Dimensions: {vehicle.dimensionLength}m × {vehicle.dimensionWidth}m × {vehicle.dimensionHeight}m
               </p>
               {vehicle.features && vehicle.features.length > 0 && (
                 <p className="text-muted-foreground">
