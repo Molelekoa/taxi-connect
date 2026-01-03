@@ -53,6 +53,9 @@ const SADC_DISTANCES: Record<string, number> = {
 const CROSS_BORDER_RATE_PER_KM = { min: 7, max: 18 }; // R7–R18 per km
 const CROSS_BORDER_ADMIN_FEE = 1200; // R1,200 fixed fee
 
+// Value-added service costs
+const LIVE_TRACKING_FEE = 150; // R150 per load
+
 const FreightEstimator = () => {
   const [formData, setFormData] = useState({
     pickupLocation: "",
@@ -67,6 +70,9 @@ const FreightEstimator = () => {
     securityEscort: false,
     extraInsurance: false,
     sadcCountry: "",
+    liveTracking: false,
+    customsClearing: false,
+    insuranceCover: false,
   });
 
   const [showResult, setShowResult] = useState(false);
@@ -179,6 +185,17 @@ const FreightEstimator = () => {
     if (formData.extraInsurance) {
       minCost *= 1.08;
       maxCost *= 1.08;
+    }
+    if (formData.liveTracking) {
+      minCost += LIVE_TRACKING_FEE;
+      maxCost += LIVE_TRACKING_FEE;
+    }
+    // Insurance cover and customs clearing costs TBD - placeholder for now
+    if (formData.insuranceCover) {
+      // Price TBD
+    }
+    if (formData.customsClearing) {
+      // Price TBD
     }
 
     // Minimum charge
@@ -360,6 +377,58 @@ const FreightEstimator = () => {
                   ))}
                 </div>
 
+                {/* Value-Added Services */}
+                <div className="pt-4 border-t border-border">
+                  <h3 className="font-semibold text-foreground mb-3">Value-Added Services</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        id="liveTracking"
+                        checked={formData.liveTracking}
+                        onCheckedChange={(checked) =>
+                          handleInputChange("liveTracking", checked === true)
+                        }
+                      />
+                      <div>
+                        <Label htmlFor="liveTracking" className="cursor-pointer font-normal">
+                          Live Tracking
+                        </Label>
+                        <p className="text-xs text-muted-foreground">R150 per load — view online via tracking link</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        id="insuranceCover"
+                        checked={formData.insuranceCover}
+                        onCheckedChange={(checked) =>
+                          handleInputChange("insuranceCover", checked === true)
+                        }
+                      />
+                      <div>
+                        <Label htmlFor="insuranceCover" className="cursor-pointer font-normal">
+                          Insurance Cover
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Price TBD</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        id="customsClearing"
+                        checked={formData.customsClearing}
+                        onCheckedChange={(checked) =>
+                          handleInputChange("customsClearing", checked === true)
+                        }
+                      />
+                      <div>
+                        <Label htmlFor="customsClearing" className="cursor-pointer font-normal">
+                          Customs Clearing
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Price TBD</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {formData.crossBorder && (
                   <div className="space-y-2 mt-4">
                     <Label>Select SADC Country *</Label>
@@ -435,6 +504,9 @@ const FreightEstimator = () => {
                       {formData.isFullTruckload && <li>• Full truckload discount applied</li>}
                       {formData.express && <li>• Express delivery surcharge</li>}
                       {formData.crossBorder && <li>• Cross-border fees</li>}
+                      {formData.liveTracking && <li>• Live tracking: R150</li>}
+                      {formData.insuranceCover && <li>• Insurance cover (price TBD)</li>}
+                      {formData.customsClearing && <li>• Customs clearing (price TBD)</li>}
                     </ul>
                   </div>
 
