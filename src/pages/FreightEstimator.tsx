@@ -38,7 +38,7 @@ const sadcCountries = [
   { value: "zimbabwe", label: "Zimbabwe (Harare)" },
 ];
 
-// SADC country distances from Johannesburg (in km) - used as fallback for cross-border
+// SADC country distances from Johannesburg (in km)
 const SADC_DISTANCES: Record<string, number> = {
   'botswana': 356,
   'lesotho': 410.7,
@@ -49,14 +49,51 @@ const SADC_DISTANCES: Record<string, number> = {
   'zimbabwe': 1121.3
 };
 
-// Cross-border cost constants
-const CROSS_BORDER_RATE_PER_KM = { min: 7, max: 18 }; // R7–R18 per km
-const CROSS_BORDER_ADMIN_FEE = 1200; // R1,200 fixed fee
+// ==========================================
+// PRICING CONSTANTS
+// ==========================================
 
-// Value-added service costs
-const LIVE_TRACKING_FEE = 150; // R150 per load
+/** Base rates for freight calculation */
+const BASE_RATES = {
+  // Domestic per-km rates (ZAR)
+  domestic: { min: 4.5, max: 12 },
+  // LTL per-kg rates (ZAR)
+  ltlPerKg: { min: 8, max: 15 },
+  // Cross-border per-km rates (ZAR) for FTL
+  crossBorder: { min: 7, max: 18 },
+  // Minimum charge thresholds (ZAR)
+  minimumCharge: { min: 1500, max: 2500 },
+} as const;
 
-// Country-specific customs rates (VAT, average duty, admin fee)
+/** Surcharges and multipliers */
+const SURCHARGES = {
+  // FTL discount multipliers
+  ftlDiscount: { min: 0.85, max: 0.9 },
+  // Cross-border LTL multiplier
+  crossBorderLtlMultiplier: 1.5,
+  // Express delivery multiplier
+  express: 1.25,
+  // Temperature controlled multiplier
+  tempControlled: 1.3,
+  // Extra insurance multiplier
+  extraInsurance: 1.08,
+  // Insurance rates (percentage of goods value)
+  insurance: {
+    baseRate: 0.003,         // 0.3%
+    highRiskAddon: 0.001,    // +0.1% for hazardous/high-value
+    crossBorderAddon: 0.0005 // +0.05% for cross-border
+  }
+} as const;
+
+/** Fixed fees (ZAR) */
+const FEES = {
+  liftgate: 650,
+  securityEscort: 2500,
+  liveTracking: 150,
+  crossBorderAdmin: 1200,
+} as const;
+
+/** Country-specific customs rates (VAT, average duty, admin fee) */
 const CUSTOMS_RATES: Record<string, { vat: number; avgDuty: number; adminFee: number }> = {
   'lesotho': { vat: 0.15, avgDuty: 0.10, adminFee: 2000 },
   'botswana': { vat: 0.15, avgDuty: 0.10, adminFee: 500 },
@@ -142,38 +179,33 @@ const FreightEstimator = () => {
     // Check if this is a full truckload
     const isFTL = formData.isFullTruckload;
 
-    // Base LTL rates (per kg)
-    const BASE_RATES = { ltlPerKg: { min: 8, max: 15 } };
-
     // Use Mapbox distance for domestic, SADC predefined for cross-border
     let distance = effectiveDistance || 500; // Fallback to 500km if no distance
     
     // Domestic base cost calculation
-    const baseRatePerKm = { min: 4.5, max: 12 };
-    let minCost = distance * baseRatePerKm.min * cargoMultiplier;
-    let maxCost = distance * baseRatePerKm.max * cargoMultiplier;
+    let minCost = distance * BASE_RATES.domestic.min * cargoMultiplier;
+    let maxCost = distance * BASE_RATES.domestic.max * cargoMultiplier;
 
     // APPLY CROSS-BORDER COSTS (if selected)
     if (formData.crossBorder) {
       const selectedCountry = formData.sadcCountry;
       if (selectedCountry && SADC_DISTANCES[selectedCountry]) {
-        // Use cross-border per-km rate instead of domestic rate
         const crossBorderDistance = SADC_DISTANCES[selectedCountry];
         distance = crossBorderDistance;
 
         // Override the base cost calculation for cross-border
         if (isFTL) {
-          minCost = crossBorderDistance * CROSS_BORDER_RATE_PER_KM.min * cargoMultiplier;
-          maxCost = crossBorderDistance * CROSS_BORDER_RATE_PER_KM.max * cargoMultiplier;
+          minCost = crossBorderDistance * BASE_RATES.crossBorder.min * cargoMultiplier;
+          maxCost = crossBorderDistance * BASE_RATES.crossBorder.max * cargoMultiplier;
         } else {
-          // For LTL, still use per-kg but with a cross-border multiplier
-          minCost = weight * BASE_RATES.ltlPerKg.min * 1.5 * cargoMultiplier;
-          maxCost = weight * BASE_RATES.ltlPerKg.max * 1.5 * cargoMultiplier;
+          // For LTL, use per-kg with cross-border multiplier
+          minCost = weight * BASE_RATES.ltlPerKg.min * SURCHARGES.crossBorderLtlMultiplier * cargoMultiplier;
+          maxCost = weight * BASE_RATES.ltlPerKg.max * SURCHARGES.crossBorderLtlMultiplier * cargoMultiplier;
         }
 
         // Add the fixed admin fee
-        minCost += CROSS_BORDER_ADMIN_FEE;
-        maxCost += CROSS_BORDER_ADMIN_FEE;
+        minCost += FEES.crossBorderAdmin;
+        maxCost += FEES.crossBorderAdmin;
       }
     }
 
@@ -188,48 +220,50 @@ const FreightEstimator = () => {
 
     // Apply full truckload discount
     if (isFTL) {
-      minCost *= 0.85;
-      maxCost *= 0.9;
+      minCost *= SURCHARGES.ftlDiscount.min;
+      maxCost *= SURCHARGES.ftlDiscount.max;
     }
 
-    // Add special requirements
+    // Add special requirements - Fixed fees
     if (formData.liftgate) {
-      minCost += 650;
-      maxCost += 650;
-    }
-    if (formData.express) {
-      minCost *= 1.25;
-      maxCost *= 1.25;
-    }
-    if (formData.tempControlled) {
-      minCost *= 1.3;
-      maxCost *= 1.3;
+      minCost += FEES.liftgate;
+      maxCost += FEES.liftgate;
     }
     if (formData.securityEscort) {
-      minCost += 2500;
-      maxCost += 2500;
-    }
-    if (formData.extraInsurance) {
-      minCost *= 1.08;
-      maxCost *= 1.08;
+      minCost += FEES.securityEscort;
+      maxCost += FEES.securityEscort;
     }
     if (formData.liveTracking) {
-      minCost += LIVE_TRACKING_FEE;
-      maxCost += LIVE_TRACKING_FEE;
+      minCost += FEES.liveTracking;
+      maxCost += FEES.liveTracking;
     }
+
+    // Add special requirements - Multipliers
+    if (formData.express) {
+      minCost *= SURCHARGES.express;
+      maxCost *= SURCHARGES.express;
+    }
+    if (formData.tempControlled) {
+      minCost *= SURCHARGES.tempControlled;
+      maxCost *= SURCHARGES.tempControlled;
+    }
+    if (formData.extraInsurance) {
+      minCost *= SURCHARGES.extraInsurance;
+      maxCost *= SURCHARGES.extraInsurance;
+    }
+
     // Insurance cover calculation
     let calculatedInsuranceCost = 0;
     if (formData.insuranceCover) {
       const goodsValue = parseFloat(formData.goodsValue) || 0;
       if (goodsValue > 0) {
-        // Base rate 0.3%
-        let insuranceRate = 0.003;
+        let insuranceRate = SURCHARGES.insurance.baseRate;
         // Adjust rate upwards for high-risk cargo or routes
         if (formData.cargoType === 'hazardous' || formData.cargoType === 'highvalue') {
-          insuranceRate += 0.001;
+          insuranceRate += SURCHARGES.insurance.highRiskAddon;
         }
         if (formData.crossBorder) {
-          insuranceRate += 0.0005;
+          insuranceRate += SURCHARGES.insurance.crossBorderAddon;
         }
         calculatedInsuranceCost = goodsValue * insuranceRate;
         minCost += calculatedInsuranceCost;
@@ -249,8 +283,8 @@ const FreightEstimator = () => {
     setCustomsCost(calculatedCustomsCost);
 
     // Minimum charge
-    minCost = Math.max(minCost, 1500);
-    maxCost = Math.max(maxCost, 2500);
+    minCost = Math.max(minCost, BASE_RATES.minimumCharge.min);
+    maxCost = Math.max(maxCost, BASE_RATES.minimumCharge.max);
 
     setPriceRange({ min: Math.round(minCost), max: Math.round(maxCost) });
     setShowResult(true);
@@ -562,19 +596,19 @@ const FreightEstimator = () => {
                         {formData.liftgate && (
                           <li className="flex justify-between">
                             <span>Liftgate service</span>
-                            <span className="text-foreground">R650</span>
+                            <span className="text-foreground">R{FEES.liftgate.toLocaleString()}</span>
                           </li>
                         )}
                         {formData.securityEscort && (
                           <li className="flex justify-between">
                             <span>Security escort</span>
-                            <span className="text-foreground">R2,500</span>
+                            <span className="text-foreground">R{FEES.securityEscort.toLocaleString()}</span>
                           </li>
                         )}
                         {formData.liveTracking && (
                           <li className="flex justify-between">
                             <span>Live tracking</span>
-                            <span className="text-foreground">R150</span>
+                            <span className="text-foreground">R{FEES.liveTracking.toLocaleString()}</span>
                           </li>
                         )}
                         {formData.insuranceCover && insuranceCost > 0 && (
@@ -586,7 +620,7 @@ const FreightEstimator = () => {
                         {formData.crossBorder && (
                           <li className="flex justify-between">
                             <span>Cross-border admin fee</span>
-                            <span className="text-foreground">R1,200</span>
+                            <span className="text-foreground">R{FEES.crossBorderAdmin.toLocaleString()}</span>
                           </li>
                         )}
                         {formData.customsClearing && customsCost > 0 && (
