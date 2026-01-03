@@ -578,6 +578,12 @@ const FreightEstimator = () => {
                     <strong>Disclaimer:</strong> This is an automated estimate only. Actual pricing will be confirmed by our team after reviewing your full shipment details. Additional fees may apply for access restrictions, waiting time, or special handling.
                   </p>
 
+                  {formData.customsClearing && (
+                    <p className="text-xs text-muted-foreground mt-3 leading-relaxed italic">
+                      Customs estimates are based on standard rates. Final charges are determined by the destination country's authority and may vary.
+                    </p>
+                  )}
+
                   <div className="text-center mt-6">
                     <Link to="/get-quote">
                       <Button variant="default" size="lg" className="bg-foreground hover:bg-foreground/90 text-background">
