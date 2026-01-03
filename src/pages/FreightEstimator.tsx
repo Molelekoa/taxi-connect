@@ -427,7 +427,6 @@ const FreightEstimator = () => {
                         <Label htmlFor="insuranceCover" className="cursor-pointer font-normal">
                           Insurance Cover
                         </Label>
-                        <p className="text-xs text-muted-foreground">0.3% of goods value (adjusted for risk)</p>
                       </div>
                     </div>
                     {formData.insuranceCover && (
@@ -441,15 +440,6 @@ const FreightEstimator = () => {
                           value={formData.goodsValue}
                           onChange={(e) => handleInputChange("goodsValue", e.target.value)}
                         />
-                        {formData.goodsValue && parseFloat(formData.goodsValue) > 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            Estimated premium: R{(parseFloat(formData.goodsValue) * (
-                              0.003 + 
-                              (formData.cargoType === 'hazardous' || formData.cargoType === 'highvalue' ? 0.001 : 0) +
-                              (formData.crossBorder ? 0.0005 : 0)
-                            )).toFixed(2)}
-                          </p>
-                        )}
                       </div>
                     )}
                     <div className="flex items-start space-x-3">
@@ -464,7 +454,6 @@ const FreightEstimator = () => {
                         <Label htmlFor="customsClearing" className="cursor-pointer font-normal">
                           Customs Clearing
                         </Label>
-                        <p className="text-xs text-muted-foreground">Price TBD</p>
                       </div>
                     </div>
                   </div>
@@ -531,30 +520,58 @@ const FreightEstimator = () => {
                     (Final quote subject to carrier confirmation)
                   </p>
 
-                  <div className="bg-card p-5 rounded-lg mt-6 space-y-2 text-sm">
-                    <p className="font-semibold text-foreground">This estimate includes:</p>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>• Standard road freight</li>
-                      <li>• Fuel levy (current surcharge)</li>
-                      <li>• Basic cargo liability</li>
-                    </ul>
-                    <p className="font-semibold text-foreground mt-4">Key factors affecting your quote:</p>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>• Distance: ~{finalDistance} km</li>
-                      <li>• Load size: {formData.weight} kg</li>
-                      {formData.isFullTruckload && <li>• Full truckload discount applied</li>}
-                      {formData.express && <li>• Express delivery surcharge</li>}
-                      {formData.crossBorder && <li>• Cross-border fees</li>}
-                      {formData.liveTracking && <li>• Live tracking: R150</li>}
-                      {formData.insuranceCover && insuranceCost > 0 && (
-                        <li>• Insurance cover: R{insuranceCost.toFixed(2)} ({(
-                          0.3 + 
-                          (formData.cargoType === 'hazardous' || formData.cargoType === 'highvalue' ? 0.1 : 0) +
-                          (formData.crossBorder ? 0.05 : 0)
-                        ).toFixed(2)}% of R{parseFloat(formData.goodsValue).toLocaleString()})</li>
-                      )}
-                      {formData.customsClearing && <li>• Customs clearing (price TBD)</li>}
-                    </ul>
+                  <div className="bg-card p-5 rounded-lg mt-6 space-y-4 text-sm">
+                    <div>
+                      <p className="font-semibold text-foreground mb-2">Cost Breakdown:</p>
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li className="flex justify-between">
+                          <span>Base freight (~{finalDistance} km)</span>
+                          <span className="text-foreground">Included</span>
+                        </li>
+                        {formData.liftgate && (
+                          <li className="flex justify-between">
+                            <span>Liftgate service</span>
+                            <span className="text-foreground">R650</span>
+                          </li>
+                        )}
+                        {formData.securityEscort && (
+                          <li className="flex justify-between">
+                            <span>Security escort</span>
+                            <span className="text-foreground">R2,500</span>
+                          </li>
+                        )}
+                        {formData.liveTracking && (
+                          <li className="flex justify-between">
+                            <span>Live tracking</span>
+                            <span className="text-foreground">R150</span>
+                          </li>
+                        )}
+                        {formData.insuranceCover && insuranceCost > 0 && (
+                          <li className="flex justify-between">
+                            <span>Insurance cover</span>
+                            <span className="text-foreground">R{insuranceCost.toFixed(2)}</span>
+                          </li>
+                        )}
+                        {formData.crossBorder && (
+                          <li className="flex justify-between">
+                            <span>Cross-border admin fee</span>
+                            <span className="text-foreground">R1,200</span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                    
+                    <div className="border-t border-border pt-3">
+                      <p className="font-semibold text-foreground mb-2">Included in estimate:</p>
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li>• Standard road freight</li>
+                        <li>• Fuel levy (current surcharge)</li>
+                        <li>• Basic cargo liability</li>
+                        {formData.isFullTruckload && <li>• Full truckload discount applied</li>}
+                        {formData.express && <li>• Express delivery surcharge</li>}
+                        {formData.tempControlled && <li>• Temperature controlled surcharge</li>}
+                      </ul>
+                    </div>
                   </div>
 
                   <p className="text-xs text-muted-foreground mt-6 leading-relaxed">
