@@ -77,11 +77,17 @@ const SURCHARGES = {
   tempControlled: 1.3,
   // Extra insurance multiplier
   extraInsurance: 1.08,
-  // Insurance rates (percentage of goods value)
-  insurance: {
-    baseRate: 0.003,         // 0.3%
-    highRiskAddon: 0.001,    // +0.1% for hazardous/high-value
-    crossBorderAddon: 0.0005 // +0.05% for cross-border
+} as const;
+
+/** Insurance pricing - base rate is wholesale cost from insurer */
+const INSURANCE = {
+  baseRate: 0.003,          // 0.3% - Wholesale cost
+  profitMarkup: 1.3,        // 30% markup for profit
+  riskMultipliers: {
+    hazardous: 1.8,         // +80% for hazardous materials
+    highvalue: 1.4,         // +40% for high-value goods
+    crossborder: 1.25,      // +25% for SADC cross-border
+    tempcontrol: 1.15       // +15% for temperature control
   }
 } as const;
 
@@ -257,15 +263,24 @@ const FreightEstimator = () => {
     if (formData.insuranceCover) {
       const goodsValue = parseFloat(formData.goodsValue) || 0;
       if (goodsValue > 0) {
-        let insuranceRate = SURCHARGES.insurance.baseRate;
-        // Adjust rate upwards for high-risk cargo or routes
-        if (formData.cargoType === 'hazardous' || formData.cargoType === 'highvalue') {
-          insuranceRate += SURCHARGES.insurance.highRiskAddon;
+        // Start with base rate
+        let insuranceRate = INSURANCE.baseRate;
+        
+        // Apply risk multipliers (multiplicative)
+        if (formData.cargoType === 'hazardous') {
+          insuranceRate *= INSURANCE.riskMultipliers.hazardous;
+        } else if (formData.cargoType === 'highvalue') {
+          insuranceRate *= INSURANCE.riskMultipliers.highvalue;
         }
         if (formData.crossBorder) {
-          insuranceRate += SURCHARGES.insurance.crossBorderAddon;
+          insuranceRate *= INSURANCE.riskMultipliers.crossborder;
         }
-        calculatedInsuranceCost = goodsValue * insuranceRate;
+        if (formData.tempControlled) {
+          insuranceRate *= INSURANCE.riskMultipliers.tempcontrol;
+        }
+        
+        // Apply profit markup
+        calculatedInsuranceCost = goodsValue * insuranceRate * INSURANCE.profitMarkup;
         minCost += calculatedInsuranceCost;
         maxCost += calculatedInsuranceCost;
       }
