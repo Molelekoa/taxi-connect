@@ -56,6 +56,30 @@ const CROSS_BORDER_ADMIN_FEE = 1200; // R1,200 fixed fee
 // Value-added service costs
 const LIVE_TRACKING_FEE = 150; // R150 per load
 
+// Country-specific customs rates (VAT, average duty, admin fee)
+const CUSTOMS_RATES: Record<string, { vat: number; avgDuty: number; adminFee: number }> = {
+  'lesotho': { vat: 0.15, avgDuty: 0.10, adminFee: 2000 },
+  'botswana': { vat: 0.15, avgDuty: 0.10, adminFee: 500 },
+  'namibia': { vat: 0.15, avgDuty: 0.10, adminFee: 500 },
+  'eswatini': { vat: 0.15, avgDuty: 0.10, adminFee: 500 },
+  'zambia': { vat: 0.16, avgDuty: 0.10, adminFee: 500 },
+  'mozambique': { vat: 0.17, avgDuty: 0.10, adminFee: 500 },
+  'zimbabwe': { vat: 0.15, avgDuty: 0.10, adminFee: 500 },
+};
+
+// Calculate customs clearing estimate
+const calculateCustomsEstimate = (goodsValue: number, destinationCountry: string): number => {
+  const rates = CUSTOMS_RATES[destinationCountry];
+  if (!rates || goodsValue <= 0) return 0;
+  
+  const dutyOwed = goodsValue * rates.avgDuty;
+  const vatBase = goodsValue + dutyOwed;
+  const vatOwed = vatBase * rates.vat;
+  const totalEstimate = dutyOwed + vatOwed + rates.adminFee;
+  
+  return Math.round(totalEstimate);
+};
+
 const FreightEstimator = () => {
   const [formData, setFormData] = useState({
     pickupLocation: "",
@@ -80,6 +104,7 @@ const FreightEstimator = () => {
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
   const [finalDistance, setFinalDistance] = useState(0);
   const [insuranceCost, setInsuranceCost] = useState(0);
+  const [customsCost, setCustomsCost] = useState(0);
 
   // Use Mapbox for domestic routes (skip for cross-border)
   const { 
@@ -213,9 +238,15 @@ const FreightEstimator = () => {
     }
     setInsuranceCost(calculatedInsuranceCost);
     
-    if (formData.customsClearing) {
-      // Price TBD
+    // Customs clearing calculation
+    let calculatedCustomsCost = 0;
+    if (formData.customsClearing && formData.crossBorder && formData.sadcCountry) {
+      const goodsValue = parseFloat(formData.goodsValue) || 0;
+      calculatedCustomsCost = calculateCustomsEstimate(goodsValue, formData.sadcCountry);
+      minCost += calculatedCustomsCost;
+      maxCost += calculatedCustomsCost;
     }
+    setCustomsCost(calculatedCustomsCost);
 
     // Minimum charge
     minCost = Math.max(minCost, 1500);
@@ -556,6 +587,12 @@ const FreightEstimator = () => {
                           <li className="flex justify-between">
                             <span>Cross-border admin fee</span>
                             <span className="text-foreground">R1,200</span>
+                          </li>
+                        )}
+                        {formData.customsClearing && customsCost > 0 && (
+                          <li className="flex justify-between">
+                            <span>Customs clearing</span>
+                            <span className="text-foreground">R{customsCost.toLocaleString()}</span>
                           </li>
                         )}
                       </ul>
