@@ -82,12 +82,14 @@ const FEES = {
   liveTracking: 150,
 } as const;
 
-/** Calculate weight premium: 5% for every 100kg over 500kg */
-const calculateWeightPremium = (weight: number): { multiplier: number; percentage: number } => {
-  if (weight <= 500) return { multiplier: 1.0, percentage: 0 };
+/** Calculate weight adjustment: discount for light packages, premium for heavy */
+const calculateWeightMultiplier = (weight: number): number => {
+  // 50% discount for packages under 50kg
+  if (weight < 50) return 0.5;
+  // 5% premium for every 100kg over 500kg
+  if (weight <= 500) return 1.0;
   const incrementsOver500 = Math.ceil((weight - 500) / 100);
-  const percentage = incrementsOver500 * 5;
-  return { multiplier: 1 + (percentage / 100), percentage };
+  return 1 + (incrementsOver500 * 0.05);
 };
 
 const FreightEstimator = () => {
@@ -106,8 +108,6 @@ const FreightEstimator = () => {
 
   const [showResult, setShowResult] = useState(false);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
-  const [finalDistance, setFinalDistance] = useState(0);
-  const [weightPremiumInfo, setWeightPremiumInfo] = useState({ percentage: 0, amount: 0 });
   const [detectedCrossBorder, setDetectedCrossBorder] = useState<string | null>(null);
 
   // Use Mapbox for route calculation
@@ -171,24 +171,15 @@ const FreightEstimator = () => {
 
     // Use Mapbox distance or SADC predefined distance
     const distance = effectiveDistance || 500; // Fallback to 500km if no distance
-    
-    setFinalDistance(distance);
 
     // Base cost calculation (same per-km rate for all routes)
     let minCost = distance * BASE_RATES.perKm.min * cargoMultiplier;
     let maxCost = distance * BASE_RATES.perKm.max * cargoMultiplier;
 
-    // Apply weight premium (5% per 100kg over 500kg)
-    const { multiplier: weightMultiplier, percentage: weightPercentage } = calculateWeightPremium(weight);
-    const premiumAmountMin = minCost * (weightMultiplier - 1);
-    const premiumAmountMax = maxCost * (weightMultiplier - 1);
+    // Apply weight multiplier (discount or premium)
+    const weightMultiplier = calculateWeightMultiplier(weight);
     minCost *= weightMultiplier;
     maxCost *= weightMultiplier;
-    
-    setWeightPremiumInfo({ 
-      percentage: weightPercentage, 
-      amount: Math.round((premiumAmountMin + premiumAmountMax) / 2) 
-    });
 
     // Apply full truckload discount
     if (isFTL) {
@@ -352,9 +343,6 @@ const FreightEstimator = () => {
                       value={formData.weight}
                       onChange={(e) => handleInputChange("weight", e.target.value)}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Weight premium applies: +5% for every 100kg over 500kg
-                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -477,48 +465,6 @@ const FreightEstimator = () => {
                   <p className="text-sm text-muted-foreground">
                     (Final quote subject to carrier confirmation)
                   </p>
-
-                  <div className="bg-card p-5 rounded-lg mt-6 space-y-4 text-sm">
-                    <div>
-                      <p className="font-semibold text-foreground mb-2">Cost Breakdown:</p>
-                      <ul className="space-y-1 text-muted-foreground">
-                        <li className="flex justify-between">
-                          <span>Base freight (~{finalDistance} km)</span>
-                          <span className="text-foreground">Included</span>
-                        </li>
-                        {formData.liftgate && (
-                          <li className="flex justify-between">
-                            <span>Liftgate service</span>
-                            <span className="text-foreground">R{FEES.liftgate.toLocaleString()}</span>
-                          </li>
-                        )}
-                        {formData.securityEscort && (
-                          <li className="flex justify-between">
-                            <span>Security escort</span>
-                            <span className="text-foreground">R{FEES.securityEscort.toLocaleString()}</span>
-                          </li>
-                        )}
-                        {formData.liveTracking && (
-                          <li className="flex justify-between">
-                            <span>Live tracking</span>
-                            <span className="text-foreground">R{FEES.liveTracking.toLocaleString()}</span>
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                    
-                    <div className="border-t border-border pt-3">
-                      <p className="font-semibold text-foreground mb-2">Included in estimate:</p>
-                      <ul className="space-y-1 text-muted-foreground">
-                        <li>• Standard road freight</li>
-                        <li>• Fuel levy (current surcharge)</li>
-                        <li>• Basic cargo liability</li>
-                        {formData.isFullTruckload && <li>• Full truckload discount applied</li>}
-                        {formData.express && <li>• Express delivery surcharge</li>}
-                        {formData.tempControlled && <li>• Temperature controlled surcharge</li>}
-                      </ul>
-                    </div>
-                  </div>
 
                   <p className="text-xs text-muted-foreground mt-6 leading-relaxed">
                     <strong>Disclaimer:</strong> This is an automated estimate only. Actual pricing will be confirmed by our team after reviewing your full shipment details. Additional fees may apply for access restrictions, waiting time, or special handling.
