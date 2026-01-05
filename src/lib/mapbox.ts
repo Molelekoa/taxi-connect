@@ -19,9 +19,12 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | n
   }
 
   try {
-    // Bias search towards South Africa
+    // Bias search towards South Africa and SADC region (expanded country list)
     const encodedAddress = encodeURIComponent(address);
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${token}&country=ZA,BW,LS,MZ,NA,SZ,ZM,ZW&limit=1`;
+    // Include all SADC countries: ZA (South Africa), BW (Botswana), LS (Lesotho), MZ (Mozambique), 
+    // NA (Namibia), SZ (Eswatini), ZM (Zambia), ZW (Zimbabwe), AO (Angola), CD (DRC), 
+    // MW (Malawi), MU (Mauritius), SC (Seychelles), TZ (Tanzania), MG (Madagascar), KM (Comoros)
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${token}&country=ZA,BW,LS,MZ,NA,SZ,ZM,ZW,AO,CD,MW,MU,SC,TZ,MG,KM&limit=1`;
 
     const response = await fetch(url);
     if (!response.ok) {
