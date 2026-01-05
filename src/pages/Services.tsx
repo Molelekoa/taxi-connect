@@ -56,6 +56,19 @@ const services = [
       "White glove delivery services",
     ],
   },
+  {
+    id: "parcel",
+    number: "05",
+    title: "Small Parcel Cross-Border",
+    description: "Fast, fixed-price delivery for small packages to Lesotho and Zimbabwe.",
+    features: [
+      "From Johannesburg and Pretoria only",
+      "To Lesotho: R150 (1-3kg), R800 (3-5kg)",
+      "To Zimbabwe: R525 (1-3kg), R2,800 (3-5kg)",
+      "Maximum 5 kg per parcel",
+      "Simple booking, no hidden fees",
+    ],
+  },
 ];
 
 const Services = () => {
