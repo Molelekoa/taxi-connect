@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Info } from "lucide-react";
+import { Loader2, Info, Package } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,24 @@ const COUNTRY_CODE_TO_SADC: Record<string, string> = {
   'ZM': 'zambia',
   'ZW': 'zimbabwe',
 };
+
+// ==========================================
+// SMALL PARCEL SERVICE
+// ==========================================
+const PARCEL_SERVICE = {
+  eligibleOrigins: ['johannesburg', 'pretoria', 'jhb', 'pta', 'randburg', 'sandton', 'centurion', 'midrand', 'rosebank', 'fourways'],
+  maxWeight: 5,
+  pricing: {
+    lesotho: [
+      { minKg: 0, maxKg: 3, price: 150 },
+      { minKg: 3, maxKg: 5, price: 800 },
+    ],
+    zimbabwe: [
+      { minKg: 0, maxKg: 3, price: 525 },   // Base R150 + 250%
+      { minKg: 3, maxKg: 5, price: 2800 },  // Base R800 + 250%
+    ],
+  },
+} as const;
 
 // ==========================================
 // PRICING CONSTANTS
@@ -109,6 +127,38 @@ const FreightEstimator = () => {
   const [showResult, setShowResult] = useState(false);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
   const [detectedCrossBorder, setDetectedCrossBorder] = useState<string | null>(null);
+
+  // Check parcel service eligibility
+  const parcelOffer = useMemo(() => {
+    const pickup = formData.pickupLocation.toLowerCase();
+    const weight = parseFloat(formData.weight);
+
+    // Check origin eligibility
+    const isEligibleOrigin = PARCEL_SERVICE.eligibleOrigins.some(
+      origin => pickup.includes(origin)
+    );
+
+    // Check destination eligibility (Lesotho or Zimbabwe only)
+    const isLesotho = detectedCrossBorder === 'lesotho';
+    const isZimbabwe = detectedCrossBorder === 'zimbabwe';
+
+    // Check weight eligibility
+    const isEligibleWeight = weight >= 1 && weight <= PARCEL_SERVICE.maxWeight;
+
+    if (!isEligibleOrigin || (!isLesotho && !isZimbabwe) || !isEligibleWeight) {
+      return { eligible: false, price: null, destination: null };
+    }
+
+    // Get pricing tier
+    const pricing = isLesotho ? PARCEL_SERVICE.pricing.lesotho : PARCEL_SERVICE.pricing.zimbabwe;
+    const tier = pricing.find(t => weight > t.minKg && weight <= t.maxKg) || pricing[0];
+
+    return {
+      eligible: true,
+      price: tier.price,
+      destination: isLesotho ? 'Lesotho' : 'Zimbabwe'
+    };
+  }, [formData.pickupLocation, formData.weight, detectedCrossBorder]);
 
   // Use Mapbox for route calculation
   const { 
@@ -445,8 +495,42 @@ const FreightEstimator = () => {
                 </Button>
               </div>
 
-              {/* Results */}
-              {showResult && (
+              {/* Parcel Service Offer */}
+              {showResult && parcelOffer.eligible && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-8 p-6 md:p-8 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border-2 border-primary"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package className="h-5 w-5 text-primary" />
+                    <span className="font-display font-bold text-lg text-foreground">Small Parcel Express</span>
+                    <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Best Value</span>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Great news! Your {formData.weight}kg shipment to {parcelOffer.destination} qualifies for our fixed-rate small parcel service.
+                  </p>
+
+                  <div className="text-4xl md:text-5xl font-display font-black text-primary my-4">
+                    R {parcelOffer.price?.toLocaleString()}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Fixed rate — no surprises
+                  </p>
+
+                  <div className="text-center mt-6">
+                    <Link to="/get-quote">
+                      <Button variant="hero" size="lg">
+                        Book Small Parcel Delivery
+                      </Button>
+                    </Link>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Regular Freight Results */}
+              {showResult && !parcelOffer.eligible && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}

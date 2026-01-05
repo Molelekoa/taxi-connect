@@ -32,6 +32,12 @@ const services = [
     title: "Specialized",
     description: "Custom solutions for unique freight requirements. Temperature-controlled, hazmat, oversized, or high-value cargo—we have the expertise and carrier network to handle it safely.",
   },
+  {
+    id: "parcel",
+    abbr: "PKG",
+    title: "Small Parcel",
+    description: "Affordable cross-border delivery for small packages (1-5 kg) from Johannesburg and Pretoria to Lesotho and Zimbabwe. Fixed pricing from R150. Fast, reliable, and hassle-free.",
+  },
 ];
 
 const fadeInUp = {
@@ -165,7 +171,7 @@ const Index = () => {
 
           {/* Service Cards - Typography Based */}
           <motion.div
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
+            className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
