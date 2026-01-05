@@ -423,8 +423,8 @@ const FreightEstimator = () => {
                 {/* Value-Added Services */}
                 <div className="pt-4 border-t border-border">
                   <h3 className="font-semibold text-foreground mb-3">Value-Added Services</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex items-start space-x-3">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/30 border border-border hover:border-primary/30 transition-colors">
                       <Checkbox
                         id="liveTracking"
                         checked={formData.liveTracking}
@@ -432,11 +432,12 @@ const FreightEstimator = () => {
                           handleInputChange("liveTracking", checked === true)
                         }
                       />
-                      <div>
-                        <Label htmlFor="liveTracking" className="cursor-pointer font-normal">
+                      <div className="flex-1">
+                        <Label htmlFor="liveTracking" className="cursor-pointer font-normal flex items-center gap-2">
                           Live Tracking
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Popular</span>
                         </Label>
-                        <p className="text-xs text-muted-foreground">R150 per load — view online via tracking link</p>
+                        <p className="text-xs text-muted-foreground mt-1">R150 per load — Real-time visibility for you and your customers</p>
                       </div>
                     </div>
                   </div>
@@ -485,12 +486,6 @@ const FreightEstimator = () => {
                           <span>Base freight (~{finalDistance} km)</span>
                           <span className="text-foreground">Included</span>
                         </li>
-                        {weightPremiumInfo.percentage > 0 && (
-                          <li className="flex justify-between">
-                            <span>Weight premium (+{weightPremiumInfo.percentage}%)</span>
-                            <span className="text-foreground">~R{weightPremiumInfo.amount.toLocaleString()}</span>
-                          </li>
-                        )}
                         {formData.liftgate && (
                           <li className="flex justify-between">
                             <span>Liftgate service</span>
