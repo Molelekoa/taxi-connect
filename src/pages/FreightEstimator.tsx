@@ -39,14 +39,14 @@ const sadcCountries = [
 ];
 
 // SADC country data: distances from Johannesburg (in km) and capital coordinates
-const SADC_DATA: Record<string, { distance: number; coordinates: { lng: number; lat: number }; capital: string }> = {
-  'botswana': { distance: 356, coordinates: { lng: 25.9123, lat: -24.6282 }, capital: 'Gaborone' },
-  'lesotho': { distance: 410.7, coordinates: { lng: 27.4833, lat: -29.3167 }, capital: 'Maseru' },
-  'mozambique': { distance: 545.1, coordinates: { lng: 32.5892, lat: -25.9655 }, capital: 'Maputo' },
-  'namibia': { distance: 1625.4, coordinates: { lng: 17.0836, lat: -22.5609 }, capital: 'Windhoek' },
-  'eswatini': { distance: 398.2, coordinates: { lng: 31.1367, lat: -26.3054 }, capital: 'Manzini' },
-  'zambia': { distance: 1732.6, coordinates: { lng: 28.2871, lat: -15.3875 }, capital: 'Lusaka' },
-  'zimbabwe': { distance: 1121.3, coordinates: { lng: 31.0522, lat: -17.8292 }, capital: 'Harare' },
+const SADC_DATA: Record<string, { distance: number; coordinates: { lng: number; lat: number }; capital: string; corridorPrice: { min: number; max: number } }> = {
+  'botswana': { distance: 356, coordinates: { lng: 25.9123, lat: -24.6282 }, capital: 'Gaborone', corridorPrice: { min: 4500, max: 8000 } },
+  'lesotho': { distance: 410.7, coordinates: { lng: 27.4833, lat: -29.3167 }, capital: 'Maseru', corridorPrice: { min: 4000, max: 7000 } },
+  'mozambique': { distance: 545.1, coordinates: { lng: 32.5892, lat: -25.9655 }, capital: 'Maputo', corridorPrice: { min: 5000, max: 9000 } },
+  'namibia': { distance: 1625.4, coordinates: { lng: 17.0836, lat: -22.5609 }, capital: 'Windhoek', corridorPrice: { min: 8000, max: 14000 } },
+  'eswatini': { distance: 398.2, coordinates: { lng: 31.1367, lat: -26.3054 }, capital: 'Manzini', corridorPrice: { min: 4000, max: 7000 } },
+  'zambia': { distance: 1732.6, coordinates: { lng: 28.2871, lat: -15.3875 }, capital: 'Lusaka', corridorPrice: { min: 9000, max: 16000 } },
+  'zimbabwe': { distance: 1121.3, coordinates: { lng: 31.0522, lat: -17.8292 }, capital: 'Harare', corridorPrice: { min: 6500, max: 12000 } },
 };
 
 // Johannesburg coordinates for cross-border origin
@@ -62,8 +62,8 @@ const BASE_RATES = {
   domestic: { min: 4.5, max: 12 },
   // LTL per-kg rates (ZAR)
   ltlPerKg: { min: 8, max: 15 },
-  // Cross-border per-km rates (ZAR) for FTL
-  crossBorder: { min: 7, max: 18 },
+  // Cross-border per-km rates (ZAR) for FTL - reduced to industry-aligned rates
+  crossBorder: { min: 3, max: 6 },
   // Minimum charge thresholds (ZAR)
   minimumCharge: { min: 1500, max: 2500 },
 } as const;
@@ -72,8 +72,8 @@ const BASE_RATES = {
 const SURCHARGES = {
   // FTL discount multipliers
   ftlDiscount: { min: 0.85, max: 0.9 },
-  // Cross-border LTL multiplier
-  crossBorderLtlMultiplier: 1.5,
+  // Cross-border LTL multiplier - reduced from 1.5 to 1.2
+  crossBorderLtlMultiplier: 1.2,
   // Express delivery multiplier
   express: 1.25,
   // Temperature controlled multiplier
@@ -206,15 +206,16 @@ const FreightEstimator = () => {
     if (formData.crossBorder) {
       const selectedCountry = formData.sadcCountry;
       if (selectedCountry && SADC_DATA[selectedCountry]) {
-        const crossBorderDistance = SADC_DATA[selectedCountry].distance;
-        distance = crossBorderDistance;
+        const sadcData = SADC_DATA[selectedCountry];
+        distance = sadcData.distance;
 
         // Override the base cost calculation for cross-border
         if (isFTL) {
-          minCost = crossBorderDistance * BASE_RATES.crossBorder.min * cargoMultiplier;
-          maxCost = crossBorderDistance * BASE_RATES.crossBorder.max * cargoMultiplier;
+          // Use corridor pricing for FTL - more realistic route-based flat rates
+          minCost = sadcData.corridorPrice.min * cargoMultiplier;
+          maxCost = sadcData.corridorPrice.max * cargoMultiplier;
         } else {
-          // For LTL, use per-kg with cross-border multiplier
+          // For LTL, use per-kg with reduced cross-border multiplier
           minCost = weight * BASE_RATES.ltlPerKg.min * SURCHARGES.crossBorderLtlMultiplier * cargoMultiplier;
           maxCost = weight * BASE_RATES.ltlPerKg.max * SURCHARGES.crossBorderLtlMultiplier * cargoMultiplier;
         }
