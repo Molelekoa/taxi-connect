@@ -49,6 +49,17 @@ const SADC_DATA: Record<string, { distance: number; coordinates: { lng: number; 
   'zimbabwe': { distance: 1121.3, coordinates: { lng: 31.0522, lat: -17.8292 }, capital: 'Harare', corridorPrice: { min: 6500, max: 12000 } },
 };
 
+// Map country codes to SADC_DATA keys for auto-detection
+const COUNTRY_CODE_MAP: Record<string, string> = {
+  'BW': 'botswana',
+  'LS': 'lesotho',
+  'MZ': 'mozambique',
+  'NA': 'namibia',
+  'SZ': 'eswatini',
+  'ZM': 'zambia',
+  'ZW': 'zimbabwe',
+};
+
 // Johannesburg coordinates for cross-border origin
 const JHB_COORDINATES = { lng: 28.0473, lat: -26.2041 };
 
@@ -150,7 +161,7 @@ const FreightEstimator = () => {
   const [finalDistance, setFinalDistance] = useState(0);
   const [customsCost, setCustomsCost] = useState(0);
 
-  // Use Mapbox for domestic routes (skip for cross-border)
+  // Use Mapbox for domestic routes (skip for cross-border when manually selected)
   const { 
     distance: mapboxDistance, 
     isLoading: isCalculatingDistance, 
@@ -158,12 +169,28 @@ const FreightEstimator = () => {
     pickupPlace,
     deliveryPlace,
     pickupCoordinates,
-    deliveryCoordinates
+    deliveryCoordinates,
+    deliveryCountryCode
   } = useMapboxDistance(
     formData.pickupLocation,
     formData.deliveryLocation,
-    formData.crossBorder // Skip API when cross-border is selected
+    formData.crossBorder // Skip API when cross-border is manually selected
   );
+
+  // Auto-detect cross-border shipping based on geocoded delivery country
+  useEffect(() => {
+    if (deliveryCountryCode && deliveryCountryCode !== 'ZA') {
+      const sadcKey = COUNTRY_CODE_MAP[deliveryCountryCode];
+      if (sadcKey && !formData.crossBorder) {
+        // Auto-enable cross-border mode and select the detected country
+        setFormData(prev => ({
+          ...prev,
+          crossBorder: true,
+          sadcCountry: sadcKey
+        }));
+      }
+    }
+  }, [deliveryCountryCode, formData.crossBorder]);
 
   // Calculate the effective distance
   const effectiveDistance = formData.crossBorder && formData.sadcCountry

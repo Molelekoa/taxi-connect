@@ -8,6 +8,8 @@ interface DistanceResult {
   deliveryPlace: string;
   pickupCoordinates: Coordinates;
   deliveryCoordinates: Coordinates;
+  pickupCountryCode: string | null;
+  deliveryCountryCode: string | null;
 }
 
 export interface UseMapboxDistanceResult {
@@ -18,6 +20,8 @@ export interface UseMapboxDistanceResult {
   deliveryPlace: string | null;
   pickupCoordinates: Coordinates | null;
   deliveryCoordinates: Coordinates | null;
+  pickupCountryCode: string | null;
+  deliveryCountryCode: string | null;
 }
 
 export function useMapboxDistance(
@@ -107,5 +111,7 @@ export function useMapboxDistance(
     deliveryPlace: result?.deliveryPlace ?? null,
     pickupCoordinates: result?.pickupCoordinates ?? null,
     deliveryCoordinates: result?.deliveryCoordinates ?? null,
+    pickupCountryCode: result?.pickupCountryCode ?? null,
+    deliveryCountryCode: result?.deliveryCountryCode ?? null,
   };
 }
