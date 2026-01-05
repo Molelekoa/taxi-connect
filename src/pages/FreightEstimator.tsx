@@ -142,14 +142,12 @@ const FreightEstimator = () => {
     sadcCountry: "",
     liveTracking: false,
     customsClearing: false,
-    insuranceCover: false,
     goodsValue: "",
   });
 
   const [showResult, setShowResult] = useState(false);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
   const [finalDistance, setFinalDistance] = useState(0);
-  const [insuranceCost, setInsuranceCost] = useState(0);
   const [customsCost, setCustomsCost] = useState(0);
 
   // Use Mapbox for domestic routes (skip for cross-border)
@@ -270,34 +268,6 @@ const FreightEstimator = () => {
       maxCost *= SURCHARGES.extraInsurance;
     }
 
-    // Insurance cover calculation
-    let calculatedInsuranceCost = 0;
-    if (formData.insuranceCover) {
-      const goodsValue = parseFloat(formData.goodsValue) || 0;
-      if (goodsValue > 0) {
-        // Start with base rate
-        let insuranceRate = INSURANCE.baseRate;
-        
-        // Apply risk multipliers (multiplicative)
-        if (formData.cargoType === 'hazardous') {
-          insuranceRate *= INSURANCE.riskMultipliers.hazardous;
-        } else if (formData.cargoType === 'highvalue') {
-          insuranceRate *= INSURANCE.riskMultipliers.highvalue;
-        }
-        if (formData.crossBorder) {
-          insuranceRate *= INSURANCE.riskMultipliers.crossborder;
-        }
-        if (formData.tempControlled) {
-          insuranceRate *= INSURANCE.riskMultipliers.tempcontrol;
-        }
-        
-        // Apply profit markup
-        calculatedInsuranceCost = goodsValue * insuranceRate * INSURANCE.profitMarkup;
-        minCost += calculatedInsuranceCost;
-        maxCost += calculatedInsuranceCost;
-      }
-    }
-    setInsuranceCost(calculatedInsuranceCost);
     
     // Customs clearing calculation
     let calculatedCustomsCost = 0;
@@ -517,21 +487,24 @@ const FreightEstimator = () => {
                         <p className="text-xs text-muted-foreground">R150 per load — view online via tracking link</p>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-3">
-                      <Checkbox
-                        id="insuranceCover"
-                        checked={formData.insuranceCover}
-                        onCheckedChange={(checked) =>
-                          handleInputChange("insuranceCover", checked === true)
-                        }
-                      />
-                      <div className="flex-1">
-                        <Label htmlFor="insuranceCover" className="cursor-pointer font-normal">
-                          Insurance Cover
-                        </Label>
+                    {formData.crossBorder && (
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="customsClearing"
+                          checked={formData.customsClearing}
+                          onCheckedChange={(checked) =>
+                            handleInputChange("customsClearing", checked === true)
+                          }
+                        />
+                        <div>
+                          <Label htmlFor="customsClearing" className="cursor-pointer font-normal">
+                            Customs Clearing
+                          </Label>
+                          <p className="text-xs text-muted-foreground">Estimated duties, VAT & admin fees</p>
+                        </div>
                       </div>
-                    </div>
-                    {formData.insuranceCover && (
+                    )}
+                    {formData.crossBorder && formData.customsClearing && (
                       <div className="sm:col-span-2 pl-6 space-y-2">
                         <Label htmlFor="goodsValue">Declared Goods Value (R)*</Label>
                         <Input
@@ -544,20 +517,6 @@ const FreightEstimator = () => {
                         />
                       </div>
                     )}
-                    <div className="flex items-start space-x-3">
-                      <Checkbox
-                        id="customsClearing"
-                        checked={formData.customsClearing}
-                        onCheckedChange={(checked) =>
-                          handleInputChange("customsClearing", checked === true)
-                        }
-                      />
-                      <div>
-                        <Label htmlFor="customsClearing" className="cursor-pointer font-normal">
-                          Customs Clearing
-                        </Label>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -646,12 +605,6 @@ const FreightEstimator = () => {
                           <li className="flex justify-between">
                             <span>Live tracking</span>
                             <span className="text-foreground">R{FEES.liveTracking.toLocaleString()}</span>
-                          </li>
-                        )}
-                        {formData.insuranceCover && insuranceCost > 0 && (
-                          <li className="flex justify-between">
-                            <span>Insurance cover</span>
-                            <span className="text-foreground">R{insuranceCost.toFixed(2)}</span>
                           </li>
                         )}
                         {formData.crossBorder && (
