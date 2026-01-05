@@ -38,16 +38,19 @@ const sadcCountries = [
   { value: "zimbabwe", label: "Zimbabwe (Harare)" },
 ];
 
-// SADC country distances from Johannesburg (in km)
-const SADC_DISTANCES: Record<string, number> = {
-  'botswana': 356,
-  'lesotho': 410.7,
-  'mozambique': 545.1,
-  'namibia': 1625.4,
-  'eswatini': 398.2,
-  'zambia': 1732.6,
-  'zimbabwe': 1121.3
+// SADC country data: distances from Johannesburg (in km) and capital coordinates
+const SADC_DATA: Record<string, { distance: number; coordinates: { lng: number; lat: number }; capital: string }> = {
+  'botswana': { distance: 356, coordinates: { lng: 25.9123, lat: -24.6282 }, capital: 'Gaborone' },
+  'lesotho': { distance: 410.7, coordinates: { lng: 27.4833, lat: -29.3167 }, capital: 'Maseru' },
+  'mozambique': { distance: 545.1, coordinates: { lng: 32.5892, lat: -25.9655 }, capital: 'Maputo' },
+  'namibia': { distance: 1625.4, coordinates: { lng: 17.0836, lat: -22.5609 }, capital: 'Windhoek' },
+  'eswatini': { distance: 398.2, coordinates: { lng: 31.1367, lat: -26.3054 }, capital: 'Manzini' },
+  'zambia': { distance: 1732.6, coordinates: { lng: 28.2871, lat: -15.3875 }, capital: 'Lusaka' },
+  'zimbabwe': { distance: 1121.3, coordinates: { lng: 31.0522, lat: -17.8292 }, capital: 'Harare' },
 };
+
+// Johannesburg coordinates for cross-border origin
+const JHB_COORDINATES = { lng: 28.0473, lat: -26.2041 };
 
 // ==========================================
 // PRICING CONSTANTS
@@ -166,8 +169,17 @@ const FreightEstimator = () => {
 
   // Calculate the effective distance
   const effectiveDistance = formData.crossBorder && formData.sadcCountry
-    ? SADC_DISTANCES[formData.sadcCountry] || 0
+    ? SADC_DATA[formData.sadcCountry]?.distance || 0
     : mapboxDistance;
+
+  // Get cross-border coordinates for map visualization
+  const crossBorderCoordinates = formData.crossBorder && formData.sadcCountry
+    ? {
+        pickup: JHB_COORDINATES,
+        delivery: SADC_DATA[formData.sadcCountry]?.coordinates || null,
+        deliveryLabel: SADC_DATA[formData.sadcCountry]?.capital || 'Destination'
+      }
+    : null;
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -195,8 +207,8 @@ const FreightEstimator = () => {
     // APPLY CROSS-BORDER COSTS (if selected)
     if (formData.crossBorder) {
       const selectedCountry = formData.sadcCountry;
-      if (selectedCountry && SADC_DISTANCES[selectedCountry]) {
-        const crossBorderDistance = SADC_DISTANCES[selectedCountry];
+      if (selectedCountry && SADC_DATA[selectedCountry]) {
+        const crossBorderDistance = SADC_DATA[selectedCountry].distance;
         distance = crossBorderDistance;
 
         // Override the base cost calculation for cross-border
@@ -389,13 +401,23 @@ const FreightEstimator = () => {
                     </div>
                   )}
 
-                  {/* Route Map */}
+                  {/* Route Map - Domestic */}
                   {!formData.crossBorder && (
                     <RouteMap
                       pickupCoordinates={pickupCoordinates}
                       deliveryCoordinates={deliveryCoordinates}
                       pickupLabel={pickupPlace || 'Pickup'}
                       deliveryLabel={deliveryPlace || 'Delivery'}
+                    />
+                  )}
+
+                  {/* Route Map - Cross-border SADC */}
+                  {formData.crossBorder && crossBorderCoordinates?.delivery && (
+                    <RouteMap
+                      pickupCoordinates={crossBorderCoordinates.pickup}
+                      deliveryCoordinates={crossBorderCoordinates.delivery}
+                      pickupLabel="Johannesburg"
+                      deliveryLabel={crossBorderCoordinates.deliveryLabel}
                     />
                   )}
 
@@ -557,9 +579,9 @@ const FreightEstimator = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {formData.sadcCountry && SADC_DISTANCES[formData.sadcCountry] && (
+                    {formData.sadcCountry && SADC_DATA[formData.sadcCountry] && (
                       <p className="text-sm text-muted-foreground mt-1">
-                        Distance from Johannesburg: <span className="font-semibold text-foreground">{SADC_DISTANCES[formData.sadcCountry]} km</span>
+                        Distance from Johannesburg: <span className="font-semibold text-foreground">{SADC_DATA[formData.sadcCountry].distance} km</span>
                       </p>
                     )}
                   </div>
