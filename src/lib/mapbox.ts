@@ -8,6 +8,7 @@ export interface Coordinates {
 export interface GeocodeResult {
   coordinates: Coordinates;
   placeName: string;
+  countryCode: string | null;
 }
 
 // Geocode an address to coordinates
@@ -38,12 +39,19 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | n
     
     if (data.features && data.features.length > 0) {
       const feature = data.features[0];
+      // Extract country code from context (e.g., "ZA", "ZW", "BW")
+      const countryContext = feature.context?.find((c: { id: string; short_code?: string }) => 
+        c.id.startsWith('country')
+      );
+      const countryCode = countryContext?.short_code?.toUpperCase() || null;
+      
       return {
         coordinates: {
           lng: feature.center[0],
           lat: feature.center[1],
         },
         placeName: feature.place_name,
+        countryCode,
       };
     }
 
@@ -100,6 +108,8 @@ export async function getDistanceFromAddresses(
   deliveryPlace: string;
   pickupCoordinates: Coordinates;
   deliveryCoordinates: Coordinates;
+  pickupCountryCode: string | null;
+  deliveryCountryCode: string | null;
 } | null> {
   const [pickupResult, deliveryResult] = await Promise.all([
     geocodeAddress(pickupAddress),
@@ -125,5 +135,7 @@ export async function getDistanceFromAddresses(
     deliveryPlace: deliveryResult.placeName,
     pickupCoordinates: pickupResult.coordinates,
     deliveryCoordinates: deliveryResult.coordinates,
+    pickupCountryCode: pickupResult.countryCode,
+    deliveryCountryCode: deliveryResult.countryCode,
   };
 }
