@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -28,29 +28,30 @@ const cargoTypes = [
   { value: "vehicles", label: "Vehicles", multiplier: 1.5 },
 ];
 
-const sadcCountries = [
-  { value: "botswana", label: "Botswana (Gaborone)" },
-  { value: "lesotho", label: "Lesotho (Maseru)" },
-  { value: "mozambique", label: "Mozambique (Maputo)" },
-  { value: "namibia", label: "Namibia (Windhoek)" },
-  { value: "eswatini", label: "Eswatini (Manzini)" },
-  { value: "zambia", label: "Zambia (Lusaka)" },
-  { value: "zimbabwe", label: "Zimbabwe (Harare)" },
-];
-
 // SADC country data: distances from Johannesburg (in km) and capital coordinates
-const SADC_DATA: Record<string, { distance: number; coordinates: { lng: number; lat: number }; capital: string; corridorPrice: { min: number; max: number } }> = {
-  'botswana': { distance: 356, coordinates: { lng: 25.9123, lat: -24.6282 }, capital: 'Gaborone', corridorPrice: { min: 4500, max: 8000 } },
-  'lesotho': { distance: 410.7, coordinates: { lng: 27.4833, lat: -29.3167 }, capital: 'Maseru', corridorPrice: { min: 4000, max: 7000 } },
-  'mozambique': { distance: 545.1, coordinates: { lng: 32.5892, lat: -25.9655 }, capital: 'Maputo', corridorPrice: { min: 5000, max: 9000 } },
-  'namibia': { distance: 1625.4, coordinates: { lng: 17.0836, lat: -22.5609 }, capital: 'Windhoek', corridorPrice: { min: 8000, max: 14000 } },
-  'eswatini': { distance: 398.2, coordinates: { lng: 31.1367, lat: -26.3054 }, capital: 'Manzini', corridorPrice: { min: 4000, max: 7000 } },
-  'zambia': { distance: 1732.6, coordinates: { lng: 28.2871, lat: -15.3875 }, capital: 'Lusaka', corridorPrice: { min: 9000, max: 16000 } },
-  'zimbabwe': { distance: 1121.3, coordinates: { lng: 31.0522, lat: -17.8292 }, capital: 'Harare', corridorPrice: { min: 6500, max: 12000 } },
+const SADC_DATA: Record<string, { distance: number; coordinates: { lng: number; lat: number }; capital: string }> = {
+  'botswana': { distance: 356, coordinates: { lng: 25.9123, lat: -24.6282 }, capital: 'Gaborone' },
+  'lesotho': { distance: 410.7, coordinates: { lng: 27.4833, lat: -29.3167 }, capital: 'Maseru' },
+  'mozambique': { distance: 545.1, coordinates: { lng: 32.5892, lat: -25.9655 }, capital: 'Maputo' },
+  'namibia': { distance: 1625.4, coordinates: { lng: 17.0836, lat: -22.5609 }, capital: 'Windhoek' },
+  'eswatini': { distance: 398.2, coordinates: { lng: 31.1367, lat: -26.3054 }, capital: 'Manzini' },
+  'zambia': { distance: 1732.6, coordinates: { lng: 28.2871, lat: -15.3875 }, capital: 'Lusaka' },
+  'zimbabwe': { distance: 1121.3, coordinates: { lng: 31.0522, lat: -17.8292 }, capital: 'Harare' },
 };
 
 // Johannesburg coordinates for cross-border origin
 const JHB_COORDINATES = { lng: 28.0473, lat: -26.2041 };
+
+// Map country codes to SADC keys
+const COUNTRY_CODE_TO_SADC: Record<string, string> = {
+  'BW': 'botswana',
+  'LS': 'lesotho',
+  'MZ': 'mozambique',
+  'NA': 'namibia',
+  'SZ': 'eswatini',
+  'ZM': 'zambia',
+  'ZW': 'zimbabwe',
+};
 
 // ==========================================
 // PRICING CONSTANTS
@@ -58,12 +59,8 @@ const JHB_COORDINATES = { lng: 28.0473, lat: -26.2041 };
 
 /** Base rates for freight calculation */
 const BASE_RATES = {
-  // Domestic per-km rates (ZAR)
-  domestic: { min: 4.5, max: 12 },
-  // LTL per-kg rates (ZAR)
-  ltlPerKg: { min: 8, max: 15 },
-  // Cross-border per-km rates (ZAR) for FTL - reduced to industry-aligned rates
-  crossBorder: { min: 3, max: 6 },
+  // Per-km rates (ZAR) - same for all routes
+  perKm: { min: 4.5, max: 12 },
   // Minimum charge thresholds (ZAR)
   minimumCharge: { min: 1500, max: 2500 },
 } as const;
@@ -72,26 +69,10 @@ const BASE_RATES = {
 const SURCHARGES = {
   // FTL discount multipliers
   ftlDiscount: { min: 0.85, max: 0.9 },
-  // Cross-border LTL multiplier - reduced from 1.5 to 1.2
-  crossBorderLtlMultiplier: 1.2,
   // Express delivery multiplier
   express: 1.25,
   // Temperature controlled multiplier
   tempControlled: 1.3,
-  // Extra insurance multiplier
-  extraInsurance: 1.08,
-} as const;
-
-/** Insurance pricing - base rate is wholesale cost from insurer */
-const INSURANCE = {
-  baseRate: 0.003,          // 0.3% - Wholesale cost
-  profitMarkup: 1.3,        // 30% markup for profit
-  riskMultipliers: {
-    hazardous: 1.8,         // +80% for hazardous materials
-    highvalue: 1.4,         // +40% for high-value goods
-    crossborder: 1.25,      // +25% for SADC cross-border
-    tempcontrol: 1.15       // +15% for temperature control
-  }
 } as const;
 
 /** Fixed fees (ZAR) */
@@ -99,31 +80,14 @@ const FEES = {
   liftgate: 650,
   securityEscort: 2500,
   liveTracking: 150,
-  crossBorderAdmin: 1200,
 } as const;
 
-/** Country-specific customs rates (VAT, average duty, admin fee) */
-const CUSTOMS_RATES: Record<string, { vat: number; avgDuty: number; adminFee: number }> = {
-  'lesotho': { vat: 0.15, avgDuty: 0.10, adminFee: 2000 },
-  'botswana': { vat: 0.15, avgDuty: 0.10, adminFee: 500 },
-  'namibia': { vat: 0.15, avgDuty: 0.10, adminFee: 500 },
-  'eswatini': { vat: 0.15, avgDuty: 0.10, adminFee: 500 },
-  'zambia': { vat: 0.16, avgDuty: 0.10, adminFee: 500 },
-  'mozambique': { vat: 0.17, avgDuty: 0.10, adminFee: 500 },
-  'zimbabwe': { vat: 0.15, avgDuty: 0.10, adminFee: 500 },
-};
-
-// Calculate customs clearing estimate
-const calculateCustomsEstimate = (goodsValue: number, destinationCountry: string): number => {
-  const rates = CUSTOMS_RATES[destinationCountry];
-  if (!rates || goodsValue <= 0) return 0;
-  
-  const dutyOwed = goodsValue * rates.avgDuty;
-  const vatBase = goodsValue + dutyOwed;
-  const vatOwed = vatBase * rates.vat;
-  const totalEstimate = dutyOwed + vatOwed + rates.adminFee;
-  
-  return Math.round(totalEstimate);
+/** Calculate weight premium: 5% for every 100kg over 500kg */
+const calculateWeightPremium = (weight: number): { multiplier: number; percentage: number } => {
+  if (weight <= 500) return { multiplier: 1.0, percentage: 0 };
+  const incrementsOver500 = Math.ceil((weight - 500) / 100);
+  const percentage = incrementsOver500 * 5;
+  return { multiplier: 1 + (percentage / 100), percentage };
 };
 
 const FreightEstimator = () => {
@@ -134,23 +98,19 @@ const FreightEstimator = () => {
     cargoType: "",
     isFullTruckload: false,
     liftgate: false,
-    crossBorder: false,
     express: false,
     tempControlled: false,
     securityEscort: false,
-    extraInsurance: false,
-    sadcCountry: "",
     liveTracking: false,
-    customsClearing: false,
-    goodsValue: "",
   });
 
   const [showResult, setShowResult] = useState(false);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
   const [finalDistance, setFinalDistance] = useState(0);
-  const [customsCost, setCustomsCost] = useState(0);
+  const [weightPremiumInfo, setWeightPremiumInfo] = useState({ percentage: 0, amount: 0 });
+  const [detectedCrossBorder, setDetectedCrossBorder] = useState<string | null>(null);
 
-  // Use Mapbox for domestic routes (skip for cross-border)
+  // Use Mapbox for route calculation
   const { 
     distance: mapboxDistance, 
     isLoading: isCalculatingDistance, 
@@ -158,24 +118,38 @@ const FreightEstimator = () => {
     pickupPlace,
     deliveryPlace,
     pickupCoordinates,
-    deliveryCoordinates
+    deliveryCoordinates,
+    deliveryCountry
   } = useMapboxDistance(
     formData.pickupLocation,
-    formData.deliveryLocation,
-    formData.crossBorder // Skip API when cross-border is selected
+    formData.deliveryLocation
   );
 
+  // Auto-detect cross-border routes
+  useEffect(() => {
+    if (deliveryCountry && deliveryCountry !== 'ZA') {
+      const sadcKey = COUNTRY_CODE_TO_SADC[deliveryCountry];
+      if (sadcKey) {
+        setDetectedCrossBorder(sadcKey);
+      } else {
+        setDetectedCrossBorder(null);
+      }
+    } else {
+      setDetectedCrossBorder(null);
+    }
+  }, [deliveryCountry]);
+
   // Calculate the effective distance
-  const effectiveDistance = formData.crossBorder && formData.sadcCountry
-    ? SADC_DATA[formData.sadcCountry]?.distance || 0
+  const effectiveDistance = detectedCrossBorder
+    ? SADC_DATA[detectedCrossBorder]?.distance || mapboxDistance
     : mapboxDistance;
 
   // Get cross-border coordinates for map visualization
-  const crossBorderCoordinates = formData.crossBorder && formData.sadcCountry
+  const crossBorderCoordinates = detectedCrossBorder
     ? {
         pickup: JHB_COORDINATES,
-        delivery: SADC_DATA[formData.sadcCountry]?.coordinates || null,
-        deliveryLabel: SADC_DATA[formData.sadcCountry]?.capital || 'Destination'
+        delivery: SADC_DATA[detectedCrossBorder]?.coordinates || null,
+        deliveryLabel: SADC_DATA[detectedCrossBorder]?.capital || 'Destination'
       }
     : null;
 
@@ -195,45 +169,26 @@ const FreightEstimator = () => {
     // Check if this is a full truckload
     const isFTL = formData.isFullTruckload;
 
-    // Use Mapbox distance for domestic, SADC predefined for cross-border
-    let distance = effectiveDistance || 500; // Fallback to 500km if no distance
+    // Use Mapbox distance or SADC predefined distance
+    const distance = effectiveDistance || 500; // Fallback to 500km if no distance
     
-    // Domestic base cost calculation
-    let minCost = distance * BASE_RATES.domestic.min * cargoMultiplier;
-    let maxCost = distance * BASE_RATES.domestic.max * cargoMultiplier;
-
-    // APPLY CROSS-BORDER COSTS (if selected)
-    if (formData.crossBorder) {
-      const selectedCountry = formData.sadcCountry;
-      if (selectedCountry && SADC_DATA[selectedCountry]) {
-        const sadcData = SADC_DATA[selectedCountry];
-        distance = sadcData.distance;
-
-        // Override the base cost calculation for cross-border
-        if (isFTL) {
-          // Use corridor pricing for FTL - more realistic route-based flat rates
-          minCost = sadcData.corridorPrice.min * cargoMultiplier;
-          maxCost = sadcData.corridorPrice.max * cargoMultiplier;
-        } else {
-          // For LTL, use per-kg with reduced cross-border multiplier
-          minCost = weight * BASE_RATES.ltlPerKg.min * SURCHARGES.crossBorderLtlMultiplier * cargoMultiplier;
-          maxCost = weight * BASE_RATES.ltlPerKg.max * SURCHARGES.crossBorderLtlMultiplier * cargoMultiplier;
-        }
-
-        // Add the fixed admin fee
-        minCost += FEES.crossBorderAdmin;
-        maxCost += FEES.crossBorderAdmin;
-      }
-    }
-
     setFinalDistance(distance);
 
-    // Weight factor (heavier loads cost more) - only for domestic
-    if (!formData.crossBorder) {
-      const weightFactor = 1 + (weight / 10000) * 0.3;
-      minCost *= weightFactor;
-      maxCost *= weightFactor;
-    }
+    // Base cost calculation (same per-km rate for all routes)
+    let minCost = distance * BASE_RATES.perKm.min * cargoMultiplier;
+    let maxCost = distance * BASE_RATES.perKm.max * cargoMultiplier;
+
+    // Apply weight premium (5% per 100kg over 500kg)
+    const { multiplier: weightMultiplier, percentage: weightPercentage } = calculateWeightPremium(weight);
+    const premiumAmountMin = minCost * (weightMultiplier - 1);
+    const premiumAmountMax = maxCost * (weightMultiplier - 1);
+    minCost *= weightMultiplier;
+    maxCost *= weightMultiplier;
+    
+    setWeightPremiumInfo({ 
+      percentage: weightPercentage, 
+      amount: Math.round((premiumAmountMin + premiumAmountMax) / 2) 
+    });
 
     // Apply full truckload discount
     if (isFTL) {
@@ -264,21 +219,6 @@ const FreightEstimator = () => {
       minCost *= SURCHARGES.tempControlled;
       maxCost *= SURCHARGES.tempControlled;
     }
-    if (formData.extraInsurance) {
-      minCost *= SURCHARGES.extraInsurance;
-      maxCost *= SURCHARGES.extraInsurance;
-    }
-
-    
-    // Customs clearing calculation
-    let calculatedCustomsCost = 0;
-    if (formData.customsClearing && formData.crossBorder && formData.sadcCountry) {
-      const goodsValue = parseFloat(formData.goodsValue) || 0;
-      calculatedCustomsCost = calculateCustomsEstimate(goodsValue, formData.sadcCountry);
-      minCost += calculatedCustomsCost;
-      maxCost += calculatedCustomsCost;
-    }
-    setCustomsCost(calculatedCustomsCost);
 
     // Minimum charge
     minCost = Math.max(minCost, BASE_RATES.minimumCharge.min);
@@ -293,8 +233,7 @@ const FreightEstimator = () => {
     formData.deliveryLocation &&
     formData.weight &&
     parseFloat(formData.weight) > 0 &&
-    formData.cargoType &&
-    (!formData.crossBorder || formData.sadcCountry);
+    formData.cargoType;
 
   const selectedCargo = cargoTypes.find((c) => c.value === formData.cargoType);
 
@@ -351,9 +290,20 @@ const FreightEstimator = () => {
                     </div>
                   )}
                   
-                  {distanceError && !formData.crossBorder && (
+                  {distanceError && (
                     <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm">
                       {distanceError}
+                    </div>
+                  )}
+
+                  {/* Cross-border detection notice */}
+                  {detectedCrossBorder && (
+                    <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg text-sm flex items-start gap-2">
+                      <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="font-medium text-foreground">Cross-border route detected</span>
+                        <span className="text-muted-foreground"> — Delivery to {SADC_DATA[detectedCrossBorder]?.capital}, {detectedCrossBorder.charAt(0).toUpperCase() + detectedCrossBorder.slice(1)}</span>
+                      </div>
                     </div>
                   )}
                   
@@ -363,7 +313,7 @@ const FreightEstimator = () => {
                         <span>Estimated distance:</span>
                         <span className="font-semibold text-foreground">{effectiveDistance} km</span>
                       </div>
-                      {pickupPlace && deliveryPlace && !formData.crossBorder && (
+                      {pickupPlace && deliveryPlace && !detectedCrossBorder && (
                         <div className="text-xs mt-2 space-y-1">
                           <div>From: {pickupPlace}</div>
                           <div>To: {deliveryPlace}</div>
@@ -373,7 +323,7 @@ const FreightEstimator = () => {
                   )}
 
                   {/* Route Map - Domestic */}
-                  {!formData.crossBorder && (
+                  {!detectedCrossBorder && (
                     <RouteMap
                       pickupCoordinates={pickupCoordinates}
                       deliveryCoordinates={deliveryCoordinates}
@@ -383,7 +333,7 @@ const FreightEstimator = () => {
                   )}
 
                   {/* Route Map - Cross-border SADC */}
-                  {formData.crossBorder && crossBorderCoordinates?.delivery && (
+                  {detectedCrossBorder && crossBorderCoordinates?.delivery && (
                     <RouteMap
                       pickupCoordinates={crossBorderCoordinates.pickup}
                       deliveryCoordinates={crossBorderCoordinates.delivery}
@@ -402,6 +352,9 @@ const FreightEstimator = () => {
                       value={formData.weight}
                       onChange={(e) => handleInputChange("weight", e.target.value)}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Weight premium applies: +5% for every 100kg over 500kg
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -448,11 +401,9 @@ const FreightEstimator = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
                     { id: "liftgate", label: "Liftgate required" },
-                    { id: "crossBorder", label: "Cross-border to SADC" },
                     { id: "express", label: "Express delivery (within 48hrs)" },
                     { id: "tempControlled", label: "Temperature controlled" },
                     { id: "securityEscort", label: "Security escort requested" },
-                    { id: "extraInsurance", label: "Extra cargo insurance" },
                   ].map((item) => (
                     <div key={item.id} className="flex items-center space-x-3">
                       <Checkbox
@@ -488,64 +439,8 @@ const FreightEstimator = () => {
                         <p className="text-xs text-muted-foreground">R150 per load — view online via tracking link</p>
                       </div>
                     </div>
-                    {formData.crossBorder && (
-                      <div className="flex items-start space-x-3">
-                        <Checkbox
-                          id="customsClearing"
-                          checked={formData.customsClearing}
-                          onCheckedChange={(checked) =>
-                            handleInputChange("customsClearing", checked === true)
-                          }
-                        />
-                        <div>
-                          <Label htmlFor="customsClearing" className="cursor-pointer font-normal">
-                            Customs Clearing
-                          </Label>
-                          <p className="text-xs text-muted-foreground">Estimated duties, VAT & admin fees</p>
-                        </div>
-                      </div>
-                    )}
-                    {formData.crossBorder && formData.customsClearing && (
-                      <div className="sm:col-span-2 pl-6 space-y-2">
-                        <Label htmlFor="goodsValue">Declared Goods Value (R)*</Label>
-                        <Input
-                          id="goodsValue"
-                          type="number"
-                          placeholder="e.g., 50000"
-                          min="1"
-                          value={formData.goodsValue}
-                          onChange={(e) => handleInputChange("goodsValue", e.target.value)}
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
-
-                {formData.crossBorder && (
-                  <div className="space-y-2 mt-4">
-                    <Label>Select SADC Country *</Label>
-                    <Select
-                      value={formData.sadcCountry}
-                      onValueChange={(value) => handleInputChange("sadcCountry", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="-- Choose a country --" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sadcCountries.map((country) => (
-                          <SelectItem key={country.value} value={country.value}>
-                            {country.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {formData.sadcCountry && SADC_DATA[formData.sadcCountry] && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Distance from Johannesburg: <span className="font-semibold text-foreground">{SADC_DATA[formData.sadcCountry].distance} km</span>
-                      </p>
-                    )}
-                  </div>
-                )}
               </section>
 
               {/* Calculate Button */}
@@ -590,6 +485,12 @@ const FreightEstimator = () => {
                           <span>Base freight (~{finalDistance} km)</span>
                           <span className="text-foreground">Included</span>
                         </li>
+                        {weightPremiumInfo.percentage > 0 && (
+                          <li className="flex justify-between">
+                            <span>Weight premium (+{weightPremiumInfo.percentage}%)</span>
+                            <span className="text-foreground">~R{weightPremiumInfo.amount.toLocaleString()}</span>
+                          </li>
+                        )}
                         {formData.liftgate && (
                           <li className="flex justify-between">
                             <span>Liftgate service</span>
@@ -606,18 +507,6 @@ const FreightEstimator = () => {
                           <li className="flex justify-between">
                             <span>Live tracking</span>
                             <span className="text-foreground">R{FEES.liveTracking.toLocaleString()}</span>
-                          </li>
-                        )}
-                        {formData.crossBorder && (
-                          <li className="flex justify-between">
-                            <span>Cross-border admin fee</span>
-                            <span className="text-foreground">R{FEES.crossBorderAdmin.toLocaleString()}</span>
-                          </li>
-                        )}
-                        {formData.customsClearing && customsCost > 0 && (
-                          <li className="flex justify-between">
-                            <span>Customs clearing</span>
-                            <span className="text-foreground">R{customsCost.toLocaleString()}</span>
                           </li>
                         )}
                       </ul>
@@ -639,12 +528,6 @@ const FreightEstimator = () => {
                   <p className="text-xs text-muted-foreground mt-6 leading-relaxed">
                     <strong>Disclaimer:</strong> This is an automated estimate only. Actual pricing will be confirmed by our team after reviewing your full shipment details. Additional fees may apply for access restrictions, waiting time, or special handling.
                   </p>
-
-                  {formData.customsClearing && (
-                    <p className="text-xs text-muted-foreground mt-3 leading-relaxed italic">
-                      Customs estimates are based on standard rates. Final charges are determined by the destination country's authority and may vary.
-                    </p>
-                  )}
 
                   <div className="text-center mt-6">
                     <Link to="/get-quote">
