@@ -57,6 +57,8 @@ const Step2Compliance = ({ formData, updateFormData, errors }: Step2Props) => {
     }
   };
 
+  const isSouthAfrica = formData.country === "south-africa";
+
   return (
     <div className="space-y-6">
       <div className="mb-6">
@@ -64,48 +66,80 @@ const Step2Compliance = ({ formData, updateFormData, errors }: Step2Props) => {
           Licenses & Compliance
         </h2>
         <p className="text-muted-foreground">
-          Required for operating legally in South Africa and cross-border.
+          {isSouthAfrica 
+            ? "Required for operating legally in South Africa and cross-border."
+            : "Provide your business registration and licensing details."}
         </p>
       </div>
 
+      {isSouthAfrica ? (
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <Label htmlFor="cipcNumber">SA Company Registration Number (CIPC) *</Label>
+            <Input
+              id="cipcNumber"
+              value={formData.cipcNumber}
+              onChange={(e) => updateFormData({ cipcNumber: e.target.value })}
+              placeholder="e.g., 2020/123456/07"
+              className={errors.cipcNumber ? "border-destructive" : ""}
+            />
+            {errors.cipcNumber && (
+              <p className="text-sm text-destructive mt-1">{errors.cipcNumber}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="taxVatNumber">Tax / VAT Number *</Label>
+            <Input
+              id="taxVatNumber"
+              value={formData.taxVatNumber}
+              onChange={(e) => updateFormData({ taxVatNumber: e.target.value })}
+              placeholder="e.g., 4123456789"
+              className={errors.taxVatNumber ? "border-destructive" : ""}
+            />
+            {errors.taxVatNumber && (
+              <p className="text-sm text-destructive mt-1">{errors.taxVatNumber}</p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <Label htmlFor="businessRegistrationNumber">Business Registration Number *</Label>
+            <Input
+              id="businessRegistrationNumber"
+              value={formData.businessRegistrationNumber}
+              onChange={(e) => updateFormData({ businessRegistrationNumber: e.target.value })}
+              placeholder="Your company registration number"
+              className={errors.businessRegistrationNumber ? "border-destructive" : ""}
+            />
+            {errors.businessRegistrationNumber && (
+              <p className="text-sm text-destructive mt-1">{errors.businessRegistrationNumber}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="taxVatNumber">Tax Registration Number</Label>
+            <Input
+              id="taxVatNumber"
+              value={formData.taxVatNumber}
+              onChange={(e) => updateFormData({ taxVatNumber: e.target.value })}
+              placeholder="If applicable"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-6">
         <div>
-          <Label htmlFor="cipcNumber">SA Company Registration Number (CIPC) *</Label>
-          <Input
-            id="cipcNumber"
-            value={formData.cipcNumber}
-            onChange={(e) => updateFormData({ cipcNumber: e.target.value })}
-            placeholder="e.g., 2020/123456/07"
-            className={errors.cipcNumber ? "border-destructive" : ""}
-          />
-          {errors.cipcNumber && (
-            <p className="text-sm text-destructive mt-1">{errors.cipcNumber}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="taxVatNumber">Tax / VAT Number *</Label>
-          <Input
-            id="taxVatNumber"
-            value={formData.taxVatNumber}
-            onChange={(e) => updateFormData({ taxVatNumber: e.target.value })}
-            placeholder="e.g., 4123456789"
-            className={errors.taxVatNumber ? "border-destructive" : ""}
-          />
-          {errors.taxVatNumber && (
-            <p className="text-sm text-destructive mt-1">{errors.taxVatNumber}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <Label htmlFor="transportLicenseNumber">Transport Operating License (OL) Number *</Label>
+          <Label htmlFor="transportLicenseNumber">
+            {isSouthAfrica ? "Transport Operating License (OL) Number *" : "Transport License Number"}
+          </Label>
           <Input
             id="transportLicenseNumber"
             value={formData.transportLicenseNumber}
             onChange={(e) => updateFormData({ transportLicenseNumber: e.target.value })}
-            placeholder="Your OL number"
+            placeholder={isSouthAfrica ? "Your OL number" : "Transport license if applicable"}
             className={errors.transportLicenseNumber ? "border-destructive" : ""}
           />
           {errors.transportLicenseNumber && (
@@ -113,24 +147,26 @@ const Step2Compliance = ({ formData, updateFormData, errors }: Step2Props) => {
           )}
         </div>
 
-        <div>
-          <Label htmlFor="pdpHolders">PDP Holders *</Label>
-          <Input
-            id="pdpHolders"
-            type="number"
-            min={1}
-            value={formData.pdpHolders}
-            onChange={(e) => updateFormData({ pdpHolders: parseInt(e.target.value) || 1 })}
-            placeholder="Number of drivers with valid PDPs"
-            className={errors.pdpHolders ? "border-destructive" : ""}
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            How many drivers hold valid Public Driver's Permits?
-          </p>
-          {errors.pdpHolders && (
-            <p className="text-sm text-destructive mt-1">{errors.pdpHolders}</p>
-          )}
-        </div>
+        {isSouthAfrica && (
+          <div>
+            <Label htmlFor="pdpHolders">PDP Holders *</Label>
+            <Input
+              id="pdpHolders"
+              type="number"
+              min={1}
+              value={formData.pdpHolders}
+              onChange={(e) => updateFormData({ pdpHolders: parseInt(e.target.value) || 1 })}
+              placeholder="Number of drivers with valid PDPs"
+              className={errors.pdpHolders ? "border-destructive" : ""}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              How many drivers hold valid Public Driver's Permits?
+            </p>
+            {errors.pdpHolders && (
+              <p className="text-sm text-destructive mt-1">{errors.pdpHolders}</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div>
@@ -182,9 +218,9 @@ const Step2Compliance = ({ formData, updateFormData, errors }: Step2Props) => {
       </AnimatePresence>
 
       <div>
-        <Label className="mb-2 block">Insurance Certificate of Currency *</Label>
+        <Label className="mb-2 block">Insurance for Public Liability and/or Goods in Transit *</Label>
         <p className="text-xs text-muted-foreground mb-3">
-          Upload a current, valid certificate for Public Liability & Goods in Transit. Max 5MB, PDF/JPEG/PNG.
+          Upload a current, valid insurance certificate. Max 5MB, PDF/JPEG/PNG.
         </p>
         
         <div
@@ -232,27 +268,29 @@ const Step2Compliance = ({ formData, updateFormData, errors }: Step2Props) => {
         )}
       </div>
 
-      <div>
-        <Label htmlFor="bbeeStatus">B-BBEE Status Level</Label>
-        <Select
-          value={formData.bbeeStatus}
-          onValueChange={(value) => updateFormData({ bbeeStatus: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select B-BBEE status (optional)" />
-          </SelectTrigger>
-          <SelectContent>
-            {bbeeOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground mt-1">
-          Optional but beneficial for certain contracts
-        </p>
-      </div>
+      {isSouthAfrica && (
+        <div>
+          <Label htmlFor="bbeeStatus">B-BBEE Status Level</Label>
+          <Select
+            value={formData.bbeeStatus}
+            onValueChange={(value) => updateFormData({ bbeeStatus: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select B-BBEE status (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              {bbeeOptions.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1">
+            Optional but beneficial for certain contracts
+          </p>
+        </div>
+      )}
     </div>
   );
 };

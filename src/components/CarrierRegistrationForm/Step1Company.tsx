@@ -17,6 +17,12 @@ interface Step1Props {
 }
 
 const Step1Company = ({ formData, updateFormData, errors }: Step1Props) => {
+  const countryOptions = [
+    { value: "south-africa", label: "South Africa" },
+    { value: "lesotho", label: "Lesotho" },
+    { value: "zimbabwe", label: "Zimbabwe" },
+  ];
+
   const businessTypes = [
     { value: "owner-operator", label: "Owner-Operator" },
     { value: "small-fleet", label: "Small Fleet (1-5 vehicles)" },
@@ -66,6 +72,28 @@ const Step1Company = ({ formData, updateFormData, errors }: Step1Props) => {
             onChange={(e) => updateFormData({ tradingName: e.target.value })}
             placeholder="Optional trading name"
           />
+        </div>
+
+        <div>
+          <Label htmlFor="country">Country of Operation *</Label>
+          <Select
+            value={formData.country}
+            onValueChange={(value) => updateFormData({ country: value as any })}
+          >
+            <SelectTrigger className={errors.country ? "border-destructive" : ""}>
+              <SelectValue placeholder="Select country" />
+            </SelectTrigger>
+            <SelectContent>
+              {countryOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.country && (
+            <p className="text-sm text-destructive mt-1">{errors.country}</p>
+          )}
         </div>
       </div>
 
