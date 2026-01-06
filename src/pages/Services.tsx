@@ -118,9 +118,9 @@ const Services = () => {
                   ))}
                 </ul>
 
-                <Link to="/get-quote">
+                <Link to={service.id === 'parcel' ? '/small-parcel' : '/get-quote'}>
                   <Button variant="outline" className="w-full">
-                    Get Quote for {service.title.split(" (")[0]}
+                    {service.id === 'parcel' ? 'Book Small Parcel' : `Get Quote for ${service.title.split(" (")[0]}`}
                   </Button>
                 </Link>
               </div>

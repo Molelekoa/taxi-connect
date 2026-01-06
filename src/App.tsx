@@ -9,6 +9,7 @@ import CarrierSignup from "./pages/CarrierSignup";
 import HowItWorks from "./pages/HowItWorks";
 import Services from "./pages/Services";
 import FreightEstimator from "./pages/FreightEstimator";
+import SmallParcelBooking from "./pages/SmallParcelBooking";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import FAQ from "./pages/FAQ";
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/get-quote" element={<GetQuote />} />
           <Route path="/freight-estimator" element={<FreightEstimator />} />
+          <Route path="/small-parcel" element={<SmallParcelBooking />} />
           <Route path="/carrier-signup" element={<CarrierSignup />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/services" element={<Services />} />
