@@ -222,9 +222,9 @@ const Index = () => {
                 {services.find((s) => s.id === selectedService)?.description}
               </p>
               <div className="text-center">
-                <Link to="/get-quote">
+                <Link to={selectedService === 'parcel' ? '/small-parcel' : '/get-quote'}>
                   <Button variant="hero" size="lg">
-                    Get Quote for {services.find((s) => s.id === selectedService)?.title}
+                    {selectedService === 'parcel' ? 'Book Small Parcel' : `Get Quote for ${services.find((s) => s.id === selectedService)?.title}`}
                   </Button>
                 </Link>
               </div>

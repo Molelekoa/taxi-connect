@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Info, Package } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 import RouteMap from "@/components/RouteMap";
+import { PARCEL_SERVICE, getParcelPrice, isEligibleOrigin, type ParcelDestination } from "@/config/parcelService";
 
 const cargoTypes = [
   { value: "general", label: "General Dry Goods", multiplier: 1.0 },
@@ -53,23 +54,7 @@ const COUNTRY_CODE_TO_SADC: Record<string, string> = {
   'ZW': 'zimbabwe',
 };
 
-// ==========================================
-// SMALL PARCEL SERVICE
-// ==========================================
-const PARCEL_SERVICE = {
-  eligibleOrigins: ['johannesburg', 'pretoria', 'jhb', 'pta', 'randburg', 'sandton', 'centurion', 'midrand', 'rosebank', 'fourways'],
-  maxWeight: 5,
-  pricing: {
-    lesotho: [
-      { minKg: 0, maxKg: 3, price: 150 },
-      { minKg: 3, maxKg: 5, price: 800 },
-    ],
-    zimbabwe: [
-      { minKg: 0, maxKg: 3, price: 525 },   // Base R150 + 250%
-      { minKg: 3, maxKg: 5, price: 2800 },  // Base R800 + 250%
-    ],
-  },
-} as const;
+// Parcel service constants are now imported from @/config/parcelService
 
 // ==========================================
 // PRICING CONSTANTS
@@ -111,6 +96,7 @@ const calculateWeightMultiplier = (weight: number): number => {
 };
 
 const FreightEstimator = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     pickupLocation: "",
     deliveryLocation: "",
@@ -130,33 +116,31 @@ const FreightEstimator = () => {
 
   // Check parcel service eligibility
   const parcelOffer = useMemo(() => {
-    const pickup = formData.pickupLocation.toLowerCase();
     const weight = parseFloat(formData.weight);
 
-    // Check origin eligibility
-    const isEligibleOrigin = PARCEL_SERVICE.eligibleOrigins.some(
-      origin => pickup.includes(origin)
-    );
+    // Check origin eligibility using shared function
+    const originEligible = isEligibleOrigin(formData.pickupLocation);
 
     // Check destination eligibility (Lesotho or Zimbabwe only)
     const isLesotho = detectedCrossBorder === 'lesotho';
     const isZimbabwe = detectedCrossBorder === 'zimbabwe';
+    const destination: ParcelDestination | null = isLesotho ? 'lesotho' : isZimbabwe ? 'zimbabwe' : null;
 
     // Check weight eligibility
     const isEligibleWeight = weight >= 1 && weight <= PARCEL_SERVICE.maxWeight;
 
-    if (!isEligibleOrigin || (!isLesotho && !isZimbabwe) || !isEligibleWeight) {
+    if (!originEligible || !destination || !isEligibleWeight) {
       return { eligible: false, price: null, destination: null };
     }
 
-    // Get pricing tier
-    const pricing = isLesotho ? PARCEL_SERVICE.pricing.lesotho : PARCEL_SERVICE.pricing.zimbabwe;
-    const tier = pricing.find(t => weight > t.minKg && weight <= t.maxKg) || pricing[0];
+    // Get pricing using shared function
+    const price = getParcelPrice(destination, weight);
 
     return {
       eligible: true,
-      price: tier.price,
-      destination: isLesotho ? 'Lesotho' : 'Zimbabwe'
+      price,
+      destination: isLesotho ? 'Lesotho' : 'Zimbabwe',
+      destinationKey: destination
     };
   }, [formData.pickupLocation, formData.weight, detectedCrossBorder]);
 
@@ -520,11 +504,18 @@ const FreightEstimator = () => {
                   </p>
 
                   <div className="text-center mt-6">
-                    <Link to="/get-quote">
-                      <Button variant="hero" size="lg">
-                        Book Small Parcel Delivery
-                      </Button>
-                    </Link>
+                    <Button 
+                      variant="hero" 
+                      size="lg"
+                      onClick={() => navigate('/small-parcel', { 
+                        state: { 
+                          destination: parcelOffer.destinationKey, 
+                          weight: parseFloat(formData.weight) 
+                        } 
+                      })}
+                    >
+                      Book Small Parcel Delivery
+                    </Button>
                   </div>
                 </motion.div>
               )}
