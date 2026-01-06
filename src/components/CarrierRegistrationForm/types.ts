@@ -4,6 +4,9 @@ import { z } from "zod";
 export const step1Schema = z.object({
   legalBusinessName: z.string().min(2, "Legal business name is required"),
   tradingName: z.string().optional(),
+  country: z.enum(["south-africa", "lesotho", "zimbabwe"], {
+    required_error: "Please select your country of operation",
+  }),
   businessType: z.enum(["owner-operator", "small-fleet", "midsize-fleet", "large-fleet"], {
     required_error: "Please select your business type",
   }),
@@ -20,17 +23,19 @@ export const step1Schema = z.object({
 });
 
 // Step 2: Compliance & Licensing
+// Note: Fields are optional to allow Lesotho/Zimbabwe carriers who may have different documentation
 export const step2Schema = z.object({
-  cipcNumber: z.string().min(5, "CIPC registration number is required"),
-  taxVatNumber: z.string().min(5, "Tax/VAT number is required"),
-  transportLicenseNumber: z.string().min(5, "Transport Operating License number is required"),
-  pdpHolders: z.number().min(1, "At least 1 PDP holder is required"),
+  cipcNumber: z.string().optional(), // SA only - CIPC registration
+  taxVatNumber: z.string().optional(), // Tax registration (varies by country)
+  transportLicenseNumber: z.string().optional(), // Transport Operating License
+  pdpHolders: z.number().min(0).optional(), // SA specific - PDP holders
   crossBorderOperations: z.enum(["yes", "no"], {
     required_error: "Please indicate cross-border operations",
   }),
   crossBorderCountries: z.string().optional(),
   insuranceCertificate: z.string().optional(), // Will store file name/path
-  bbeeStatus: z.string().optional(),
+  bbeeStatus: z.string().optional(), // SA specific - B-BBEE
+  businessRegistrationNumber: z.string().optional(), // For Lesotho/Zimbabwe carriers
 });
 
 // Vehicle photos schema
@@ -98,6 +103,7 @@ export const initialFormData: CarrierFormData = {
   // Step 1
   legalBusinessName: "",
   tradingName: "",
+  country: "south-africa",
   businessType: "owner-operator",
   yearsInOperation: "",
   primaryContactPerson: "",
@@ -115,6 +121,7 @@ export const initialFormData: CarrierFormData = {
   crossBorderCountries: "",
   insuranceCertificate: "",
   bbeeStatus: "",
+  businessRegistrationNumber: "",
   // Step 3
   vehicles: [
     {
