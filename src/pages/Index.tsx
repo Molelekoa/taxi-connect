@@ -314,22 +314,62 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Quote Form Section */}
-      <motion.section
-        id="quote-form"
-        className="section-padding"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={fadeInUp}
-        transition={{ duration: 0.6 }}
-      >
+      {/* Small Parcel Cross-Border Highlight */}
+      <section className="section-padding">
         <div className="container-narrow">
-          <div className="max-w-2xl mx-auto">
-            <QuoteForm />
-          </div>
+          <motion.div
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-secondary to-primary/5 border border-primary/20 p-8 md:p-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+            transition={{ duration: 0.6 }}
+          >
+            {/* Decorative glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
+              {/* Left: Content */}
+              <div className="flex-1 text-center md:text-left">
+                <div className="inline-block px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-semibold mb-4">
+                  NEW SERVICE
+                </div>
+                <h2 className="font-display font-bold text-2xl md:text-3xl text-foreground mb-3">
+                  Small Parcel <span className="text-gradient">Cross-Border</span>
+                </h2>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                  Send packages up to 5 kg from Johannesburg or Pretoria to Lesotho and Zimbabwe. Fixed pricing, no surprises.
+                </p>
+                
+                {/* Price highlights */}
+                <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-6">
+                  <div className="px-4 py-2 rounded-xl bg-card border border-border">
+                    <span className="text-muted-foreground text-sm">Lesotho from</span>
+                    <span className="ml-2 font-display font-bold text-primary text-lg">R150</span>
+                  </div>
+                  <div className="px-4 py-2 rounded-xl bg-card border border-border">
+                    <span className="text-muted-foreground text-sm">Zimbabwe from</span>
+                    <span className="ml-2 font-display font-bold text-primary text-lg">R525</span>
+                  </div>
+                </div>
+
+                <Link to="/small-parcel">
+                  <Button variant="hero" size="lg">
+                    Book Small Parcel
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Right: Large typography accent */}
+              <div className="hidden md:block">
+                <div className="font-display font-black text-8xl lg:text-9xl text-primary/15 leading-none">
+                  PKG
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </motion.section>
+      </section>
 
       <Footer />
     </div>
