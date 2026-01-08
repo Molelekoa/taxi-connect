@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Info, Package } from "lucide-react";
+import { Loader2, Info, Package, TrendingUp } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,17 +16,13 @@ import {
 } from "@/components/ui/select";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 import RouteMap from "@/components/RouteMap";
-import { PARCEL_SERVICE, getParcelPrice, isEligibleOrigin, type ParcelDestination } from "@/config/parcelService";
-
-const cargoTypes = [
-  { value: "general", label: "General Dry Goods", multiplier: 1.0 },
-  { value: "perishables", label: "Perishables (Refrigerated)", multiplier: 1.4 },
-  { value: "hazardous", label: "Hazardous Materials", multiplier: 1.6 },
-  { value: "highvalue", label: "High-Value Goods", multiplier: 1.3 },
-  { value: "fragile", label: "Fragile", multiplier: 1.25 },
-  { value: "building", label: "Building Materials", multiplier: 1.1 },
-  { value: "vehicles", label: "Vehicles", multiplier: 1.5 },
-];
+import {
+  calculateDeliveryPrice,
+  calculateWeightPercentage,
+  WEIGHT_LIMITS,
+  HANDLING_FEE,
+  type PriceBreakdown,
+} from "@/config/pricingCalculator";
 
 // SADC country data: distances from Johannesburg (in km) and capital coordinates
 const SADC_DATA: Record<string, { distance: number; coordinates: { lng: number; lat: number }; capital: string }> = {
@@ -54,46 +49,17 @@ const COUNTRY_CODE_TO_SADC: Record<string, string> = {
   'ZW': 'zimbabwe',
 };
 
-// Parcel service constants are now imported from @/config/parcelService
-
-// ==========================================
-// PRICING CONSTANTS
-// ==========================================
-
-/** Base rates for freight calculation */
-const BASE_RATES = {
-  // Per-km rates (ZAR) - same for all routes
-  perKm: { min: 4.5, max: 12 },
-  // Minimum charge thresholds (ZAR)
-  minimumCharge: { min: 1500, max: 2500 },
-} as const;
-
-/** Surcharges and multipliers */
-const SURCHARGES = {
-  // FTL discount multipliers
-  ftlDiscount: { min: 0.85, max: 0.9 },
-  // Express delivery multiplier
-  express: 1.25,
-  // Temperature controlled multiplier
-  tempControlled: 1.3,
-} as const;
-
-/** Fixed fees (ZAR) */
-const FEES = {
-  liftgate: 650,
-  securityEscort: 2500,
-  liveTracking: 150,
-} as const;
-
-/** Calculate weight adjustment: discount for light packages, premium for heavy */
-const calculateWeightMultiplier = (weight: number): number => {
-  // 50% discount for packages under 50kg
-  if (weight < 50) return 0.5;
-  // 5% premium for every 100kg over 500kg
-  if (weight <= 500) return 1.0;
-  const incrementsOver500 = Math.ceil((weight - 500) / 100);
-  return 1 + (incrementsOver500 * 0.05);
-};
+// Common city options for quick selection
+const POPULAR_CITIES = [
+  { value: "Johannesburg", label: "Johannesburg" },
+  { value: "Pretoria", label: "Pretoria" },
+  { value: "Durban", label: "Durban" },
+  { value: "Bloemfontein", label: "Bloemfontein" },
+  { value: "Cape Town", label: "Cape Town" },
+  { value: "Maseru", label: "Maseru (Lesotho)" },
+  { value: "Harare", label: "Harare (Zimbabwe)" },
+  { value: "Bulawayo", label: "Bulawayo (Zimbabwe)" },
+];
 
 const ParcelEstimator = () => {
   const navigate = useNavigate();
@@ -101,48 +67,11 @@ const ParcelEstimator = () => {
     pickupLocation: "",
     deliveryLocation: "",
     weight: "",
-    cargoType: "general",
-    isFullTruckload: false,
-    liftgate: false,
-    express: false,
-    tempControlled: false,
-    securityEscort: false,
-    liveTracking: false,
   });
 
   const [showResult, setShowResult] = useState(false);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
+  const [priceBreakdown, setPriceBreakdown] = useState<PriceBreakdown | null>(null);
   const [detectedCrossBorder, setDetectedCrossBorder] = useState<string | null>(null);
-
-  // Check parcel service eligibility
-  const parcelOffer = useMemo(() => {
-    const weight = parseFloat(formData.weight);
-
-    // Check origin eligibility using shared function
-    const originEligible = isEligibleOrigin(formData.pickupLocation);
-
-    // Check destination eligibility (Lesotho or Zimbabwe only)
-    const isLesotho = detectedCrossBorder === 'lesotho';
-    const isZimbabwe = detectedCrossBorder === 'zimbabwe';
-    const destination: ParcelDestination | null = isLesotho ? 'lesotho' : isZimbabwe ? 'zimbabwe' : null;
-
-    // Check weight eligibility
-    const isEligibleWeight = weight >= 1 && weight <= PARCEL_SERVICE.maxWeight;
-
-    if (!originEligible || !destination || !isEligibleWeight) {
-      return { eligible: false, price: null, destination: null };
-    }
-
-    // Get pricing using shared function
-    const price = getParcelPrice(destination, weight);
-
-    return {
-      eligible: true,
-      price,
-      destination: isLesotho ? 'Lesotho' : 'Zimbabwe',
-      destinationKey: destination
-    };
-  }, [formData.pickupLocation, formData.weight, detectedCrossBorder]);
 
   // Use Mapbox for route calculation
   const { 
@@ -187,69 +116,31 @@ const ParcelEstimator = () => {
       }
     : null;
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  // Live percentage preview
+  const livePercentage = useMemo(() => {
+    const weight = parseFloat(formData.weight);
+    if (!weight || weight < WEIGHT_LIMITS.min || weight > WEIGHT_LIMITS.max) return null;
+    return calculateWeightPercentage(weight);
+  }, [formData.weight]);
+
+  const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setShowResult(false); // Hide result when form changes
+    setShowResult(false);
   };
 
   const calculateEstimate = () => {
     const weight = parseFloat(formData.weight) || 0;
-    if (weight <= 0 || !formData.cargoType) return;
+    if (weight < WEIGHT_LIMITS.min || weight > WEIGHT_LIMITS.max) return;
+    if (!formData.pickupLocation || !formData.deliveryLocation) return;
 
-    // Get cargo multiplier
-    const cargo = cargoTypes.find((c) => c.value === formData.cargoType);
-    const cargoMultiplier = cargo?.multiplier || 1.0;
+    const result = calculateDeliveryPrice(
+      formData.pickupLocation,
+      formData.deliveryLocation,
+      weight,
+      effectiveDistance || undefined
+    );
 
-    // Check if this is a full truckload
-    const isFTL = formData.isFullTruckload;
-
-    // Use Mapbox distance or SADC predefined distance
-    const distance = effectiveDistance || 500; // Fallback to 500km if no distance
-
-    // Base cost calculation (same per-km rate for all routes)
-    let minCost = distance * BASE_RATES.perKm.min * cargoMultiplier;
-    let maxCost = distance * BASE_RATES.perKm.max * cargoMultiplier;
-
-    // Apply weight multiplier (discount or premium)
-    const weightMultiplier = calculateWeightMultiplier(weight);
-    minCost *= weightMultiplier;
-    maxCost *= weightMultiplier;
-
-    // Apply full truckload discount
-    if (isFTL) {
-      minCost *= SURCHARGES.ftlDiscount.min;
-      maxCost *= SURCHARGES.ftlDiscount.max;
-    }
-
-    // Add special requirements - Fixed fees
-    if (formData.liftgate) {
-      minCost += FEES.liftgate;
-      maxCost += FEES.liftgate;
-    }
-    if (formData.securityEscort) {
-      minCost += FEES.securityEscort;
-      maxCost += FEES.securityEscort;
-    }
-    if (formData.liveTracking) {
-      minCost += FEES.liveTracking;
-      maxCost += FEES.liveTracking;
-    }
-
-    // Add special requirements - Multipliers
-    if (formData.express) {
-      minCost *= SURCHARGES.express;
-      maxCost *= SURCHARGES.express;
-    }
-    if (formData.tempControlled) {
-      minCost *= SURCHARGES.tempControlled;
-      maxCost *= SURCHARGES.tempControlled;
-    }
-
-    // Minimum charge
-    minCost = Math.max(minCost, BASE_RATES.minimumCharge.min);
-    maxCost = Math.max(maxCost, BASE_RATES.minimumCharge.max);
-
-    setPriceRange({ min: Math.round(minCost), max: Math.round(maxCost) });
+    setPriceBreakdown(result);
     setShowResult(true);
   };
 
@@ -257,10 +148,11 @@ const ParcelEstimator = () => {
     formData.pickupLocation &&
     formData.deliveryLocation &&
     formData.weight &&
-    parseFloat(formData.weight) > 0 &&
-    formData.cargoType;
+    parseFloat(formData.weight) >= WEIGHT_LIMITS.min &&
+    parseFloat(formData.weight) <= WEIGHT_LIMITS.max;
 
-  const selectedCargo = cargoTypes.find((c) => c.value === formData.cargoType);
+  const weightValue = parseFloat(formData.weight) || 0;
+  const isWeightValid = weightValue >= WEIGHT_LIMITS.min && weightValue <= WEIGHT_LIMITS.max;
 
   return (
     <div className="min-h-screen bg-background">
@@ -269,39 +161,89 @@ const ParcelEstimator = () => {
       <main className="pt-24 pb-16">
         <div className="container-narrow max-w-3xl mx-auto">
           {/* Header */}
-            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-xl">
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-xl">
             <div className="bg-primary text-primary-foreground p-6 md:p-8">
               <h1 className="font-display font-bold text-2xl md:text-3xl mb-2">
                 CourierConnect Parcel Pricing
               </h1>
               <p className="text-primary-foreground/80">
-                Get instant pricing for your parcel. We use taxi and bus networks for affordable, reliable delivery.
+                Get instant pricing for parcels 1-20kg. Our rates are based on bus/taxi fares with a sliding scale percentage.
               </p>
             </div>
 
             <div className="p-6 md:p-8 space-y-8">
-              {/* Step 1: Basic Details */}
+              {/* Pricing Explanation */}
+              <div className="bg-muted/50 rounded-lg p-4 text-sm">
+                <div className="flex items-start gap-3">
+                  <TrendingUp className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-foreground mb-1">Smart Pricing Model</p>
+                    <p className="text-muted-foreground">
+                      We charge a percentage of the bus fare for your route, plus R{HANDLING_FEE} handling:
+                    </p>
+                    <ul className="text-muted-foreground mt-2 space-y-1">
+                      <li>• <strong>1-5kg:</strong> 5% → 25% of bus fare</li>
+                      <li>• <strong>5-10kg:</strong> 25% → 40% of bus fare</li>
+                      <li>• <strong>10-20kg:</strong> 40% → 65% of bus fare</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Route Selection */}
               <section className="space-y-6 pb-8 border-b border-border">
                 <h2 className="font-display font-bold text-xl text-foreground">
-                  Step 1: Basic Shipment Details
+                  Route & Parcel Details
                 </h2>
 
                 <div className="grid gap-5">
                   <div className="space-y-2">
-                    <Label htmlFor="pickup">Pickup Location (City or Postal Code)*</Label>
+                    <Label htmlFor="pickup">Origin City *</Label>
+                    <Select
+                      value={formData.pickupLocation}
+                      onValueChange={(value) => handleInputChange("pickupLocation", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select origin city" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {POPULAR_CITIES.map((city) => (
+                          <SelectItem key={city.value} value={city.value}>
+                            {city.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Or type a custom location:</p>
                     <Input
                       id="pickup"
-                      placeholder="e.g., Johannesburg or 2000"
+                      placeholder="e.g., Randburg, Midrand"
                       value={formData.pickupLocation}
                       onChange={(e) => handleInputChange("pickupLocation", e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="delivery">Delivery Location (City or Postal Code)*</Label>
+                    <Label htmlFor="delivery">Destination City *</Label>
+                    <Select
+                      value={formData.deliveryLocation}
+                      onValueChange={(value) => handleInputChange("deliveryLocation", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select destination city" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {POPULAR_CITIES.map((city) => (
+                          <SelectItem key={city.value} value={city.value}>
+                            {city.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Or type a custom location:</p>
                     <Input
                       id="delivery"
-                      placeholder="e.g., Cape Town or 8001"
+                      placeholder="e.g., Maseru, Harare"
                       value={formData.deliveryLocation}
                       onChange={(e) => handleInputChange("deliveryLocation", e.target.value)}
                     />
@@ -368,100 +310,32 @@ const ParcelEstimator = () => {
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="weight">Total Weight (kg)*</Label>
+                    <Label htmlFor="weight">Parcel Weight (kg) *</Label>
                     <Input
                       id="weight"
                       type="number"
-                      placeholder="e.g., 500"
-                      min="1"
+                      placeholder="e.g., 5"
+                      min={WEIGHT_LIMITS.min}
+                      max={WEIGHT_LIMITS.max}
                       value={formData.weight}
                       onChange={(e) => handleInputChange("weight", e.target.value)}
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Cargo Type*</Label>
-                    <Select
-                      value={formData.cargoType}
-                      onValueChange={(value) => handleInputChange("cargoType", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select cargo type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cargoTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id="fullTruck"
-                      checked={formData.isFullTruckload}
-                      onCheckedChange={(checked) =>
-                        handleInputChange("isFullTruckload", checked === true)
-                      }
-                    />
-                    <Label htmlFor="fullTruck" className="cursor-pointer font-normal">
-                      Is this a Full Truckload (approx. 24+ pallets)?
-                    </Label>
-                  </div>
-                </div>
-              </section>
-
-              {/* Step 2: Special Requirements */}
-              <section className="space-y-6">
-                <h2 className="font-display font-bold text-xl text-foreground">
-                  Step 2: Special Requirements
-                </h2>
-                <p className="text-sm text-muted-foreground">Select all that apply:</p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    { id: "liftgate", label: "Liftgate required" },
-                    { id: "express", label: "Express delivery (within 48hrs)" },
-                    { id: "tempControlled", label: "Temperature controlled" },
-                    { id: "securityEscort", label: "Security escort requested" },
-                  ].map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3">
-                      <Checkbox
-                        id={item.id}
-                        checked={formData[item.id as keyof typeof formData] as boolean}
-                        onCheckedChange={(checked) =>
-                          handleInputChange(item.id, checked === true)
-                        }
-                      />
-                      <Label htmlFor={item.id} className="cursor-pointer font-normal">
-                        {item.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Value-Added Services */}
-                <div className="pt-4 border-t border-border">
-                  <h3 className="font-semibold text-foreground mb-3">Value-Added Services</h3>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/30 border border-border hover:border-primary/30 transition-colors">
-                      <Checkbox
-                        id="liveTracking"
-                        checked={formData.liveTracking}
-                        onCheckedChange={(checked) =>
-                          handleInputChange("liveTracking", checked === true)
-                        }
-                      />
-                      <div className="flex-1">
-                        <Label htmlFor="liveTracking" className="cursor-pointer font-normal flex items-center gap-2">
-                          Live Tracking
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Popular</span>
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-1">R150 per load — Real-time visibility for you and your customers</p>
+                    <p className="text-xs text-muted-foreground">
+                      Min {WEIGHT_LIMITS.min}kg — Max {WEIGHT_LIMITS.max}kg
+                    </p>
+                    
+                    {formData.weight && !isWeightValid && (
+                      <p className="text-xs text-destructive">
+                        Weight must be between {WEIGHT_LIMITS.min} and {WEIGHT_LIMITS.max}kg
+                      </p>
+                    )}
+                    
+                    {/* Live percentage preview */}
+                    {livePercentage !== null && (
+                      <div className="bg-primary/10 text-primary p-2 rounded text-xs font-medium">
+                        {weightValue}kg → {livePercentage.toFixed(1)}% of bus fare will apply
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </section>
@@ -475,12 +349,12 @@ const ParcelEstimator = () => {
                   disabled={!isFormValid}
                   className="px-10"
                 >
-                  Calculate My Estimate
+                  Calculate My Price
                 </Button>
               </div>
 
-              {/* Parcel Service Offer */}
-              {showResult && parcelOffer.eligible && (
+              {/* Price Result */}
+              {showResult && priceBreakdown && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -488,70 +362,78 @@ const ParcelEstimator = () => {
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <Package className="h-5 w-5 text-primary" />
-                    <span className="font-display font-bold text-lg text-foreground">Small Parcel Express</span>
-                    <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Best Value</span>
+                    <span className="font-display font-bold text-lg text-foreground">Your Parcel Price</span>
+                    <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                      {priceBreakdown.distanceCategory}
+                    </span>
                   </div>
-
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Great news! Your {formData.weight}kg shipment to {parcelOffer.destination} qualifies for our fixed-rate small parcel service.
-                  </p>
 
                   <div className="text-4xl md:text-5xl font-display font-black text-primary my-4">
-                    R {parcelOffer.price?.toLocaleString()}
+                    R {priceBreakdown.finalPrice.toLocaleString()}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Fixed rate — no surprises
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {priceBreakdown.note}
                   </p>
 
-                  <div className="text-center mt-6">
+                  {/* Price Breakdown */}
+                  <div className="bg-background/50 rounded-lg p-4 space-y-2 text-sm mb-6">
+                    <h4 className="font-semibold text-foreground mb-3">Price Breakdown</h4>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Route</span>
+                      <span className="text-foreground">{priceBreakdown.route}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Bus Fare (reference)</span>
+                      <span className="text-foreground">
+                        R {priceBreakdown.busFare.toLocaleString()}
+                        {priceBreakdown.busFareSource === "estimated" && (
+                          <span className="text-xs text-muted-foreground ml-1">(est.)</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Weight</span>
+                      <span className="text-foreground">{priceBreakdown.parcelWeightKg} kg</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Percentage Applied</span>
+                      <span className="text-foreground">{priceBreakdown.applicablePercentage}%</span>
+                    </div>
+                    <div className="flex justify-between border-t border-border pt-2 mt-2">
+                      <span className="text-muted-foreground">Transport Cost</span>
+                      <span className="text-foreground">R {priceBreakdown.transportCost.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Handling Fee</span>
+                      <span className="text-foreground">R {priceBreakdown.handlingFee}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-foreground border-t border-border pt-2 mt-2">
+                      <span>Total</span>
+                      <span>R {priceBreakdown.finalPrice.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="text-center">
                     <Button 
                       variant="hero" 
                       size="lg"
                       onClick={() => navigate('/small-parcel', { 
                         state: { 
-                          destination: parcelOffer.destinationKey, 
-                          weight: parseFloat(formData.weight) 
+                          origin: formData.pickupLocation,
+                          destination: formData.deliveryLocation, 
+                          weight: parseFloat(formData.weight),
+                          price: priceBreakdown.finalPrice
                         } 
                       })}
                     >
-                      Book Small Parcel Delivery
+                      Book This Delivery
                     </Button>
                   </div>
-                </motion.div>
-              )}
 
-              {/* Regular Freight Results */}
-              {showResult && !parcelOffer.eligible && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-8 p-6 md:p-8 bg-gradient-to-br from-muted/50 to-muted rounded-xl border-l-4 border-primary"
-                >
-                  <h3 className="font-display font-bold text-2xl text-foreground mb-2">
-                    Your Instant Estimate
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Based on {formData.weight} kg of {selectedCargo?.label || "goods"}.
+                  <p className="text-xs text-muted-foreground mt-4 text-center">
+                    <strong>Note:</strong> Final price confirmed at booking. Cross-border deliveries may be subject to customs requirements.
                   </p>
-
-                  <div className="text-4xl md:text-5xl font-display font-black text-primary my-4">
-                    R {priceRange.min.toLocaleString()} — R {priceRange.max.toLocaleString()}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    (Final quote subject to carrier confirmation)
-                  </p>
-
-                  <p className="text-xs text-muted-foreground mt-6 leading-relaxed">
-                    <strong>Disclaimer:</strong> This is an automated estimate only. Actual pricing will be confirmed by our team after reviewing your full shipment details. Additional fees may apply for access restrictions, waiting time, or special handling.
-                  </p>
-
-                  <div className="text-center mt-6">
-                    <Link to="/get-quote">
-                      <Button variant="default" size="lg" className="bg-foreground hover:bg-foreground/90 text-background">
-                        Get Your Official Quote →
-                      </Button>
-                    </Link>
-                  </div>
                 </motion.div>
               )}
             </div>
