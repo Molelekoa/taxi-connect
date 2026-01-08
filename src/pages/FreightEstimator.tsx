@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Info, Package, TrendingUp } from "lucide-react";
+import { Loader2, Info, Package } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,7 @@ import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 import RouteMap from "@/components/RouteMap";
 import {
   calculateDeliveryPrice,
-  calculateWeightPercentage,
   WEIGHT_LIMITS,
-  HANDLING_FEE,
   type PriceBreakdown,
 } from "@/config/pricingCalculator";
 
@@ -116,12 +114,6 @@ const ParcelEstimator = () => {
       }
     : null;
 
-  // Live percentage preview
-  const livePercentage = useMemo(() => {
-    const weight = parseFloat(formData.weight);
-    if (!weight || weight < WEIGHT_LIMITS.min || weight > WEIGHT_LIMITS.max) return null;
-    return calculateWeightPercentage(weight);
-  }, [formData.weight]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -172,23 +164,6 @@ const ParcelEstimator = () => {
             </div>
 
             <div className="p-6 md:p-8 space-y-8">
-              {/* Pricing Explanation */}
-              <div className="bg-muted/50 rounded-lg p-4 text-sm">
-                <div className="flex items-start gap-3">
-                  <TrendingUp className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-foreground mb-1">Smart Pricing Model</p>
-                    <p className="text-muted-foreground">
-                      We charge a percentage of the bus fare for your route, plus R{HANDLING_FEE} handling:
-                    </p>
-                    <ul className="text-muted-foreground mt-2 space-y-1">
-                      <li>• <strong>1-5kg:</strong> 5% → 25% of bus fare</li>
-                      <li>• <strong>5-10kg:</strong> 25% → 40% of bus fare</li>
-                      <li>• <strong>10-20kg:</strong> 40% → 65% of bus fare</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
 
               {/* Route Selection */}
               <section className="space-y-6 pb-8 border-b border-border">
@@ -330,12 +305,6 @@ const ParcelEstimator = () => {
                       </p>
                     )}
                     
-                    {/* Live percentage preview */}
-                    {livePercentage !== null && (
-                      <div className="bg-primary/10 text-primary p-2 rounded text-xs font-medium">
-                        {weightValue}kg → {livePercentage.toFixed(1)}% of bus fare will apply
-                      </div>
-                    )}
                   </div>
                 </div>
               </section>
@@ -372,45 +341,20 @@ const ParcelEstimator = () => {
                     R {priceBreakdown.finalPrice.toLocaleString()}
                   </div>
                   
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {priceBreakdown.note}
-                  </p>
 
-                  {/* Price Breakdown */}
+                  {/* Summary */}
                   <div className="bg-background/50 rounded-lg p-4 space-y-2 text-sm mb-6">
-                    <h4 className="font-semibold text-foreground mb-3">Price Breakdown</h4>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Route</span>
                       <span className="text-foreground">{priceBreakdown.route}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Bus Fare (reference)</span>
-                      <span className="text-foreground">
-                        R {priceBreakdown.busFare.toLocaleString()}
-                        {priceBreakdown.busFareSource === "estimated" && (
-                          <span className="text-xs text-muted-foreground ml-1">(est.)</span>
-                        )}
-                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Weight</span>
                       <span className="text-foreground">{priceBreakdown.parcelWeightKg} kg</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Percentage Applied</span>
-                      <span className="text-foreground">{priceBreakdown.applicablePercentage}%</span>
-                    </div>
-                    <div className="flex justify-between border-t border-border pt-2 mt-2">
-                      <span className="text-muted-foreground">Transport Cost</span>
-                      <span className="text-foreground">R {priceBreakdown.transportCost.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Handling Fee</span>
-                      <span className="text-foreground">R {priceBreakdown.handlingFee}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-foreground border-t border-border pt-2 mt-2">
-                      <span>Total</span>
-                      <span>R {priceBreakdown.finalPrice.toLocaleString()}</span>
+                      <span className="text-muted-foreground">Category</span>
+                      <span className="text-foreground">{priceBreakdown.distanceCategory}</span>
                     </div>
                   </div>
 
