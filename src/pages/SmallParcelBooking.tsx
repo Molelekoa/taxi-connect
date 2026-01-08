@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, CheckCircle, MapPin, AlertCircle } from "lucide-react";
+import { Package, CheckCircle, MapPin, TrendingUp } from "lucide-react";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -17,19 +17,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { PARCEL_SERVICE, getParcelPrice, isEligibleOrigin, type ParcelDestination } from "@/config/parcelService";
+import {
+  calculateDeliveryPrice,
+  calculateWeightPercentage,
+  WEIGHT_LIMITS,
+  HANDLING_FEE,
+} from "@/config/pricingCalculator";
+
+// Available cities for origin and destination
+const ORIGIN_CITIES = [
+  { value: "Johannesburg", label: "Johannesburg" },
+  { value: "Pretoria", label: "Pretoria" },
+  { value: "Durban", label: "Durban" },
+  { value: "Bloemfontein", label: "Bloemfontein" },
+  { value: "Cape Town", label: "Cape Town" },
+];
+
+const DESTINATION_CITIES = [
+  { value: "Johannesburg", label: "Johannesburg (SA)" },
+  { value: "Pretoria", label: "Pretoria (SA)" },
+  { value: "Durban", label: "Durban (SA)" },
+  { value: "Cape Town", label: "Cape Town (SA)" },
+  { value: "Bloemfontein", label: "Bloemfontein (SA)" },
+  { value: "Maseru", label: "Maseru (Lesotho)" },
+  { value: "Harare", label: "Harare (Zimbabwe)" },
+  { value: "Bulawayo", label: "Bulawayo (Zimbabwe)" },
+];
 
 const parcelBookingSchema = z.object({
   contactName: z.string().min(2, "Name is required"),
   email: z.string().email("Valid email required"),
   phone: z.string().min(10, "Valid phone number required"),
+  originCity: z.string().min(2, "Origin city is required"),
   pickupAddress: z.string().min(5, "Pickup address is required"),
   pickupDate: z.string().optional(),
-  destination: z.enum(["lesotho", "zimbabwe"]),
+  destinationCity: z.string().min(2, "Destination city is required"),
   deliveryAddress: z.string().min(3, "Delivery address is required"),
   recipientName: z.string().min(2, "Recipient name is required"),
   recipientPhone: z.string().min(10, "Recipient phone required"),
-  weight: z.number().min(1, "Minimum 1 kg").max(5, "Maximum 5 kg"),
+  weight: z.number().min(WEIGHT_LIMITS.min, `Minimum ${WEIGHT_LIMITS.min} kg`).max(WEIGHT_LIMITS.max, `Maximum ${WEIGHT_LIMITS.max} kg`),
   description: z.string().optional(),
 });
 
@@ -39,16 +65,22 @@ const SmallParcelBooking = () => {
   const location = useLocation();
   const { toast } = useToast();
   
-  // Pre-fill from freight estimator if available
-  const prefilled = location.state as { destination?: ParcelDestination; weight?: number } | null;
+  // Pre-fill from estimator if available
+  const prefilled = location.state as { 
+    origin?: string; 
+    destination?: string; 
+    weight?: number;
+    price?: number;
+  } | null;
 
   const [formData, setFormData] = useState<Partial<FormData>>({
     contactName: "",
     email: "",
     phone: "",
+    originCity: prefilled?.origin || "",
     pickupAddress: "",
     pickupDate: "",
-    destination: prefilled?.destination || undefined,
+    destinationCity: prefilled?.destination || "",
     deliveryAddress: "",
     recipientName: "",
     recipientPhone: "",
@@ -60,17 +92,18 @@ const SmallParcelBooking = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Calculate live price
-  const calculatedPrice = useMemo(() => {
-    if (!formData.destination || !formData.weight) return null;
-    return getParcelPrice(formData.destination, formData.weight);
-  }, [formData.destination, formData.weight]);
+  // Calculate live price using new pricing calculator
+  const priceBreakdown = useMemo(() => {
+    if (!formData.originCity || !formData.destinationCity || !formData.weight) return null;
+    if (formData.weight < WEIGHT_LIMITS.min || formData.weight > WEIGHT_LIMITS.max) return null;
+    return calculateDeliveryPrice(formData.originCity, formData.destinationCity, formData.weight);
+  }, [formData.originCity, formData.destinationCity, formData.weight]);
 
-  // Check origin eligibility
-  const originWarning = useMemo(() => {
-    if (!formData.pickupAddress || formData.pickupAddress.length < 3) return null;
-    return !isEligibleOrigin(formData.pickupAddress);
-  }, [formData.pickupAddress]);
+  // Live percentage preview
+  const livePercentage = useMemo(() => {
+    if (!formData.weight || formData.weight < WEIGHT_LIMITS.min || formData.weight > WEIGHT_LIMITS.max) return null;
+    return calculateWeightPercentage(formData.weight);
+  }, [formData.weight]);
 
   const handleInputChange = (field: keyof FormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -136,7 +169,7 @@ const SmallParcelBooking = () => {
                 Booking Confirmed!
               </h1>
               <p className="text-muted-foreground mb-2">
-                Your small parcel booking has been received.
+                Your parcel booking has been received.
               </p>
               <p className="text-muted-foreground mb-8">
                 We'll contact you within <strong className="text-foreground">1 hour</strong> to confirm pickup details.
@@ -159,7 +192,7 @@ const SmallParcelBooking = () => {
                   </li>
                   <li className="flex gap-3">
                     <span className="font-bold text-primary">4.</span>
-                    Parcel delivered to recipient in {formData.destination === 'lesotho' ? 'Lesotho' : 'Zimbabwe'}
+                    Parcel delivered to recipient in {formData.destinationCity}
                   </li>
                 </ol>
               </div>
@@ -190,69 +223,32 @@ const SmallParcelBooking = () => {
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
               <Package className="w-4 h-4" />
-              Small Parcel Express
+              CourierConnect Booking
             </div>
             <h1 className="font-display font-bold text-3xl md:text-4xl text-foreground mb-3">
-              Cross-Border Parcel Delivery
+              Book Your Parcel Delivery
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Fast, fixed-price delivery for small packages (1-5 kg) from Johannesburg & Pretoria to Lesotho and Zimbabwe.
+              Affordable parcel delivery ({WEIGHT_LIMITS.min}-{WEIGHT_LIMITS.max}kg) across South Africa, Lesotho, and Zimbabwe using our taxi/bus network.
             </p>
           </div>
 
-          {/* Pricing Cards */}
-          <div className="grid sm:grid-cols-2 gap-4 mb-10">
-            <motion.div
-              className={`p-6 rounded-xl border-2 transition-all cursor-pointer ${
-                formData.destination === 'lesotho'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border bg-card hover:border-primary/50'
-              }`}
-              onClick={() => handleInputChange('destination', 'lesotho')}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <MapPin className="w-5 h-5 text-primary" />
-                <h3 className="font-display font-bold text-lg text-foreground">Lesotho</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">1-3 kg</span>
-                  <span className="font-bold text-foreground">R150</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">3-5 kg</span>
-                  <span className="font-bold text-foreground">R800</span>
+          {/* Pricing Info */}
+          <div className="bg-muted/50 rounded-xl p-4 mb-8 text-sm">
+            <div className="flex items-start gap-3">
+              <TrendingUp className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-foreground mb-1">Sliding Scale Pricing</p>
+                <p className="text-muted-foreground">
+                  Price = % of bus fare + R{HANDLING_FEE} handling. Heavier parcels pay higher percentage:
+                </p>
+                <div className="flex flex-wrap gap-4 mt-2 text-xs">
+                  <span className="bg-background px-2 py-1 rounded">1-5kg: 5-25%</span>
+                  <span className="bg-background px-2 py-1 rounded">5-10kg: 25-40%</span>
+                  <span className="bg-background px-2 py-1 rounded">10-20kg: 40-65%</span>
                 </div>
               </div>
-            </motion.div>
-
-            <motion.div
-              className={`p-6 rounded-xl border-2 transition-all cursor-pointer ${
-                formData.destination === 'zimbabwe'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border bg-card hover:border-primary/50'
-              }`}
-              onClick={() => handleInputChange('destination', 'zimbabwe')}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <MapPin className="w-5 h-5 text-primary" />
-                <h3 className="font-display font-bold text-lg text-foreground">Zimbabwe</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">1-3 kg</span>
-                  <span className="font-bold text-foreground">R525</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">3-5 kg</span>
-                  <span className="font-bold text-foreground">R2,800</span>
-                </div>
-              </div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Booking Form */}
@@ -319,24 +315,34 @@ const SmallParcelBooking = () => {
                 </h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
+                    <Label>Origin City *</Label>
+                    <Select
+                      value={formData.originCity}
+                      onValueChange={(value) => handleInputChange('originCity', value)}
+                    >
+                      <SelectTrigger className={errors.originCity ? 'border-destructive' : ''}>
+                        <SelectValue placeholder="Select origin city" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ORIGIN_CITIES.map((city) => (
+                          <SelectItem key={city.value} value={city.value}>
+                            {city.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.originCity && <p className="text-destructive text-xs">{errors.originCity}</p>}
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="pickupAddress">Pickup Address *</Label>
                     <Input
                       id="pickupAddress"
                       value={formData.pickupAddress}
                       onChange={(e) => handleInputChange('pickupAddress', e.target.value)}
-                      placeholder="Full street address in Johannesburg or Pretoria"
+                      placeholder="Full street address"
                       className={errors.pickupAddress ? 'border-destructive' : ''}
                     />
                     {errors.pickupAddress && <p className="text-destructive text-xs">{errors.pickupAddress}</p>}
-                    {originWarning && (
-                      <div className="flex items-start gap-2 text-amber-600 text-xs mt-1">
-                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span>
-                          Small Parcel service is only available from Johannesburg and Pretoria areas.{" "}
-                          <Link to="/get-quote" className="underline">Need shipping from another location?</Link>
-                        </span>
-                      </div>
-                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pickupDate">Preferred Pickup Date (optional)</Label>
@@ -358,28 +364,31 @@ const SmallParcelBooking = () => {
                 </h3>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Destination Country *</Label>
+                    <Label>Destination City *</Label>
                     <Select
-                      value={formData.destination}
-                      onValueChange={(value) => handleInputChange('destination', value)}
+                      value={formData.destinationCity}
+                      onValueChange={(value) => handleInputChange('destinationCity', value)}
                     >
-                      <SelectTrigger className={errors.destination ? 'border-destructive' : ''}>
+                      <SelectTrigger className={errors.destinationCity ? 'border-destructive' : ''}>
                         <SelectValue placeholder="Select destination" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="lesotho">Lesotho</SelectItem>
-                        <SelectItem value="zimbabwe">Zimbabwe</SelectItem>
+                        {DESTINATION_CITIES.map((city) => (
+                          <SelectItem key={city.value} value={city.value}>
+                            {city.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
-                    {errors.destination && <p className="text-destructive text-xs">{errors.destination}</p>}
+                    {errors.destinationCity && <p className="text-destructive text-xs">{errors.destinationCity}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="deliveryAddress">City / Area *</Label>
+                    <Label htmlFor="deliveryAddress">Delivery Address / Area *</Label>
                     <Input
                       id="deliveryAddress"
                       value={formData.deliveryAddress}
                       onChange={(e) => handleInputChange('deliveryAddress', e.target.value)}
-                      placeholder={formData.destination === 'lesotho' ? 'e.g., Maseru' : 'e.g., Harare'}
+                      placeholder="Full address or area name"
                       className={errors.deliveryAddress ? 'border-destructive' : ''}
                     />
                     {errors.deliveryAddress && <p className="text-destructive text-xs">{errors.deliveryAddress}</p>}
@@ -418,16 +427,23 @@ const SmallParcelBooking = () => {
                     <Input
                       id="weight"
                       type="number"
-                      min="1"
-                      max="5"
+                      min={WEIGHT_LIMITS.min}
+                      max={WEIGHT_LIMITS.max}
                       step="0.1"
                       value={formData.weight || ''}
                       onChange={(e) => handleInputChange('weight', parseFloat(e.target.value) || 0)}
-                      placeholder="1-5 kg"
+                      placeholder={`${WEIGHT_LIMITS.min}-${WEIGHT_LIMITS.max} kg`}
                       className={errors.weight ? 'border-destructive' : ''}
                     />
                     {errors.weight && <p className="text-destructive text-xs">{errors.weight}</p>}
-                    <p className="text-xs text-muted-foreground">Maximum 5 kg per parcel</p>
+                    <p className="text-xs text-muted-foreground">
+                      {WEIGHT_LIMITS.min}kg minimum — {WEIGHT_LIMITS.max}kg maximum
+                    </p>
+                    {livePercentage !== null && (
+                      <p className="text-xs text-primary font-medium">
+                        {formData.weight}kg → {livePercentage.toFixed(1)}% of bus fare
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Contents Description (optional)</Label>
@@ -443,19 +459,41 @@ const SmallParcelBooking = () => {
               </section>
 
               {/* Live Price Display */}
-              {calculatedPrice && (
+              {priceBreakdown && (
                 <motion.div
-                  className="bg-primary/10 border border-primary/20 rounded-xl p-6 text-center"
+                  className="bg-primary/10 border border-primary/20 rounded-xl p-6"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <p className="text-sm text-muted-foreground mb-1">Your Price</p>
-                  <p className="font-display font-bold text-4xl text-primary">
-                    R{calculatedPrice.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Fixed price • No hidden fees
-                  </p>
+                  <div className="text-center mb-4">
+                    <p className="text-sm text-muted-foreground mb-1">Your Price</p>
+                    <p className="font-display font-bold text-4xl text-primary">
+                      R{priceBreakdown.finalPrice.toLocaleString()}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-background/50 rounded-lg p-3 text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Route</span>
+                      <span>{priceBreakdown.route}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Bus Fare</span>
+                      <span>R{priceBreakdown.busFare}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Percentage</span>
+                      <span>{priceBreakdown.applicablePercentage}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Transport</span>
+                      <span>R{priceBreakdown.transportCost}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Handling</span>
+                      <span>R{priceBreakdown.handlingFee}</span>
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
@@ -465,9 +503,9 @@ const SmallParcelBooking = () => {
                 variant="hero"
                 size="xl"
                 className="w-full"
-                disabled={isSubmitting || originWarning || !formData.destination}
+                disabled={isSubmitting || !formData.originCity || !formData.destinationCity || !priceBreakdown}
               >
-                {isSubmitting ? "Submitting..." : "Book Now"}
+                {isSubmitting ? "Submitting..." : `Book Now${priceBreakdown ? ` — R${priceBreakdown.finalPrice}` : ''}`}
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">
