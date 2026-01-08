@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, CheckCircle, MapPin, TrendingUp } from "lucide-react";
+import { Package, CheckCircle, MapPin } from "lucide-react";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -19,9 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   calculateDeliveryPrice,
-  calculateWeightPercentage,
   WEIGHT_LIMITS,
-  HANDLING_FEE,
 } from "@/config/pricingCalculator";
 
 // Available cities for origin and destination
@@ -99,11 +97,6 @@ const SmallParcelBooking = () => {
     return calculateDeliveryPrice(formData.originCity, formData.destinationCity, formData.weight);
   }, [formData.originCity, formData.destinationCity, formData.weight]);
 
-  // Live percentage preview
-  const livePercentage = useMemo(() => {
-    if (!formData.weight || formData.weight < WEIGHT_LIMITS.min || formData.weight > WEIGHT_LIMITS.max) return null;
-    return calculateWeightPercentage(formData.weight);
-  }, [formData.weight]);
 
   const handleInputChange = (field: keyof FormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -233,23 +226,6 @@ const SmallParcelBooking = () => {
             </p>
           </div>
 
-          {/* Pricing Info */}
-          <div className="bg-muted/50 rounded-xl p-4 mb-8 text-sm">
-            <div className="flex items-start gap-3">
-              <TrendingUp className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-foreground mb-1">Sliding Scale Pricing</p>
-                <p className="text-muted-foreground">
-                  Price = % of bus fare + R{HANDLING_FEE} handling. Heavier parcels pay higher percentage:
-                </p>
-                <div className="flex flex-wrap gap-4 mt-2 text-xs">
-                  <span className="bg-background px-2 py-1 rounded">1-5kg: 5-25%</span>
-                  <span className="bg-background px-2 py-1 rounded">5-10kg: 25-40%</span>
-                  <span className="bg-background px-2 py-1 rounded">10-20kg: 40-65%</span>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Booking Form */}
           <motion.form
@@ -439,11 +415,6 @@ const SmallParcelBooking = () => {
                     <p className="text-xs text-muted-foreground">
                       {WEIGHT_LIMITS.min}kg minimum — {WEIGHT_LIMITS.max}kg maximum
                     </p>
-                    {livePercentage !== null && (
-                      <p className="text-xs text-primary font-medium">
-                        {formData.weight}kg → {livePercentage.toFixed(1)}% of bus fare
-                      </p>
-                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Contents Description (optional)</Label>
@@ -478,20 +449,12 @@ const SmallParcelBooking = () => {
                       <span>{priceBreakdown.route}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Bus Fare</span>
-                      <span>R{priceBreakdown.busFare}</span>
+                      <span className="text-muted-foreground">Weight</span>
+                      <span>{priceBreakdown.parcelWeightKg} kg</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Percentage</span>
-                      <span>{priceBreakdown.applicablePercentage}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Transport</span>
-                      <span>R{priceBreakdown.transportCost}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Handling</span>
-                      <span>R{priceBreakdown.handlingFee}</span>
+                      <span className="text-muted-foreground">Category</span>
+                      <span>{priceBreakdown.distanceCategory}</span>
                     </div>
                   </div>
                 </motion.div>
