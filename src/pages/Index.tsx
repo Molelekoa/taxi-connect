@@ -4,39 +4,30 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import QuoteForm from "@/components/QuoteForm";
+import { Package, Bus, MapPin, Banknote, Clock, Shield, Users } from "lucide-react";
 import heroImage from "@/assets/hero-truck.jpg";
 
-const services = [
+const parcelSizes = [
   {
-    id: "ftl",
-    abbr: "FTL",
-    title: "Full Truckload",
-    description: "Dedicated capacity for large shipments. Your freight gets exclusive use of the entire trailer, ensuring fast transit times and reduced handling. Ideal for shipments over 4,500 kg or 10+ pallets.",
+    id: "small",
+    abbr: "S",
+    title: "Small",
+    weight: "1-5 kg",
+    description: "Documents, electronics, small packages. Perfect for e-commerce items, personal deliveries, and urgent documents.",
   },
   {
-    id: "ltl",
-    abbr: "LTL",
-    title: "Less Than Truckload",
-    description: "Cost-effective shipping for smaller loads. Share trailer space with other shippers to reduce costs while still getting reliable service. Perfect for shipments between 70–4,500 kg.",
+    id: "medium",
+    abbr: "M",
+    title: "Medium",
+    weight: "5-10 kg",
+    description: "Larger boxes, multiple items. Ideal for online shopping orders, care packages, and business supplies.",
   },
   {
-    id: "expedited",
-    abbr: "EXP",
-    title: "Expedited",
-    description: "Time-critical deliveries when every hour counts. Dedicated equipment, direct routes, and priority handling ensure your urgent freight arrives on schedule. Available 24/7.",
-  },
-  {
-    id: "specialized",
-    abbr: "SPEC",
-    title: "Specialized",
-    description: "Custom solutions for unique freight requirements. Temperature-controlled, hazmat, oversized, or high-value cargo—we have the expertise and carrier network to handle it safely.",
-  },
-  {
-    id: "parcel",
-    abbr: "PKG",
-    title: "Small Parcel",
-    description: "Affordable cross-border delivery for small packages (1-5 kg) from Johannesburg and Pretoria to Lesotho and Zimbabwe. Fixed pricing from R150. Fast, reliable, and hassle-free.",
+    id: "large",
+    abbr: "L",
+    title: "Large",
+    weight: "10-20 kg",
+    description: "Suitcase-sized cargo. Great for bulk goods, essential supplies, and heavier shipments.",
   },
 ];
 
@@ -59,7 +50,7 @@ const scaleIn = {
 };
 
 const Index = () => {
-  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const heroRef = useRef<HTMLElement>(null);
   
   const { scrollYProgress } = useScroll({
@@ -69,7 +60,7 @@ const Index = () => {
   
   const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const backgroundScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
-  const overlayOpacity = useTransform(scrollYProgress, [0, 0.5], [0.5, 0.8]);
+  const overlayOpacity = useTransform(scrollYProgress, [0, 0.5], [0.6, 0.85]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -84,11 +75,11 @@ const Index = () => {
         >
           <motion.img
             src={heroImage}
-            alt="Modern truck on highway"
+            alt="Bus traveling on a highway"
             className="w-full h-full object-cover"
             style={{ scale: backgroundScale }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
+            animate={{ opacity: 0.4 }}
             transition={{ duration: 1.5, ease: "easeOut" }}
           />
         </motion.div>
@@ -108,15 +99,25 @@ const Index = () => {
         />
 
         <div className="container-narrow relative z-10 text-center">
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Bus className="h-4 w-4 text-primary" />
+            <span className="text-sm text-primary font-medium">Powered by taxis & buses</span>
+          </motion.div>
+          
           <motion.h1
             className="font-display font-extrabold text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
-            Powerful Logistics.
+            Smart Parcel Delivery.
             <br />
-            <span className="text-gradient">Simple Process.</span>
+            <span className="text-gradient">Affordable Rates.</span>
           </motion.h1>
           <motion.p
             className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
@@ -124,17 +125,22 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
           >
-            Dyno Dash connects your freight with our vetted carrier network. Fast, reliable, and transparent.
+            CourierConnect uses existing taxi and bus routes to deliver your parcels across South Africa, Lesotho, and Zimbabwe — fast and affordable.
           </motion.p>
           <motion.div
-            className="mt-10"
+            className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
           >
-            <Link to="/get-quote">
+            <Link to="/small-parcel">
               <Button variant="hero" size="xl">
-                Get a Free Quote
+                Send a Parcel
+              </Button>
+            </Link>
+            <Link to="/freight-estimator">
+              <Button variant="outline" size="xl">
+                Get Pricing
               </Button>
             </Link>
           </motion.div>
@@ -153,7 +159,71 @@ const Index = () => {
         </motion.div>
       </section>
 
-      {/* Interactive Service Selector */}
+      {/* Value Proposition */}
+      <section className="section-padding bg-secondary/30">
+        <div className="container-narrow">
+          <motion.div
+            className="text-center mb-16"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground mb-4">
+              Why <span className="text-gradient">CourierConnect</span>?
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              We leverage underutilized space on vehicles already traveling these routes daily — turning everyday travel into reliable delivery.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="grid md:grid-cols-3 gap-8"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={staggerContainer}
+          >
+            {[
+              {
+                icon: Banknote,
+                title: "Affordable",
+                description: "Smart pricing based on discounted transport rates. Save up to 60% compared to traditional couriers.",
+              },
+              {
+                icon: MapPin,
+                title: "Wide Coverage",
+                description: "Access remote areas through our network of taxi ranks and bus routes across 3 countries.",
+              },
+              {
+                icon: Clock,
+                title: "Fast & Reliable",
+                description: "Daily departures on popular routes. Your parcel travels with scheduled passenger transport.",
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={item.title}
+                className="card-elevated p-8 text-center hover:border-primary/50 transition-all duration-300"
+                variants={fadeInUp}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-6">
+                  <item.icon className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="font-display font-bold text-xl text-foreground mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-muted-foreground">
+                  {item.description}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Parcel Size Selector */}
       <section className="section-padding">
         <div className="container-narrow">
           <motion.div
@@ -165,24 +235,27 @@ const Index = () => {
             transition={{ duration: 0.6 }}
           >
             <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground">
-              What are you <span className="text-gradient">shipping?</span>
+              What are you <span className="text-gradient">sending?</span>
             </h2>
+            <p className="text-muted-foreground mt-4">
+              We handle parcels from 1kg to 20kg — perfect for e-commerce, personal items, and essential goods.
+            </p>
           </motion.div>
 
-          {/* Service Cards - Typography Based */}
+          {/* Size Cards */}
           <motion.div
-            className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
             variants={staggerContainer}
           >
-            {services.map((service, index) => (
+            {parcelSizes.map((size, index) => (
               <motion.button
-                key={service.id}
-                onClick={() => setSelectedService(selectedService === service.id ? null : service.id)}
-                className={`p-6 md:p-8 rounded-2xl border-2 transition-all duration-300 text-center ${
-                  selectedService === service.id
+                key={size.id}
+                onClick={() => setSelectedSize(selectedSize === size.id ? null : size.id)}
+                className={`p-8 rounded-2xl border-2 transition-all duration-300 text-center ${
+                  selectedSize === size.id
                     ? "border-primary bg-primary/10 shadow-lg shadow-primary/20"
                     : "border-border bg-card hover:border-primary/50 hover:bg-secondary/50"
                 }`}
@@ -196,21 +269,22 @@ const Index = () => {
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
               >
-                {/* Bold Abbreviation */}
-                <div className={`font-display font-black text-4xl md:text-5xl mb-3 transition-colors ${
-                  selectedService === service.id ? "text-primary" : "text-primary/70"
+                {/* Size Letter */}
+                <div className={`font-display font-black text-5xl md:text-6xl mb-3 transition-colors ${
+                  selectedSize === size.id ? "text-primary" : "text-primary/70"
                 }`}>
-                  {service.abbr}
+                  {size.abbr}
                 </div>
-                <h3 className="font-display font-semibold text-foreground text-sm md:text-base">
-                  {service.title}
+                <h3 className="font-display font-semibold text-foreground text-lg mb-1">
+                  {size.title}
                 </h3>
+                <p className="text-sm text-muted-foreground">{size.weight}</p>
               </motion.button>
             ))}
           </motion.div>
 
-          {/* Selected Service Description */}
-          {selectedService && (
+          {/* Selected Size Description */}
+          {selectedSize && (
             <motion.div
               className="mt-8 p-6 md:p-8 rounded-2xl bg-secondary/50 border border-border"
               initial={{ opacity: 0, y: 20 }}
@@ -219,12 +293,12 @@ const Index = () => {
               transition={{ duration: 0.3 }}
             >
               <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-6">
-                {services.find((s) => s.id === selectedService)?.description}
+                {parcelSizes.find((s) => s.id === selectedSize)?.description}
               </p>
               <div className="text-center">
-                <Link to={selectedService === 'parcel' ? '/small-parcel' : '/get-quote'}>
+                <Link to="/small-parcel">
                   <Button variant="hero" size="lg">
-                    {selectedService === 'parcel' ? 'Book Small Parcel' : `Get Quote for ${services.find((s) => s.id === selectedService)?.title}`}
+                    Send {parcelSizes.find((s) => s.id === selectedSize)?.title} Parcel
                   </Button>
                 </Link>
               </div>
@@ -259,18 +333,18 @@ const Index = () => {
             {[
               {
                 step: "01",
-                title: "Submit",
-                description: "Tell us about your load in under 60 seconds.",
+                title: "Drop Off",
+                description: "Bring your parcel to a designated hub at a taxi rank or bus terminal.",
               },
               {
                 step: "02",
-                title: "Match",
-                description: "Our system finds the ideal carrier from our network.",
+                title: "We Transport",
+                description: "Your parcel travels on the next available taxi or bus heading to your destination.",
               },
               {
                 step: "03",
-                title: "Track",
-                description: "Receive updates and track your shipment seamlessly.",
+                title: "Collect",
+                description: "Recipient picks up from the destination hub, or we deliver to their door.",
               },
             ].map((item, index) => (
               <motion.div
@@ -314,7 +388,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Small Parcel Cross-Border Highlight */}
+      {/* Cross-Border Routes */}
       <section className="section-padding">
         <div className="container-narrow">
           <motion.div
@@ -331,14 +405,14 @@ const Index = () => {
             <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
               {/* Left: Content */}
               <div className="flex-1 text-center md:text-left">
-                <div className="inline-block px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-semibold mb-4">
-                  NEW SERVICE
+                <div className="inline-block px-3 py-1 rounded-full bg-accent/20 text-accent text-sm font-semibold mb-4">
+                  CROSS-BORDER
                 </div>
                 <h2 className="font-display font-bold text-2xl md:text-3xl text-foreground mb-3">
-                  Small Parcel <span className="text-gradient">Cross-Border</span>
+                  South Africa • Lesotho • <span className="text-gradient">Zimbabwe</span>
                 </h2>
                 <p className="text-muted-foreground mb-6 max-w-md">
-                  Send packages up to 5 kg from Johannesburg or Pretoria to Lesotho and Zimbabwe. Fixed pricing, no surprises.
+                  Send parcels across borders with our established taxi and bus routes. Transparent pricing, reliable delivery.
                 </p>
                 
                 {/* Price highlights */}
@@ -355,18 +429,52 @@ const Index = () => {
 
                 <Link to="/small-parcel">
                   <Button variant="hero" size="lg">
-                    Book Small Parcel
+                    Send Cross-Border
                   </Button>
                 </Link>
               </div>
 
               {/* Right: Large typography accent */}
               <div className="hidden md:block">
-                <div className="font-display font-black text-8xl lg:text-9xl text-primary/15 leading-none">
-                  PKG
+                <div className="font-display font-black text-7xl lg:text-8xl text-primary/15 leading-none">
+                  🇿🇦→🇱🇸
+                  <br />
+                  🇿🇦→🇿🇼
                 </div>
               </div>
             </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Trust Section */}
+      <section className="section-padding bg-secondary/30">
+        <div className="container-narrow">
+          <motion.div
+            className="grid md:grid-cols-3 gap-8 text-center"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={staggerContainer}
+          >
+            {[
+              { icon: Package, stat: "5,000+", label: "Parcels Delivered" },
+              { icon: Users, stat: "50+", label: "Transport Partners" },
+              { icon: Shield, stat: "100%", label: "Secure Handling" },
+            ].map((item, index) => (
+              <motion.div
+                key={item.label}
+                className="p-6"
+                variants={fadeInUp}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <item.icon className="h-8 w-8 text-primary mx-auto mb-4" />
+                <div className="font-display font-black text-4xl text-foreground mb-2">
+                  {item.stat}
+                </div>
+                <p className="text-muted-foreground">{item.label}</p>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>

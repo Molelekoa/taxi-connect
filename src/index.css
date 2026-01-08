@@ -6,48 +6,49 @@
 
 @layer base {
   :root {
-    --background: 0 0% 7%;
+    --background: 220 20% 8%;
     --foreground: 0 0% 100%;
 
-    --card: 0 0% 10%;
+    --card: 220 20% 11%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 10%;
+    --popover: 220 20% 11%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 24 100% 50%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 165 80% 45%;
+    --primary-foreground: 220 20% 8%;
 
-    --secondary: 0 0% 12%;
+    --secondary: 220 20% 14%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 10% 60%;
 
-    --accent: 24 100% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 45 95% 55%;
+    --accent-foreground: 220 20% 8%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 15%;
-    --ring: 24 100% 50%;
+    --border: 220 15% 22%;
+    --input: 220 15% 18%;
+    --ring: 165 80% 45%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(24 100% 50%) 0%, hsl(30 100% 55%) 100%);
-    --gradient-dark: linear-gradient(180deg, hsl(0 0% 7%) 0%, hsl(0 0% 10%) 100%);
-    --gradient-glow: radial-gradient(ellipse at center, hsl(24 100% 50% / 0.15) 0%, transparent 70%);
+    /* Custom gradients - teal/green for transit feel */
+    --gradient-primary: linear-gradient(135deg, hsl(165 80% 45%) 0%, hsl(180 70% 40%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(45 95% 55%) 0%, hsl(35 90% 50%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(220 20% 8%) 0%, hsl(220 20% 12%) 100%);
+    --gradient-glow: radial-gradient(ellipse at center, hsl(165 80% 45% / 0.15) 0%, transparent 70%);
     
     /* Shadows */
-    --shadow-glow: 0 0 60px hsl(24 100% 50% / 0.3);
+    --shadow-glow: 0 0 60px hsl(165 80% 45% / 0.25);
     --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.4);
   }
 
   .dark {
-    --background: 0 0% 7%;
+    --background: 220 20% 8%;
     --foreground: 0 0% 100%;
   }
 }
@@ -74,6 +75,11 @@
   .text-gradient {
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-primary);
+  }
+
+  .text-gradient-accent {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-accent);
   }
 
   .glow-effect {
