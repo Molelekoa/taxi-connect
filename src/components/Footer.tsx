@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { Link } from "react-router-dom";
+import { Package } from "lucide-react";
 
 const Footer = forwardRef<HTMLElement>((_, ref) => {
   return (
@@ -8,14 +9,15 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
         <div className="grid md:grid-cols-4 gap-12">
           {/* Logo & Description */}
           <div className="md:col-span-2">
-            <Link to="/" className="inline-block mb-4">
+            <Link to="/" className="inline-flex items-center gap-2 mb-4">
+              <Package className="h-6 w-6 text-primary" />
               <span className="font-display font-black text-2xl tracking-tight">
-                <span className="text-foreground">DYNO</span>
-                <span className="text-primary">DASH</span>
+                <span className="text-foreground">Courier</span>
+                <span className="text-primary">Connect</span>
               </span>
             </Link>
             <p className="text-muted-foreground max-w-sm">
-              Your trusted freight brokerage partner. Connecting shippers with reliable carriers for fast, transparent logistics.
+              The affordable, smart logistics bridge for Southern Africa. We turn everyday taxi and bus travel into reliable parcel delivery.
             </p>
           </div>
 
@@ -24,23 +26,23 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
             <h4 className="font-display font-semibold text-foreground mb-4">Quick Links</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/services" className="text-muted-foreground hover:text-primary transition-colors">
-                  Services
-                </Link>
-              </li>
-              <li>
                 <Link to="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors">
                   How It Works
                 </Link>
               </li>
               <li>
-                <Link to="/get-quote" className="text-muted-foreground hover:text-primary transition-colors">
-                  Get a Quote
+                <Link to="/freight-estimator" className="text-muted-foreground hover:text-primary transition-colors">
+                  Get Pricing
+                </Link>
+              </li>
+              <li>
+                <Link to="/small-parcel" className="text-muted-foreground hover:text-primary transition-colors">
+                  Send a Parcel
                 </Link>
               </li>
               <li>
                 <Link to="/carrier-signup" className="text-muted-foreground hover:text-primary transition-colors">
-                  Carrier Signup
+                  Partner With Us
                 </Link>
               </li>
               <li>
@@ -57,19 +59,19 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
             <ul className="space-y-3">
               <li>
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">Email</span>
-                <a href="mailto:info@dynodash.com" className="text-muted-foreground hover:text-primary transition-colors">
-                  info@dynodash.com
+                <a href="mailto:hello@courierconnect.co.za" className="text-muted-foreground hover:text-primary transition-colors">
+                  hello@courierconnect.co.za
                 </a>
               </li>
               <li>
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">Phone</span>
-                <a href="tel:+27115685343" className="text-muted-foreground hover:text-primary transition-colors">
-                  (011) 568 5343
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">WhatsApp</span>
+                <a href="https://wa.me/27115685343" className="text-muted-foreground hover:text-primary transition-colors">
+                  +27 11 568 5343
                 </a>
               </li>
               <li>
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">Location</span>
-                <span className="text-muted-foreground">Johannesburg, South Africa</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary block mb-0.5">Coverage</span>
+                <span className="text-muted-foreground">South Africa • Lesotho • Zimbabwe</span>
               </li>
             </ul>
           </div>
@@ -78,7 +80,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Dyno Dash. All rights reserved.
+            © {new Date().getFullYear()} CourierConnect. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>

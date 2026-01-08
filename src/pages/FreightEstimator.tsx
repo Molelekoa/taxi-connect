@@ -95,13 +95,13 @@ const calculateWeightMultiplier = (weight: number): number => {
   return 1 + (incrementsOver500 * 0.05);
 };
 
-const FreightEstimator = () => {
+const ParcelEstimator = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     pickupLocation: "",
     deliveryLocation: "",
     weight: "",
-    cargoType: "",
+    cargoType: "general",
     isFullTruckload: false,
     liftgate: false,
     express: false,
@@ -269,13 +269,13 @@ const FreightEstimator = () => {
       <main className="pt-24 pb-16">
         <div className="container-narrow max-w-3xl mx-auto">
           {/* Header */}
-          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-xl">
-            <div className="bg-foreground text-background p-6 md:p-8">
+            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-xl">
+            <div className="bg-primary text-primary-foreground p-6 md:p-8">
               <h1 className="font-display font-bold text-2xl md:text-3xl mb-2">
-                Dyno Dash Quick Freight Estimator
+                CourierConnect Parcel Pricing
               </h1>
-              <p className="text-background/80">
-                Get an instant estimate. We'll shop your load to our carrier network for the best final rate.
+              <p className="text-primary-foreground/80">
+                Get instant pricing for your parcel. We use taxi and bus networks for affordable, reliable delivery.
               </p>
             </div>
 
@@ -564,4 +564,4 @@ const FreightEstimator = () => {
   );
 };
 
-export default FreightEstimator;
+export default ParcelEstimator;

@@ -2,37 +2,41 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { MapPin, Bus, Package, CheckCircle } from "lucide-react";
 
 const steps = [
   {
     step: "01",
-    title: "Submit Your Load",
-    description: "Tell us about your load in under 60 seconds. Simply fill out our quick online form with your pickup and delivery locations, freight details, and any special requirements.",
+    title: "Book & Drop Off",
+    description: "Book your parcel online or via WhatsApp. Then drop off your package at one of our designated hubs — conveniently located at major taxi ranks and bus terminals.",
     details: [
-      "No account required to get a quote",
-      "Instant submission confirmation",
-      "Available 24/7, even on holidays",
+      "Book online in under 2 minutes",
+      "Pay via EFT, card, or cash at hub",
+      "Hubs in Johannesburg & Pretoria",
     ],
+    icon: MapPin,
   },
   {
     step: "02",
-    title: "We Match & Negotiate",
-    description: "Our logistics experts get to work immediately. We search our extensive carrier network to find the best match for your shipment, negotiating competitive rates on your behalf.",
+    title: "We Transport It",
+    description: "Your parcel is loaded onto the next available taxi or long-distance bus heading to your destination. Our partners are established transport operators running daily scheduled routes.",
     details: [
-      "Access to 10,000+ vetted carriers",
-      "Competitive rate negotiation",
-      "Carrier vetting for safety & reliability",
+      "Daily departures on popular routes",
+      "Secure handling and tracking",
+      "Trusted transport partners",
     ],
+    icon: Bus,
   },
   {
     step: "03",
-    title: "Track & Deliver",
-    description: "Once your carrier is confirmed, you'll receive real-time tracking updates. Our team monitors every shipment and proactively communicates any updates until delivery is complete.",
+    title: "Recipient Collects",
+    description: "The recipient is notified when the parcel arrives at the destination hub. They simply show ID and collect. We can also arrange last-mile delivery for an additional fee.",
     details: [
-      "Real-time GPS tracking",
-      "Proactive milestone updates",
-      "Dedicated support throughout transit",
+      "SMS notification on arrival",
+      "ID verification for security",
+      "Optional door-to-door delivery",
     ],
+    icon: Package,
   },
 ];
 
@@ -46,12 +50,37 @@ const HowItWorks = () => {
           {/* Hero */}
           <div className="text-center mb-16 max-w-3xl mx-auto">
             <h1 className="font-display font-bold text-4xl md:text-5xl text-foreground mb-4">
-              How <span className="text-gradient">Dyno Dash</span> Works
+              How <span className="text-gradient">CourierConnect</span> Works
             </h1>
             <p className="text-lg text-muted-foreground">
-              We've simplified freight logistics into three easy steps. From your first quote to final delivery, 
-              we handle everything so you can focus on your business.
+              We've built a smarter way to send parcels — leveraging the existing taxi and bus networks 
+              that already travel these routes every day.
             </p>
+          </div>
+
+          {/* The Innovation */}
+          <div className="card-elevated p-8 md:p-12 mb-16 text-center">
+            <h2 className="font-display font-bold text-2xl text-foreground mb-4">
+              The <span className="text-gradient">Smart Logistics</span> Advantage
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+              Instead of running expensive dedicated delivery vehicles, we partner with taxis and long-distance buses 
+              that are already traveling your route. This means lower costs for you and better utilization of existing transport infrastructure.
+            </p>
+            <div className="grid md:grid-cols-3 gap-6 mt-8">
+              <div className="p-4">
+                <div className="text-3xl font-display font-bold text-primary mb-2">60%</div>
+                <p className="text-sm text-muted-foreground">Cheaper than traditional couriers</p>
+              </div>
+              <div className="p-4">
+                <div className="text-3xl font-display font-bold text-primary mb-2">Daily</div>
+                <p className="text-sm text-muted-foreground">Departures on major routes</p>
+              </div>
+              <div className="p-4">
+                <div className="text-3xl font-display font-bold text-primary mb-2">3</div>
+                <p className="text-sm text-muted-foreground">Countries connected</p>
+              </div>
+            </div>
           </div>
 
           {/* Steps */}
@@ -80,7 +109,7 @@ const HowItWorks = () => {
                   <ul className="space-y-3">
                     {step.details.map((detail) => (
                       <li key={detail} className="flex items-center gap-3">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                        <CheckCircle className="h-4 w-4 text-primary shrink-0" />
                         <span className="text-foreground">{detail}</span>
                       </li>
                     ))}
@@ -89,10 +118,7 @@ const HowItWorks = () => {
 
                 <div className={`card-elevated p-8 ${index % 2 === 1 ? "lg:order-1" : ""}`}>
                   <div className="aspect-video bg-gradient-to-br from-primary/20 via-secondary to-primary/10 rounded-xl flex items-center justify-center">
-                    {/* Large decorative number */}
-                    <span className="font-display font-black text-8xl md:text-9xl text-primary/20">
-                      {step.step}
-                    </span>
+                    <step.icon className="h-20 w-20 text-primary/40" />
                   </div>
                 </div>
               </div>
@@ -104,23 +130,23 @@ const HowItWorks = () => {
             <div className="card-elevated p-8 md:p-12 max-w-2xl mx-auto">
               {/* Decorative element */}
               <div className="font-display font-black text-6xl text-primary/20 mb-4 leading-none">
-                60<span className="text-3xl align-top">sec</span>
+                2<span className="text-3xl align-top">min</span>
               </div>
               <h3 className="font-display font-bold text-2xl text-foreground mb-3">
-                Ready to Get Started?
+                Ready to Send a Parcel?
               </h3>
               <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                Get your free quote in under 60 seconds. Our team responds within 1 business hour.
+                Book your delivery in under 2 minutes. Get instant pricing and drop off at your nearest hub.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/get-quote">
+                <Link to="/small-parcel">
                   <Button variant="hero" size="lg">
-                    Get a Free Quote
+                    Send a Parcel
                   </Button>
                 </Link>
-              <a href="tel:+27115685343">
+                <a href="https://wa.me/27115685343">
                   <Button variant="outline" size="lg">
-                    (011) 568 5343
+                    WhatsApp Us
                   </Button>
                 </a>
               </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
@@ -9,11 +9,10 @@ const Navbar = () => {
 
   const navLinks = [
     { label: "Home", path: "/" },
-    { label: "Services", path: "/services" },
     { label: "How It Works", path: "/how-it-works" },
-    { label: "Get Estimate", path: "/freight-estimator" },
-    { label: "Get Quote", path: "/get-quote" },
-    { label: "Carrier Signup", path: "/carrier-signup" },
+    { label: "Pricing", path: "/freight-estimator" },
+    { label: "Send Parcel", path: "/small-parcel" },
+    { label: "Partner With Us", path: "/carrier-signup" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -21,17 +20,18 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-lg border-b border-border">
       <div className="container-narrow flex items-center justify-between h-16">
-        {/* Logo - Typography Only */}
-        <Link to="/" className="flex items-center gap-1">
-          <span className="font-display font-black text-2xl tracking-tight">
-            <span className="text-foreground">DYNO</span>
-            <span className="text-primary">DASH</span>
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2">
+          <Package className="h-7 w-7 text-primary" />
+          <span className="font-display font-black text-xl tracking-tight">
+            <span className="text-foreground">Courier</span>
+            <span className="text-primary">Connect</span>
           </span>
         </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center gap-8">
-          {navLinks.slice(0, 5).map((link) => (
+          {navLinks.slice(0, 4).map((link) => (
             <Link
               key={link.path}
               to={link.path}
@@ -50,12 +50,12 @@ const Navbar = () => {
         <div className="hidden lg:flex items-center gap-4">
           <Link to="/carrier-signup">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              Carrier Signup
+              Partner With Us
             </Button>
           </Link>
-          <Link to="/get-quote">
+          <Link to="/small-parcel">
             <Button variant="hero" size="default">
-              Get Quote
+              Send Parcel
             </Button>
           </Link>
         </div>
@@ -88,9 +88,9 @@ const Navbar = () => {
                 {link.label}
               </Link>
             ))}
-            <Link to="/get-quote" onClick={() => setIsOpen(false)}>
+            <Link to="/small-parcel" onClick={() => setIsOpen(false)}>
               <Button variant="hero" className="w-full mt-4">
-                Get Quote
+                Send Parcel
               </Button>
             </Link>
           </div>
