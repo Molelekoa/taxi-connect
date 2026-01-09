@@ -5,38 +5,38 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-semibold ring-offset-background transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        // Default: Sky blue - trustworthy
-        default: "bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] shadow-soft hover:shadow-card",
+        // Default: Confident Blue - high contrast
+        default: "bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 active:scale-[0.98]",
         
-        // Coral CTA - warm, friendly, attention-grabbing
-        coral: "bg-accent text-accent-foreground rounded-xl font-bold hover:scale-[1.02] active:scale-[0.98] shadow-coral-glow hover:shadow-elevated",
+        // Coral CTA - vibrant, action-oriented with white text
+        coral: "bg-accent text-accent-foreground rounded-xl font-bold hover:bg-accent/90 active:scale-[0.98] shadow-coral-glow",
         
-        // Hero button - prominent sky blue
-        hero: "bg-primary text-primary-foreground rounded-xl font-bold hover:scale-[1.02] active:scale-[0.98] shadow-card hover:shadow-elevated",
+        // Hero button - prominent blue
+        hero: "bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 active:scale-[0.98] shadow-soft",
         
-        // Destructive - softer red
+        // Destructive - distinct red
         destructive: "bg-destructive text-destructive-foreground rounded-xl hover:bg-destructive/90",
         
-        // Outline - clean border style
-        outline: "border-2 border-border bg-transparent text-foreground rounded-xl hover:bg-secondary hover:border-primary/40",
+        // Outline - clear border with blue text
+        outline: "border border-border bg-transparent text-primary font-semibold rounded-xl hover:bg-secondary hover:border-primary/50",
         
         // Secondary - subtle gray background
-        secondary: "bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/80",
+        secondary: "bg-secondary text-secondary-foreground rounded-xl hover:bg-muted",
         
         // Ghost - minimal hover effect
-        ghost: "rounded-xl hover:bg-secondary hover:text-foreground",
+        ghost: "rounded-xl text-foreground hover:bg-secondary",
         
-        // Link style
-        link: "text-primary underline-offset-4 hover:underline",
+        // Link style - blue text
+        link: "text-primary underline-offset-4 hover:underline font-semibold",
         
         // Navigation items
-        nav: "bg-transparent text-foreground hover:text-primary transition-colors rounded-lg",
+        nav: "bg-transparent text-muted-foreground hover:text-foreground transition-colors rounded-lg",
         
-        // Success - green confirmation
+        // Success - vibrant green
         success: "bg-success text-success-foreground rounded-xl hover:bg-success/90",
       },
       size: {

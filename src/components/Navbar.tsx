@@ -18,11 +18,11 @@ const Navbar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-b border-border shadow-soft">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-card backdrop-blur-sm border-b border-border">
       <div className="container-narrow flex items-center justify-between h-16">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-soft group-hover:shadow-card transition-shadow">
+          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:bg-primary/90 transition-colors">
             <Package className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-display font-bold text-xl tracking-tight">
@@ -31,19 +31,22 @@ const Navbar = () => {
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center gap-1">
+        {/* Desktop Navigation - High Contrast Tabs */}
+        <div className="hidden lg:flex items-center gap-0.5">
           {navLinks.slice(0, 4).map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-4 py-2 text-sm font-medium transition-colors relative ${
                 isActive(link.path)
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  ? "text-primary font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {link.label}
+              {isActive(link.path) && (
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />
+              )}
             </Link>
           ))}
         </div>
@@ -74,17 +77,17 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="lg:hidden bg-card border-t border-border shadow-card">
-          <div className="container-narrow py-4 space-y-2">
+        <div className="lg:hidden bg-card border-t border-border">
+          <div className="container-narrow py-4 space-y-1">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
                 onClick={() => setIsOpen(false)}
-                className={`block py-3 px-4 rounded-xl text-sm font-medium transition-all ${
+                className={`block py-3 px-4 rounded-lg text-sm font-medium transition-colors border-l-2 ${
                   isActive(link.path)
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "text-primary border-primary bg-primary/5 font-semibold"
+                    : "text-muted-foreground hover:text-foreground border-transparent hover:border-border"
                 }`}
               >
                 {link.label}
