@@ -1,87 +1,68 @@
 import { z } from "zod";
 
-// Step 1: Company & Primary Contact
+// Step 1: Personal Information
 export const step1Schema = z.object({
-  legalBusinessName: z.string().min(2, "Legal business name is required"),
-  tradingName: z.string().optional(),
-  country: z.enum(["south-africa", "lesotho", "zimbabwe"], {
-    required_error: "Please select your country of operation",
-  }),
-  businessType: z.enum(["owner-operator", "small-fleet", "midsize-fleet", "large-fleet"], {
-    required_error: "Please select your business type",
-  }),
-  yearsInOperation: z.string().min(1, "Please select years in operation"),
-  primaryContactPerson: z.string().min(2, "Contact person name is required"),
-  contactTitle: z.string().min(2, "Contact title is required"),
-  directPhone: z
+  fullName: z.string().min(2, "Full name is required"),
+  idNumber: z.string().min(6, "ID number is required"),
+  passportNumber: z.string().optional(),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z
     .string()
     .min(10, "Phone number must be at least 10 digits")
     .regex(/^[\d\s\-\(\)\+]+$/, "Please enter a valid phone number"),
-  email: z.string().email("Please enter a valid email address"),
   physicalAddress: z.string().min(5, "Physical address is required"),
-  website: z.string().optional(),
+  country: z.enum(["south-africa", "lesotho", "zimbabwe"], {
+    required_error: "Please select your country",
+  }),
 });
 
-// Step 2: Compliance & Licensing
-// Note: Fields are optional to allow Lesotho/Zimbabwe carriers who may have different documentation
+// Step 2: Driver & License Information
 export const step2Schema = z.object({
-  cipcNumber: z.string().optional(), // SA only - CIPC registration
-  taxVatNumber: z.string().optional(), // Tax registration (varies by country)
-  transportLicenseNumber: z.string().optional(), // Transport Operating License
-  pdpHolders: z.number().min(0).optional(), // SA specific - PDP holders
-  crossBorderOperations: z.enum(["yes", "no"], {
-    required_error: "Please indicate cross-border operations",
+  licenseType: z.string().min(1, "License type is required"),
+  yearsWithLicense: z.string().min(1, "Please select years with license"),
+  noCriminalRecord: z.boolean().refine((val) => val === true, {
+    message: "You must declare no criminal record to proceed",
   }),
-  crossBorderCountries: z.string().optional(),
-  insuranceCertificate: z.string().optional(), // Will store file name/path
-  bbeeStatus: z.string().optional(), // SA specific - B-BBEE
-  businessRegistrationNumber: z.string().optional(), // For Lesotho/Zimbabwe carriers
+  idCopyUploaded: z.string().min(1, "ID copy is required"),
+  licenseCopyUploaded: z.string().min(1, "Driver's license copy is required"),
 });
 
-// Vehicle photos schema
-export const vehiclePhotosSchema = z.object({
-  front: z.string().optional(),
-  side: z.string().optional(),
-  back: z.string().optional(),
-});
-
-// Vehicle entry for Step 3
-export const vehicleSchema = z.object({
-  id: z.string(),
-  vehicleType: z.string().min(1, "Vehicle type is required"),
-  quantity: z.number().min(1, "Quantity must be at least 1"),
-  minPayloadCapacity: z.string().min(1, "Minimum payload capacity is required"),
-  maxPayloadCapacity: z.string().min(1, "Maximum payload capacity is required"),
-  dimensionLength: z.string().min(1, "Length is required"),
-  dimensionWidth: z.string().min(1, "Width is required"),
-  dimensionHeight: z.string().min(1, "Height is required"),
-  features: z.array(z.string()).optional(),
-  photos: vehiclePhotosSchema.optional(),
-});
-
-export type VehiclePhotos = z.infer<typeof vehiclePhotosSchema>;
-
-// Step 3: Fleet Details
+// Step 3: Vehicle Details
 export const step3Schema = z.object({
-  vehicles: z.array(vehicleSchema).min(1, "At least one vehicle is required"),
-  trailerPreference: z.enum(["frequently", "if-needed", "no"], {
-    required_error: "Please select trailer preference",
+  vehicleOwnership: z.enum(["own", "financed", "rented", "company"], {
+    required_error: "Please select vehicle ownership",
+  }),
+  vehicleType: z.string().min(1, "Vehicle type is required"),
+  vehicleRegistration: z.string().min(1, "Registration number is required"),
+  vehicleYear: z.string().min(4, "Vehicle year is required"),
+  vehicleModel: z.string().min(1, "Vehicle make/model is required"),
+  vehicleColour: z.string().min(1, "Vehicle colour is required"),
+  minLoadCapacity: z.string().min(1, "Minimum load capacity is required"),
+  maxLoadCapacity: z.string().min(1, "Maximum load capacity is required"),
+  hasValidInsurance: z.boolean().refine((val) => val === true, {
+    message: "You must confirm valid vehicle insurance",
   }),
 });
 
-// Step 4: Operations
+// Step 4: Operations & Preferences
 export const step4Schema = z.object({
-  serviceRegions: z.array(z.string()).min(1, "Select at least one service region"),
-  preferredRoutes: z.string().optional(),
+  primaryServiceRegion: z.string().min(1, "Primary service region is required"),
+  additionalRegions: z.array(z.string()).optional(),
   cargoTypes: z.array(z.string()).min(1, "Select at least one cargo type"),
-  hazmatCertNumber: z.string().optional(),
-  loadPreference: z.string().optional(),
-  rateBasis: z.array(z.string()).optional(),
+  emergencyContactName: z.string().min(2, "Emergency contact name is required"),
+  emergencyContactRelation: z.string().min(1, "Relationship is required"),
+  emergencyContactPhone: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits")
+    .regex(/^[\d\s\-\(\)\+]+$/, "Please enter a valid phone number"),
 });
 
-// Step 5: Review (just referral source)
+// Step 5: Review & Submit
 export const step5Schema = z.object({
   referralSource: z.string().min(1, "Please tell us how you heard about us"),
+  termsAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms and conditions",
+  }),
 });
 
 // Full form schema
@@ -93,58 +74,44 @@ export const fullCarrierSchema = step1Schema
 
 export type Step1Data = z.infer<typeof step1Schema>;
 export type Step2Data = z.infer<typeof step2Schema>;
-export type VehicleEntry = z.infer<typeof vehicleSchema>;
 export type Step3Data = z.infer<typeof step3Schema>;
 export type Step4Data = z.infer<typeof step4Schema>;
 export type Step5Data = z.infer<typeof step5Schema>;
 export type CarrierFormData = z.infer<typeof fullCarrierSchema>;
 
 export const initialFormData: CarrierFormData = {
-  // Step 1
-  legalBusinessName: "",
-  tradingName: "",
-  country: "south-africa",
-  businessType: "owner-operator",
-  yearsInOperation: "",
-  primaryContactPerson: "",
-  contactTitle: "",
-  directPhone: "",
+  // Step 1 - Personal Info
+  fullName: "",
+  idNumber: "",
+  passportNumber: "",
   email: "",
+  phone: "",
   physicalAddress: "",
-  website: "",
-  // Step 2
-  cipcNumber: "",
-  taxVatNumber: "",
-  transportLicenseNumber: "",
-  pdpHolders: 1,
-  crossBorderOperations: "no",
-  crossBorderCountries: "",
-  insuranceCertificate: "",
-  bbeeStatus: "",
-  businessRegistrationNumber: "",
-  // Step 3
-  vehicles: [
-    {
-      id: crypto.randomUUID(),
-      vehicleType: "",
-      quantity: 1,
-      minPayloadCapacity: "",
-      maxPayloadCapacity: "",
-      dimensionLength: "",
-      dimensionWidth: "",
-      dimensionHeight: "",
-      features: [],
-      photos: { front: "", side: "", back: "" },
-    },
-  ],
-  trailerPreference: "no",
-  // Step 4
-  serviceRegions: [],
-  preferredRoutes: "",
+  country: "south-africa",
+  // Step 2 - Driver & License
+  licenseType: "",
+  yearsWithLicense: "",
+  noCriminalRecord: false,
+  idCopyUploaded: "",
+  licenseCopyUploaded: "",
+  // Step 3 - Vehicle
+  vehicleOwnership: "own",
+  vehicleType: "",
+  vehicleRegistration: "",
+  vehicleYear: "",
+  vehicleModel: "",
+  vehicleColour: "",
+  minLoadCapacity: "",
+  maxLoadCapacity: "",
+  hasValidInsurance: false,
+  // Step 4 - Operations
+  primaryServiceRegion: "",
+  additionalRegions: [],
   cargoTypes: [],
-  hazmatCertNumber: "",
-  loadPreference: "",
-  rateBasis: [],
-  // Step 5
+  emergencyContactName: "",
+  emergencyContactRelation: "",
+  emergencyContactPhone: "",
+  // Step 5 - Review
   referralSource: "",
+  termsAccepted: false,
 };
