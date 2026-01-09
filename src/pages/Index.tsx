@@ -66,67 +66,47 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Hero Section */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-        {/* Background Image with Parallax */}
-        <motion.div 
-          className="absolute inset-0"
-          style={{ y: backgroundY }}
-        >
-          <motion.img
-            src={heroImage}
-            alt="Bus traveling on a highway"
-            className="w-full h-full object-cover"
-            style={{ scale: backgroundScale }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
-          />
-        </motion.div>
-        <motion.div 
-          className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background"
-          style={{ opacity: overlayOpacity }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background/50" />
+      {/* Hero Section - Light, Airy, Friendly */}
+      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 bg-gradient-to-b from-background via-secondary/30 to-background">
+        {/* Soft decorative shapes */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
 
-        {/* Glow Effect */}
-        <motion.div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full opacity-20 blur-3xl"
-          style={{ background: "var(--gradient-glow)" }}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 0.2, scale: 1 }}
-          transition={{ duration: 1.2, delay: 0.3 }}
-        />
-
-        <div className="container-narrow relative z-10 text-center">
+        <div className="container-narrow relative z-10 text-center py-12">
+          {/* Friendly badge */}
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-card border border-border shadow-soft mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Bus className="h-4 w-4 text-primary" />
-            <span className="text-sm text-primary font-medium">Powered by taxis & buses</span>
+            <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
+              <Bus className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-sm text-foreground font-medium">Powered by taxis & buses</span>
           </motion.div>
           
           <motion.h1
-            className="font-display font-extrabold text-5xl md:text-6xl lg:text-7xl text-foreground leading-tight"
+            className="font-display font-bold text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
-            Smart Parcel Delivery.
+            Parcel delivery made
             <br />
-            <span className="text-gradient">Affordable Rates.</span>
+            <span className="text-gradient">simple & affordable</span>
           </motion.h1>
+          
           <motion.p
-            className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
+            className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
           >
-            CourierConnect uses existing taxi and bus routes to deliver your parcels across South Africa, Lesotho, and Zimbabwe — fast and affordable.
+            CourierConnect uses existing taxi and bus routes to deliver your parcels across South Africa, Lesotho, and Zimbabwe — fast and friendly.
           </motion.p>
+          
           <motion.div
             className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
             initial={{ opacity: 0, y: 20 }}
@@ -134,27 +114,52 @@ const Index = () => {
             transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
           >
             <Link to="/small-parcel">
-              <Button variant="hero" size="xl">
+              <Button variant="coral" size="xl">
                 Send a Parcel
               </Button>
             </Link>
             <Link to="/freight-estimator">
               <Button variant="outline" size="xl">
-                Get Pricing
+                Check Pricing
               </Button>
             </Link>
           </motion.div>
+
+          {/* Trust indicators */}
+          <motion.div
+            className="mt-16 flex flex-wrap items-center justify-center gap-8 text-muted-foreground"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.7, delay: 0.5 }}
+          >
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-success" />
+              <span className="text-sm font-medium">Secure handling</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              <span className="text-sm font-medium">Daily departures</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-accent" />
+              <span className="text-sm font-medium">Trusted drivers</span>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Scroll indicator */}
+        {/* Scroll indicator - friendlier style */}
         <motion.div
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.5 }}
         >
-          <div className="w-6 h-10 border-2 border-muted-foreground/50 rounded-full flex items-start justify-center pt-2 animate-float">
-            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
+          <div className="w-8 h-12 border-2 border-primary/30 rounded-full flex items-start justify-center pt-2">
+            <motion.div 
+              className="w-2 h-2 bg-primary rounded-full"
+              animate={{ y: [0, 12, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            />
           </div>
         </motion.div>
       </section>
