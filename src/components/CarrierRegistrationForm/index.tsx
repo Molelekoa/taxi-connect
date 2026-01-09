@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import ProgressIndicator from "./ProgressIndicator";
-import Step1Company from "./Step1Company";
-import Step2Compliance from "./Step2Compliance";
-import Step3Fleet from "./Step3Fleet";
+import Step1Personal from "./Step1Personal";
+import Step2License from "./Step2License";
+import Step3Vehicle from "./Step3Vehicle";
 import Step4Operations from "./Step4Operations";
 import Step5Review from "./Step5Review";
 import {
@@ -19,7 +19,7 @@ import {
   step5Schema,
 } from "./types";
 
-const STORAGE_KEY = "dyno-dash-carrier-registration";
+const STORAGE_KEY = "courierconnect-driver-registration";
 const TOTAL_STEPS = 5;
 
 const CarrierRegistrationForm = () => {
@@ -130,11 +130,11 @@ const CarrierRegistrationForm = () => {
 
     switch (currentStep) {
       case 1:
-        return <Step1Company {...stepProps} />;
+        return <Step1Personal {...stepProps} />;
       case 2:
-        return <Step2Compliance {...stepProps} />;
+        return <Step2License {...stepProps} />;
       case 3:
-        return <Step3Fleet {...stepProps} />;
+        return <Step3Vehicle {...stepProps} />;
       case 4:
         return <Step4Operations {...stepProps} />;
       case 5:
@@ -158,14 +158,14 @@ const CarrierRegistrationForm = () => {
           Application Submitted!
         </h2>
         <p className="text-muted-foreground text-lg mb-6 max-w-md mx-auto">
-          Thank you for applying to join the Dyno Dash carrier network. Our team will verify your 
+          Thank you for applying to become a CourierConnect delivery partner. Our team will verify your 
           documents and contact you within 2-3 business days.
         </p>
         <div className="p-4 rounded-lg bg-secondary/50 border border-border">
           <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">What happens next?</strong><br />
-            We'll review your compliance documents, verify your fleet information, and reach out 
-            to discuss partnership opportunities.
+            We'll verify your ID, driver's license, and vehicle details. Once approved, 
+            you'll receive access to our driver app and can start accepting deliveries.
           </p>
         </div>
       </motion.div>

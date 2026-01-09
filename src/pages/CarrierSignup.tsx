@@ -12,11 +12,11 @@ const CarrierSignup = () => {
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="font-display font-bold text-4xl md:text-5xl text-foreground mb-4">
-              Join the Dyno Dash{" "}
-              <span className="text-gradient">Carrier Network</span>
+              Become a{" "}
+              <span className="text-gradient">Delivery Partner</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Partner with Dyno Dash to access quality loads, reliable payment, and dedicated support. 
+              Join CourierConnect and earn by delivering parcels in your area. 
               Complete the application below to get started.
             </p>
           </div>
