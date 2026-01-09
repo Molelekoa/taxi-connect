@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Package } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PackageIcon, HomeIcon, PricingIcon, SendPackageIcon, PartnerIcon, TrackIcon } from "@/components/icons/AppIcons";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,7 +24,7 @@ const Navbar = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:bg-primary/90 transition-colors">
-            <Package className="h-5 w-5 text-primary-foreground" />
+            <PackageIcon size={20} className="text-primary-foreground" active />
           </div>
           <span className="font-display font-bold text-xl tracking-tight">
             <span className="text-foreground">Courier</span>
