@@ -8,26 +8,30 @@
  */
 export const BUS_FARE_DATABASE: Record<string, number> = {
   // South Africa to Zimbabwe (Long Distance)
-  "Johannesburg-Harare": 3000.00,
-  "Johannesburg-Bulawayo": 2750.00,
-  "Pretoria-Harare": 3125.00,
+  "Johannesburg-Harare": 1200.00,
+  "Johannesburg-Bulawayo": 1100.00,
+  "Pretoria-Harare": 1250.00,
   
   // South Africa to Lesotho (Medium Distance)
-  "Johannesburg-Maseru": 625.00,
-  "Bloemfontein-Maseru": 375.00,
-  "Durban-Maseru": 1250.00,
+  "Johannesburg-Maseru": 250.00,
+  "Bloemfontein-Maseru": 150.00,
+  "Durban-Maseru": 500.00,
   
   // Domestic South Africa
-  "Johannesburg-Pretoria": 300.00,
-  "Johannesburg-Durban": 1250.00,
-  "Johannesburg-Bloemfontein": 875.00,
-  "Johannesburg-Cape Town": 2000.00,
-  "Pretoria-Durban": 1375.00,
-  "Durban-Cape Town": 1875.00,
+  "Johannesburg-Pretoria": 120.00,
+  "Johannesburg-Durban": 500.00,
+  "Johannesburg-Bloemfontein": 350.00,
+  "Pretoria-Durban": 550.00,
 };
 
 /** Handling fee added to every delivery (ZAR) */
 export const HANDLING_FEE = 25.00;
+
+/** Price multiplier (150% increase = 2.5x) */
+export const PRICE_MULTIPLIER = 2.50;
+
+/** Minimum price floor (ZAR) */
+export const MINIMUM_PRICE = 135.00;
 
 /** Fallback fare per km when route not in database */
 export const FALLBACK_FARE_PER_KM = 1.50;
@@ -124,11 +128,11 @@ export interface PriceBreakdown {
   busFareSource: "database" | "estimated";
   parcelWeightKg: number;
   applicablePercentage: number;
-  transportCost: number;
-  handlingFee: number;
+  baseCalculatedPrice: number;
+  afterMultiplier: number;
+  minimumEnforced: boolean;
   finalPrice: number;
   currency: string;
-  note: string;
 }
 
 /**
@@ -160,14 +164,18 @@ export const calculateDeliveryPrice = (
     busFareSource = "estimated";
   }
   
-  // 2. Calculate applicable percentage and transport cost
+  // 2. Calculate applicable percentage and base price
   const applicablePercentage = calculateWeightPercentage(clampedWeight);
-  const transportCost = busFare * (applicablePercentage / 100);
+  const baseCalculatedPrice = (busFare * (applicablePercentage / 100)) + HANDLING_FEE;
   
-  // 3. Add handling fee for final price
-  const finalPrice = transportCost + HANDLING_FEE;
+  // 3. Apply 150% increase (multiply by 2.5)
+  const afterMultiplier = baseCalculatedPrice * PRICE_MULTIPLIER;
   
-  // 4. Prepare result breakdown
+  // 4. Enforce minimum price
+  const finalPrice = Math.max(MINIMUM_PRICE, afterMultiplier);
+  const minimumEnforced = finalPrice === MINIMUM_PRICE;
+  
+  // 5. Prepare result breakdown
   return {
     route: `${originCity} to ${destinationCity}`,
     distanceCategory: getDistanceCategory(originCity, destinationCity),
@@ -175,11 +183,11 @@ export const calculateDeliveryPrice = (
     busFareSource,
     parcelWeightKg: clampedWeight,
     applicablePercentage: Math.round(applicablePercentage * 10) / 10,
-    transportCost: Math.round(transportCost * 100) / 100,
-    handlingFee: HANDLING_FEE,
+    baseCalculatedPrice: Math.round(baseCalculatedPrice * 100) / 100,
+    afterMultiplier: Math.round(afterMultiplier * 100) / 100,
+    minimumEnforced,
     finalPrice: Math.round(finalPrice * 100) / 100,
     currency: "ZAR",
-    note: `Price based on ${Math.round(applicablePercentage * 10) / 10}% of bus fare.`,
   };
 };
 
