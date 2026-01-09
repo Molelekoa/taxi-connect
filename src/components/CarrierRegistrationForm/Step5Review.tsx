@@ -1,5 +1,6 @@
 import { CarrierFormData } from "./types";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -7,7 +8,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, FileCheck, Truck, MapPin, CheckCircle } from "lucide-react";
+import {
+  User,
+  CreditCard,
+  Car,
+  MapPin,
+  CheckCircle,
+  FileText,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Step5Props {
   formData: CarrierFormData;
@@ -15,229 +24,144 @@ interface Step5Props {
   errors: Record<string, string>;
 }
 
-const referralSources = [
-  "Google Search",
-  "Referral from Another Carrier",
-  "Industry Event / Trade Show",
-  "Social Media",
-  "Load Board",
-  "Other",
-];
-
 const Step5Review = ({ formData, updateFormData, errors }: Step5Props) => {
-  const businessTypeLabels: Record<string, string> = {
-    "owner-operator": "Owner-Operator",
-    "small-fleet": "Small Fleet (1-5 vehicles)",
-    "midsize-fleet": "Midsize Fleet (6-25 vehicles)",
-    "large-fleet": "Large Fleet (25+ vehicles)",
+  const referralOptions = [
+    "Google / Search Engine",
+    "Facebook / Social Media",
+    "Friend / Family Referral",
+    "Existing Driver Referral",
+    "Job Board / Advertisement",
+    "Other",
+  ];
+
+  const formatLicenseType = (type: string) => {
+    const types: Record<string, string> = {
+      "code-a": "Code A (Motorcycle)",
+      "code-b": "Code B (Light Motor Vehicle)",
+      "code-c1": "Code C1 (Light Heavy Vehicle)",
+      "code-c": "Code C (Heavy Vehicle)",
+      "code-eb": "Code EB (Light Vehicle with Trailer)",
+      "code-ec1": "Code EC1 (Articulated Vehicle up to 16,000 kg)",
+      "code-ec": "Code EC (Articulated Heavy Vehicle)",
+    };
+    return types[type] || type;
   };
 
-  const regionLabels: Record<string, string> = {
-    gauteng: "Gauteng",
-    "western-cape": "Western Cape",
-    "kwazulu-natal": "KwaZulu-Natal",
-    "eastern-cape": "Eastern Cape",
-    "free-state": "Free State",
-    "cross-border": "Cross-Border (SADC)",
-    national: "National Coverage",
+  const formatVehicleType = (type: string) => {
+    const types: Record<string, string> = {
+      motorcycle: "Motorcycle/Scooter",
+      hatchback: "Hatchback",
+      sedan: "Sedan",
+      suv: "SUV/Crossover",
+      bakkie: "Bakkie/Pickup",
+      minivan: "Minivan/Kombi",
+      "panel-van": "Panel Van",
+      "small-truck": "Small Truck (1-3 ton)",
+    };
+    return types[type] || type;
+  };
+
+  const formatRegion = (region: string) => {
+    return region
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   const cargoLabels: Record<string, string> = {
-    "general-freight": "General Freight",
-    hazardous: "Hazardous Materials",
-    perishables: "Perishables",
-    "high-value": "High-Value Goods",
+    documents: "Documents & Paperwork",
+    electronics: "Electronic Devices",
+    medication: "Medication & Pharmacy",
     automotive: "Automotive Parts",
-    bulk: "Bulk Materials",
-    livestock: "Live Animals",
-    other: "Other",
+    clothing: "Clothing & Apparel",
+    "food-ambient": "Food (Non-perishable)",
+    gifts: "Gifts & Personal Items",
+    books: "Books & Printed Materials",
   };
 
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h2 className="font-display font-bold text-2xl text-foreground mb-2">
-          Review & Finish
+        <h2 className="font-display font-bold text-2xl text-foreground mb-2 flex items-center gap-2">
+          <CheckCircle className="w-6 h-6 text-primary" />
+          Review Your Application
         </h2>
         <p className="text-muted-foreground">
-          Please verify your information before submitting.
+          Please review your information before submitting. You can go back to make changes.
         </p>
       </div>
 
-      {/* Company Summary */}
-      <div className="p-5 rounded-xl border border-border bg-secondary/30">
-        <div className="flex items-center gap-2 mb-4">
-          <Building2 className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Company Information</h3>
-        </div>
-        <div className="grid md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-muted-foreground">Legal Name:</span>
-            <p className="text-foreground font-medium">{formData.legalBusinessName}</p>
-          </div>
-          {formData.tradingName && (
-            <div>
-              <span className="text-muted-foreground">Trading As:</span>
-              <p className="text-foreground font-medium">{formData.tradingName}</p>
-            </div>
-          )}
-          <div>
-            <span className="text-muted-foreground">Business Type:</span>
-            <p className="text-foreground font-medium">
-              {businessTypeLabels[formData.businessType]}
-            </p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Years in Operation:</span>
-            <p className="text-foreground font-medium">{formData.yearsInOperation}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Contact:</span>
-            <p className="text-foreground font-medium">
-              {formData.primaryContactPerson} ({formData.contactTitle})
-            </p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Email:</span>
-            <p className="text-foreground font-medium">{formData.email}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Phone:</span>
-            <p className="text-foreground font-medium">{formData.directPhone}</p>
+      {/* Summary Cards */}
+      <div className="space-y-4">
+        {/* Personal Info */}
+        <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <User className="w-4 h-4 text-primary" />
+            Personal Information
+          </h3>
+          <div className="grid md:grid-cols-2 gap-2 text-sm">
+            <p><span className="text-muted-foreground">Name:</span> {formData.fullName}</p>
+            <p><span className="text-muted-foreground">ID:</span> {formData.idNumber}</p>
+            <p><span className="text-muted-foreground">Email:</span> {formData.email}</p>
+            <p><span className="text-muted-foreground">Phone:</span> {formData.phone}</p>
+            <p className="md:col-span-2"><span className="text-muted-foreground">Address:</span> {formData.physicalAddress}</p>
           </div>
         </div>
-      </div>
 
-      {/* Compliance Summary */}
-      <div className="p-5 rounded-xl border border-border bg-secondary/30">
-        <div className="flex items-center gap-2 mb-4">
-          <FileCheck className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Compliance & Licensing</h3>
+        {/* License Info */}
+        <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" />
+            Driver's License
+          </h3>
+          <div className="grid md:grid-cols-2 gap-2 text-sm">
+            <p><span className="text-muted-foreground">License Type:</span> {formatLicenseType(formData.licenseType)}</p>
+            <p><span className="text-muted-foreground">Years Licensed:</span> {formData.yearsWithLicense.replace("-", " - ")}</p>
+            <p><span className="text-muted-foreground">ID Copy:</span> {formData.idCopyUploaded ? "✅ Uploaded" : "❌ Not uploaded"}</p>
+            <p><span className="text-muted-foreground">License Copy:</span> {formData.licenseCopyUploaded ? "✅ Uploaded" : "❌ Not uploaded"}</p>
+            <p className="md:col-span-2"><span className="text-muted-foreground">No Criminal Record:</span> {formData.noCriminalRecord ? "✅ Declared" : "❌ Not declared"}</p>
+          </div>
         </div>
-        <div className="grid md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-muted-foreground">CIPC Number:</span>
-            <p className="text-foreground font-medium">{formData.cipcNumber}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Tax/VAT Number:</span>
-            <p className="text-foreground font-medium">{formData.taxVatNumber}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Transport License:</span>
-            <p className="text-foreground font-medium">{formData.transportLicenseNumber}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">PDP Holders:</span>
-            <p className="text-foreground font-medium">{formData.pdpHolders}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Cross-Border:</span>
-            <p className="text-foreground font-medium">
-              {formData.crossBorderOperations === "yes" ? "Yes" : "No"}
-            </p>
-          </div>
-          {formData.insuranceCertificate && (
-            <div>
-              <span className="text-muted-foreground">Insurance Certificate:</span>
-              <p className="text-foreground font-medium flex items-center gap-1">
-                <CheckCircle className="w-4 h-4 text-primary" />
-                Uploaded
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Fleet Summary */}
-      <div className="p-5 rounded-xl border border-border bg-secondary/30">
-        <div className="flex items-center gap-2 mb-4">
-          <Truck className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Fleet Details</h3>
+        {/* Vehicle Info */}
+        <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Car className="w-4 h-4 text-primary" />
+            Vehicle Details
+          </h3>
+          <div className="grid md:grid-cols-2 gap-2 text-sm">
+            <p><span className="text-muted-foreground">Type:</span> {formatVehicleType(formData.vehicleType)}</p>
+            <p><span className="text-muted-foreground">Registration:</span> {formData.vehicleRegistration}</p>
+            <p><span className="text-muted-foreground">Make/Model:</span> {formData.vehicleModel}</p>
+            <p><span className="text-muted-foreground">Year:</span> {formData.vehicleYear}</p>
+            <p><span className="text-muted-foreground">Colour:</span> {formData.vehicleColour}</p>
+            <p><span className="text-muted-foreground">Capacity:</span> {formData.minLoadCapacity} - {formData.maxLoadCapacity} kg</p>
+            <p className="md:col-span-2"><span className="text-muted-foreground">Insurance:</span> {formData.hasValidInsurance ? "✅ Confirmed" : "❌ Not confirmed"}</p>
+          </div>
         </div>
-        <div className="space-y-3">
-          {formData.vehicles.map((vehicle, index) => {
-            const photos = vehicle.photos;
-            const hasPhotos = photos?.front || photos?.side || photos?.back;
-            return (
-              <div key={vehicle.id} className="text-sm p-3 rounded-lg bg-background/50">
-                <div className="flex gap-4">
-                  {hasPhotos && (
-                    <div className="flex gap-2 flex-shrink-0">
-                      {photos?.front && (
-                        <img
-                          src={photos.front}
-                          alt={`Vehicle ${index + 1} front`}
-                          className="w-16 h-12 object-cover rounded-md border border-border"
-                        />
-                      )}
-                      {photos?.side && (
-                        <img
-                          src={photos.side}
-                          alt={`Vehicle ${index + 1} side`}
-                          className="w-16 h-12 object-cover rounded-md border border-border"
-                        />
-                      )}
-                      {photos?.back && (
-                        <img
-                          src={photos.back}
-                          alt={`Vehicle ${index + 1} back`}
-                          className="w-16 h-12 object-cover rounded-md border border-border"
-                        />
-                      )}
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {vehicle.quantity}x {vehicle.vehicleType || "Not specified"}
-                    </p>
-                    <p className="text-muted-foreground">
-                      Load: {vehicle.minPayloadCapacity}–{vehicle.maxPayloadCapacity} kg | Dimensions: {vehicle.dimensionLength}m × {vehicle.dimensionWidth}m × {vehicle.dimensionHeight}m
-                    </p>
-                    {vehicle.features && vehicle.features.length > 0 && (
-                      <p className="text-muted-foreground">
-                        Features: {vehicle.features.join(", ")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Operations Summary */}
-      <div className="p-5 rounded-xl border border-border bg-secondary/30">
-        <div className="flex items-center gap-2 mb-4">
-          <MapPin className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Operations</h3>
-        </div>
-        <div className="space-y-3 text-sm">
-          <div>
-            <span className="text-muted-foreground">Service Regions:</span>
-            <p className="text-foreground font-medium">
-              {formData.serviceRegions?.map((r) => regionLabels[r]).join(", ") || "Not specified"}
+        {/* Operations Info */}
+        <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" />
+            Operations
+          </h3>
+          <div className="text-sm space-y-2">
+            <p><span className="text-muted-foreground">Primary Region:</span> {formatRegion(formData.primaryServiceRegion)}</p>
+            {formData.additionalRegions && formData.additionalRegions.length > 0 && (
+              <p><span className="text-muted-foreground">Additional Regions:</span> {formData.additionalRegions.map(formatRegion).join(", ")}</p>
+            )}
+            <p><span className="text-muted-foreground">Cargo Types:</span> {formData.cargoTypes?.map((c) => cargoLabels[c] || c).join(", ")}</p>
+            <p className="pt-2 border-t border-border mt-2">
+              <span className="text-muted-foreground">Emergency Contact:</span> {formData.emergencyContactName} ({formData.emergencyContactRelation}) - {formData.emergencyContactPhone}
             </p>
           </div>
-          <div>
-            <span className="text-muted-foreground">Cargo Types:</span>
-            <p className="text-foreground font-medium">
-              {formData.cargoTypes?.map((c) => cargoLabels[c]).join(", ") || "Not specified"}
-            </p>
-          </div>
-          {formData.preferredRoutes && (
-            <div>
-              <span className="text-muted-foreground">Preferred Routes:</span>
-              <p className="text-foreground font-medium">{formData.preferredRoutes}</p>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Referral Source */}
-      <div className="pt-4 border-t border-border">
-        <Label htmlFor="referralSource">How did you hear about Dyno Dash? *</Label>
+      <div>
+        <Label htmlFor="referralSource">How did you hear about CourierConnect? *</Label>
         <Select
           value={formData.referralSource}
           onValueChange={(value) => updateFormData({ referralSource: value })}
@@ -246,9 +170,9 @@ const Step5Review = ({ formData, updateFormData, errors }: Step5Props) => {
             <SelectValue placeholder="Select an option" />
           </SelectTrigger>
           <SelectContent>
-            {referralSources.map((source) => (
-              <SelectItem key={source} value={source}>
-                {source}
+            {referralOptions.map((option) => (
+              <SelectItem key={option} value={option.toLowerCase()}>
+                {option}
               </SelectItem>
             ))}
           </SelectContent>
@@ -258,10 +182,42 @@ const Step5Review = ({ formData, updateFormData, errors }: Step5Props) => {
         )}
       </div>
 
-      <p className="text-sm text-muted-foreground p-4 rounded-lg bg-secondary/50 border border-border">
-        By submitting, you agree to Dyno Dash's terms for carriers. Our team will verify your 
-        documents and contact you within 2-3 business days. All information is kept confidential.
-      </p>
+      {/* Terms & Conditions */}
+      <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+        <div className="flex items-start space-x-3">
+          <Checkbox
+            id="termsAccepted"
+            checked={formData.termsAccepted}
+            onCheckedChange={(checked) =>
+              updateFormData({ termsAccepted: checked === true })
+            }
+            className={errors.termsAccepted ? "border-destructive" : ""}
+          />
+          <div className="space-y-1">
+            <Label
+              htmlFor="termsAccepted"
+              className="cursor-pointer font-medium flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4 text-primary" />
+              Accept Terms & Conditions *
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              I have read and agree to the CourierConnect{" "}
+              <Link to="/terms-of-service" className="text-primary hover:underline" target="_blank">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy-policy" className="text-primary hover:underline" target="_blank">
+                Privacy Policy
+              </Link>
+              . I confirm that all information provided is accurate and complete.
+            </p>
+          </div>
+        </div>
+        {errors.termsAccepted && (
+          <p className="text-sm text-destructive mt-2">{errors.termsAccepted}</p>
+        )}
+      </div>
     </div>
   );
 };
