@@ -8,22 +8,22 @@
  */
 export const BUS_FARE_DATABASE: Record<string, number> = {
   // South Africa to Zimbabwe (Long Distance)
-  "Johannesburg-Harare": 1200.00,
-  "Johannesburg-Bulawayo": 1100.00,
-  "Pretoria-Harare": 1250.00,
+  "Johannesburg-Harare": 3000.00,
+  "Johannesburg-Bulawayo": 2750.00,
+  "Pretoria-Harare": 3125.00,
   
   // South Africa to Lesotho (Medium Distance)
-  "Johannesburg-Maseru": 250.00,
-  "Bloemfontein-Maseru": 150.00,
-  "Durban-Maseru": 500.00,
+  "Johannesburg-Maseru": 625.00,
+  "Bloemfontein-Maseru": 375.00,
+  "Durban-Maseru": 1250.00,
   
   // Domestic South Africa
-  "Johannesburg-Pretoria": 120.00,
-  "Johannesburg-Durban": 500.00,
-  "Johannesburg-Bloemfontein": 350.00,
-  "Johannesburg-Cape Town": 800.00,
-  "Pretoria-Durban": 550.00,
-  "Durban-Cape Town": 750.00,
+  "Johannesburg-Pretoria": 300.00,
+  "Johannesburg-Durban": 1250.00,
+  "Johannesburg-Bloemfontein": 875.00,
+  "Johannesburg-Cape Town": 2000.00,
+  "Pretoria-Durban": 1375.00,
+  "Durban-Cape Town": 1875.00,
 };
 
 /** Handling fee added to every delivery (ZAR) */
