@@ -19,7 +19,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               </span>
             </Link>
             <p className="text-muted-foreground max-w-sm leading-relaxed">
-              The affordable, smart logistics bridge for Southern Africa. We turn everyday taxi and bus travel into reliable parcel delivery.
+              The affordable, smart logistics bridge for Southern Africa. Efficient, reliable parcel delivery across the region.
             </p>
             
             {/* Trust badge */}

@@ -2,13 +2,13 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { MapPin, Bus, Package, CheckCircle } from "lucide-react";
+import { MapPin, Package, CheckCircle } from "lucide-react";
 
 const steps = [
   {
     step: "01",
     title: "Book & Drop Off",
-    description: "Book your parcel online or via WhatsApp. Then drop off your package at one of our designated hubs — conveniently located at major taxi ranks and bus terminals.",
+    description: "Book your parcel online or via WhatsApp. Then drop off your package at one of our designated hubs across the region.",
     details: [
       "Book online in under 2 minutes",
       "Pay via EFT, card, or cash at hub",
@@ -19,13 +19,13 @@ const steps = [
   {
     step: "02",
     title: "We Transport It",
-    description: "Your parcel is loaded onto the next available taxi or long-distance bus heading to your destination. Our partners are established transport operators running daily scheduled routes.",
+    description: "Your parcel is securely transported via our optimized logistics network. Our partners are established operators running daily scheduled routes.",
     details: [
       "Daily departures on popular routes",
       "Secure handling and tracking",
       "Trusted transport partners",
     ],
-    icon: Bus,
+    icon: Package,
   },
   {
     step: "03",
@@ -53,8 +53,8 @@ const HowItWorks = () => {
               How <span className="text-gradient">CourierConnect</span> Works
             </h1>
             <p className="text-lg text-muted-foreground">
-              We've built a smarter way to send parcels — leveraging the existing taxi and bus networks 
-              that already travel these routes every day.
+              We've built a smarter way to send parcels — using optimized logistics networks 
+              that deliver faster and more affordably.
             </p>
           </div>
 
@@ -64,8 +64,8 @@ const HowItWorks = () => {
               The <span className="text-gradient">Smart Logistics</span> Advantage
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-              Instead of running expensive dedicated delivery vehicles, we partner with taxis and long-distance buses 
-              that are already traveling your route. This means lower costs for you and better utilization of existing transport infrastructure.
+              Through route optimization and shared logistics, we pass significant savings on to you 
+              while maintaining reliable, scheduled delivery service across Southern Africa.
             </p>
             <div className="grid md:grid-cols-3 gap-6 mt-8">
               <div className="p-4">

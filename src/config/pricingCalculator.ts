@@ -1,12 +1,14 @@
 // ==========================================
-// COURIERCONNECT SLIDING-SCALE PRICING
+// COURIERCONNECT PRICING ENGINE
+// INTERNAL USE ONLY - DO NOT EXPOSE TO UI
 // ==========================================
 
 /**
- * Bus fare database for common routes (in ZAR).
+ * Route pricing database (in ZAR).
  * Keys are route tuples [origin, destination] - bidirectional lookup supported.
+ * NOTE: These values and the calculation logic are INTERNAL and should NOT be shown in the UI.
  */
-export const BUS_FARE_DATABASE: Record<string, number> = {
+export const ROUTE_PRICING_DATABASE: Record<string, number> = {
   // South Africa to Zimbabwe (Long Distance)
   "Johannesburg-Harare": 1200.00,
   "Johannesburg-Bulawayo": 1100.00,
@@ -74,21 +76,21 @@ export const calculateWeightPercentage = (weightKg: number): number => {
 };
 
 /**
- * Gets the bus fare for a route from the database.
+ * Gets the route price from the database.
  * Supports bidirectional lookup (A->B or B->A).
  */
-export const getBusFare = (originCity: string, destinationCity: string): number | null => {
+export const getRoutePrice = (originCity: string, destinationCity: string): number | null => {
   const normalizedOrigin = normalizeCity(originCity);
   const normalizedDest = normalizeCity(destinationCity);
   
   const routeKey = `${normalizedOrigin}-${normalizedDest}`;
   const reverseKey = `${normalizedDest}-${normalizedOrigin}`;
   
-  if (BUS_FARE_DATABASE[routeKey]) {
-    return BUS_FARE_DATABASE[routeKey];
+  if (ROUTE_PRICING_DATABASE[routeKey]) {
+    return ROUTE_PRICING_DATABASE[routeKey];
   }
-  if (BUS_FARE_DATABASE[reverseKey]) {
-    return BUS_FARE_DATABASE[reverseKey];
+  if (ROUTE_PRICING_DATABASE[reverseKey]) {
+    return ROUTE_PRICING_DATABASE[reverseKey];
   }
   
   return null;
@@ -124,8 +126,8 @@ export const getDistanceCategory = (origin: string, destination: string): string
 export interface PriceBreakdown {
   route: string;
   distanceCategory: string;
-  busFare: number;
-  busFareSource: "database" | "estimated";
+  routeBase: number;
+  routeBaseSource: "database" | "estimated";
   parcelWeightKg: number;
   applicablePercentage: number;
   baseCalculatedPrice: number;
@@ -136,7 +138,8 @@ export interface PriceBreakdown {
 }
 
 /**
- * Calculates delivery price using the sliding scale percentage system.
+ * Calculates delivery price using the internal pricing system.
+ * NOTE: Internal calculation details should NOT be exposed in the UI.
  * 
  * @param originCity - Origin city name
  * @param destinationCity - Destination city name
@@ -153,34 +156,34 @@ export const calculateDeliveryPrice = (
   // Clamp weight to valid range
   const clampedWeight = Math.max(WEIGHT_LIMITS.min, Math.min(WEIGHT_LIMITS.max, weightKg));
   
-  // 1. Find bus fare
-  let busFare = getBusFare(originCity, destinationCity);
-  let busFareSource: "database" | "estimated" = "database";
+  // 1. Find route base price
+  let routeBase = getRoutePrice(originCity, destinationCity);
+  let routeBaseSource: "database" | "estimated" = "database";
   
-  if (busFare === null) {
+  if (routeBase === null) {
     // Fallback: use distance-based estimation
     const effectiveDistance = distanceKm || DEFAULT_DISTANCE_KM;
-    busFare = FALLBACK_FARE_PER_KM * effectiveDistance;
-    busFareSource = "estimated";
+    routeBase = FALLBACK_FARE_PER_KM * effectiveDistance;
+    routeBaseSource = "estimated";
   }
   
   // 2. Calculate applicable percentage and base price
   const applicablePercentage = calculateWeightPercentage(clampedWeight);
-  const baseCalculatedPrice = (busFare * (applicablePercentage / 100)) + HANDLING_FEE;
+  const baseCalculatedPrice = (routeBase * (applicablePercentage / 100)) + HANDLING_FEE;
   
-  // 3. Apply 150% increase (multiply by 2.5)
+  // 3. Apply price multiplier
   const afterMultiplier = baseCalculatedPrice * PRICE_MULTIPLIER;
   
   // 4. Enforce minimum price
   const finalPrice = Math.max(MINIMUM_PRICE, afterMultiplier);
   const minimumEnforced = finalPrice === MINIMUM_PRICE;
   
-  // 5. Prepare result breakdown
+  // 5. Prepare result breakdown (internal details)
   return {
     route: `${originCity} to ${destinationCity}`,
     distanceCategory: getDistanceCategory(originCity, destinationCity),
-    busFare: Math.round(busFare * 100) / 100,
-    busFareSource,
+    routeBase: Math.round(routeBase * 100) / 100,
+    routeBaseSource,
     parcelWeightKg: clampedWeight,
     applicablePercentage: Math.round(applicablePercentage * 10) / 10,
     baseCalculatedPrice: Math.round(baseCalculatedPrice * 100) / 100,
