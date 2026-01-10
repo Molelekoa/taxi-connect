@@ -35,6 +35,9 @@ export const PRICE_MULTIPLIER = 2.50;
 /** Minimum price floor (ZAR) */
 export const MINIMUM_PRICE = 135.00;
 
+/** Parcel tracking add-on fee (ZAR) */
+export const TRACKING_FEE = 100.00;
+
 /** Fallback fare per km when route not in database */
 export const FALLBACK_FARE_PER_KM = 1.50;
 
@@ -133,6 +136,8 @@ export interface PriceBreakdown {
   baseCalculatedPrice: number;
   afterMultiplier: number;
   minimumEnforced: boolean;
+  trackingIncluded: boolean;
+  trackingFee: number;
   finalPrice: number;
   currency: string;
 }
@@ -145,13 +150,15 @@ export interface PriceBreakdown {
  * @param destinationCity - Destination city name
  * @param weightKg - Parcel weight in kilograms (1-20kg)
  * @param distanceKm - Optional distance in km for fallback calculation
+ * @param includeTracking - Whether to include parcel tracking add-on
  * @returns Price breakdown object
  */
 export const calculateDeliveryPrice = (
   originCity: string,
   destinationCity: string,
   weightKg: number,
-  distanceKm?: number
+  distanceKm?: number,
+  includeTracking: boolean = false
 ): PriceBreakdown => {
   // Clamp weight to valid range
   const clampedWeight = Math.max(WEIGHT_LIMITS.min, Math.min(WEIGHT_LIMITS.max, weightKg));
@@ -175,10 +182,14 @@ export const calculateDeliveryPrice = (
   const afterMultiplier = baseCalculatedPrice * PRICE_MULTIPLIER;
   
   // 4. Enforce minimum price
-  const finalPrice = Math.max(MINIMUM_PRICE, afterMultiplier);
-  const minimumEnforced = finalPrice === MINIMUM_PRICE;
+  const basePrice = Math.max(MINIMUM_PRICE, afterMultiplier);
+  const minimumEnforced = basePrice === MINIMUM_PRICE;
   
-  // 5. Prepare result breakdown (internal details)
+  // 5. Add tracking fee if requested
+  const trackingFee = includeTracking ? TRACKING_FEE : 0;
+  const finalPrice = basePrice + trackingFee;
+  
+  // 6. Prepare result breakdown (internal details)
   return {
     route: `${originCity} to ${destinationCity}`,
     distanceCategory: getDistanceCategory(originCity, destinationCity),
@@ -189,6 +200,8 @@ export const calculateDeliveryPrice = (
     baseCalculatedPrice: Math.round(baseCalculatedPrice * 100) / 100,
     afterMultiplier: Math.round(afterMultiplier * 100) / 100,
     minimumEnforced,
+    trackingIncluded: includeTracking,
+    trackingFee: trackingFee,
     finalPrice: Math.round(finalPrice * 100) / 100,
     currency: "ZAR",
   };
@@ -202,11 +215,12 @@ export const getQuickPrice = (
   originCity: string,
   destinationCity: string,
   weightKg: number,
-  distanceKm?: number
+  distanceKm?: number,
+  includeTracking: boolean = false
 ): number | null => {
   if (weightKg < WEIGHT_LIMITS.min || weightKg > WEIGHT_LIMITS.max) {
     return null;
   }
-  const result = calculateDeliveryPrice(originCity, destinationCity, weightKg, distanceKm);
+  const result = calculateDeliveryPrice(originCity, destinationCity, weightKg, distanceKm, includeTracking);
   return result.finalPrice;
 };

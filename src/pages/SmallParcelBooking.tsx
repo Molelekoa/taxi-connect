@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, CheckCircle, MapPin } from "lucide-react";
+import { Package, CheckCircle, MapPin, Radio } from "lucide-react";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -20,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   calculateDeliveryPrice,
   WEIGHT_LIMITS,
+  TRACKING_FEE,
 } from "@/config/pricingCalculator";
 
 // Available cities for origin and destination
@@ -55,6 +57,7 @@ const parcelBookingSchema = z.object({
   recipientPhone: z.string().min(10, "Recipient phone required"),
   weight: z.number().min(WEIGHT_LIMITS.min, `Minimum ${WEIGHT_LIMITS.min} kg`).max(WEIGHT_LIMITS.max, `Maximum ${WEIGHT_LIMITS.max} kg`),
   description: z.string().optional(),
+  includeTracking: z.boolean().optional(),
 });
 
 type FormData = z.infer<typeof parcelBookingSchema>;
@@ -84,6 +87,7 @@ const SmallParcelBooking = () => {
     recipientPhone: "",
     weight: prefilled?.weight || undefined,
     description: "",
+    includeTracking: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -94,11 +98,11 @@ const SmallParcelBooking = () => {
   const priceBreakdown = useMemo(() => {
     if (!formData.originCity || !formData.destinationCity || !formData.weight) return null;
     if (formData.weight < WEIGHT_LIMITS.min || formData.weight > WEIGHT_LIMITS.max) return null;
-    return calculateDeliveryPrice(formData.originCity, formData.destinationCity, formData.weight);
-  }, [formData.originCity, formData.destinationCity, formData.weight]);
+    return calculateDeliveryPrice(formData.originCity, formData.destinationCity, formData.weight, undefined, formData.includeTracking || false);
+  }, [formData.originCity, formData.destinationCity, formData.weight, formData.includeTracking]);
 
 
-  const handleInputChange = (field: keyof FormData, value: string | number) => {
+  const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
@@ -222,7 +226,7 @@ const SmallParcelBooking = () => {
               Book Your Parcel Delivery
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Affordable parcel delivery ({WEIGHT_LIMITS.min}-{WEIGHT_LIMITS.max}kg) across South Africa, Lesotho, and Zimbabwe using our taxi/bus network.
+              Affordable parcel delivery ({WEIGHT_LIMITS.min}-{WEIGHT_LIMITS.max}kg) across South Africa, Lesotho, and Zimbabwe through our optimized logistics network.
             </p>
           </div>
 
@@ -427,6 +431,33 @@ const SmallParcelBooking = () => {
                     />
                   </div>
                 </div>
+
+                {/* Tracking Add-on */}
+                <div className="bg-secondary/50 border border-border rounded-lg p-4 mt-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="includeTracking"
+                      checked={formData.includeTracking || false}
+                      onCheckedChange={(checked) => handleInputChange('includeTracking', checked === true)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <Label 
+                        htmlFor="includeTracking" 
+                        className="text-sm font-medium cursor-pointer flex items-center gap-2"
+                      >
+                        <Radio className="w-4 h-4 text-primary" />
+                        Add Parcel Tracking
+                        <span className="bg-primary text-primary-foreground text-xs font-semibold px-2 py-0.5 rounded-full">
+                          +R{TRACKING_FEE}
+                        </span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Get real-time SMS and email updates on your parcel's location and delivery status.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </section>
 
               {/* Live Price Display */}
@@ -456,6 +487,12 @@ const SmallParcelBooking = () => {
                       <span className="text-muted-foreground">Category</span>
                       <span>{priceBreakdown.distanceCategory}</span>
                     </div>
+                    {priceBreakdown.trackingIncluded && (
+                      <div className="flex justify-between text-primary font-medium">
+                        <span>Parcel Tracking</span>
+                        <span>+R{priceBreakdown.trackingFee}</span>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
