@@ -11,9 +11,7 @@ const Navbar = () => {
   const navLinks = [
     { label: "Home", path: "/" },
     { label: "How It Works", path: "/how-it-works" },
-    { label: "Pricing", path: "/freight-estimator" },
     { label: "Send Parcel", path: "/small-parcel" },
-    { label: "Partner With Us", path: "/carrier-signup" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -56,12 +54,12 @@ const Navbar = () => {
         <div className="hidden lg:flex items-center gap-3">
           <Link to="/carrier-signup">
             <Button variant="outline" size="sm">
-              Partner With Us
+              Become a Partner
             </Button>
           </Link>
-          <Link to="/small-parcel">
+          <Link to="/freight-estimator">
             <Button variant="coral" size="default">
-              Send Parcel
+              Get Quote
             </Button>
           </Link>
         </div>
@@ -94,10 +92,15 @@ const Navbar = () => {
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 border-t border-border">
-              <Link to="/small-parcel" onClick={() => setIsOpen(false)}>
+            <div className="pt-4 border-t border-border space-y-2">
+              <Link to="/carrier-signup" onClick={() => setIsOpen(false)}>
+                <Button variant="outline" className="w-full">
+                  Become a Partner
+                </Button>
+              </Link>
+              <Link to="/freight-estimator" onClick={() => setIsOpen(false)}>
                 <Button variant="coral" className="w-full">
-                  Send Parcel
+                  Get Quote
                 </Button>
               </Link>
             </div>
