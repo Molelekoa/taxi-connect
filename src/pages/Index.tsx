@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Package, Bus, MapPin, Banknote, Clock, Shield, Users } from "lucide-react";
+import { Package, MapPin, Banknote, Clock, Shield, Users } from "lucide-react";
 import heroImage from "@/assets/hero-truck.jpg";
 
 const parcelSizes = [
@@ -82,9 +82,9 @@ const Index = () => {
             transition={{ duration: 0.5 }}
           >
             <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
-              <Bus className="h-4 w-4 text-primary" />
+              <Package className="h-4 w-4 text-primary" />
             </div>
-            <span className="text-sm text-foreground font-medium">Powered by taxis & buses</span>
+            <span className="text-sm text-foreground font-medium">Smart, efficient delivery</span>
           </motion.div>
           
           <motion.h1
@@ -104,7 +104,7 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
           >
-            CourierConnect uses existing taxi and bus routes to deliver your parcels across South Africa, Lesotho, and Zimbabwe — fast and friendly.
+            CourierConnect delivers your parcels across South Africa, Lesotho, and Zimbabwe — fast, affordable, and friendly.
           </motion.p>
           
           <motion.div
@@ -179,7 +179,7 @@ const Index = () => {
               Why <span className="text-gradient">CourierConnect</span>?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              We leverage underutilized space on vehicles already traveling these routes daily — turning everyday travel into reliable delivery.
+              Our optimized logistics network delivers faster and more affordably than traditional couriers.
             </p>
           </motion.div>
 
@@ -194,17 +194,17 @@ const Index = () => {
               {
                 icon: Banknote,
                 title: "Affordable",
-                description: "Smart pricing based on discounted transport rates. Save up to 60% compared to traditional couriers.",
+                description: "Smart pricing through route optimization. Save up to 60% compared to traditional couriers.",
               },
               {
                 icon: MapPin,
                 title: "Wide Coverage",
-                description: "Access remote areas through our network of taxi ranks and bus routes across 3 countries.",
+                description: "Access even remote areas through our extensive logistics network across 3 countries.",
               },
               {
                 icon: Clock,
                 title: "Fast & Reliable",
-                description: "Daily departures on popular routes. Your parcel travels with scheduled passenger transport.",
+                description: "Daily departures on popular routes with scheduled, reliable service.",
               },
             ].map((item, index) => (
               <motion.div
@@ -339,12 +339,12 @@ const Index = () => {
               {
                 step: "01",
                 title: "Drop Off",
-                description: "Bring your parcel to a designated hub at a taxi rank or bus terminal.",
+                description: "Bring your parcel to one of our convenient collection points.",
               },
               {
                 step: "02",
                 title: "We Transport",
-                description: "Your parcel travels on the next available taxi or bus heading to your destination.",
+                description: "Your parcel is securely transported via our optimized route network.",
               },
               {
                 step: "03",
@@ -417,7 +417,7 @@ const Index = () => {
                   South Africa • Lesotho • <span className="text-gradient">Zimbabwe</span>
                 </h2>
                 <p className="text-muted-foreground mb-6 max-w-md">
-                  Send parcels across borders with our established taxi and bus routes. Transparent pricing, reliable delivery.
+                  Send parcels across borders with our established cross-border network. Transparent pricing, reliable delivery.
                 </p>
                 
                 {/* Price highlights */}

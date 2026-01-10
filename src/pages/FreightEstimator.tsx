@@ -159,7 +159,7 @@ const ParcelEstimator = () => {
                 CourierConnect Parcel Pricing
               </h1>
               <p className="text-primary-foreground/80">
-                Get instant pricing for parcels 1-20kg. Our rates are based on bus/taxi fares with a sliding scale percentage.
+                Get instant pricing for parcels 1-20kg. Our optimized routes mean lower costs for you.
               </p>
             </div>
 
