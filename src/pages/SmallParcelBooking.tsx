@@ -72,6 +72,7 @@ const SmallParcelBooking = () => {
     destination?: string; 
     weight?: number;
     price?: number;
+    includeTracking?: boolean;
   } | null;
 
   const [formData, setFormData] = useState<Partial<FormData>>({
@@ -87,7 +88,7 @@ const SmallParcelBooking = () => {
     recipientPhone: "",
     weight: prefilled?.weight || undefined,
     description: "",
-    includeTracking: false,
+    includeTracking: prefilled?.includeTracking || false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -447,13 +448,13 @@ const SmallParcelBooking = () => {
                         className="text-sm font-medium cursor-pointer flex items-center gap-2"
                       >
                         <Radio className="w-4 h-4 text-primary" />
-                        Add Parcel Tracking
+                        Get Tracking Link
                         <span className="bg-primary text-primary-foreground text-xs font-semibold px-2 py-0.5 rounded-full">
                           +R{TRACKING_FEE}
                         </span>
                       </Label>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Get real-time SMS and email updates on your parcel's location and delivery status.
+                        Receive a unique tracking link you can share with the recipient to follow your parcel's journey.
                       </p>
                     </div>
                   </div>

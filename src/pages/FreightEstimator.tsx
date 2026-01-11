@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Info, Package } from "lucide-react";
+import { Loader2, Info, Package, Radio } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,11 @@ import {
 } from "@/components/ui/select";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 import RouteMap from "@/components/RouteMap";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   calculateDeliveryPrice,
   WEIGHT_LIMITS,
+  TRACKING_FEE,
   type PriceBreakdown,
 } from "@/config/pricingCalculator";
 
@@ -65,6 +67,7 @@ const ParcelEstimator = () => {
     pickupLocation: "",
     deliveryLocation: "",
     weight: "",
+    includeTracking: false,
   });
 
   const [showResult, setShowResult] = useState(false);
@@ -115,7 +118,7 @@ const ParcelEstimator = () => {
     : null;
 
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setShowResult(false);
   };
@@ -129,7 +132,8 @@ const ParcelEstimator = () => {
       formData.pickupLocation,
       formData.deliveryLocation,
       weight,
-      effectiveDistance || undefined
+      effectiveDistance || undefined,
+      formData.includeTracking
     );
 
     setPriceBreakdown(result);
@@ -304,7 +308,33 @@ const ParcelEstimator = () => {
                         Weight must be between {WEIGHT_LIMITS.min} and {WEIGHT_LIMITS.max}kg
                       </p>
                     )}
-                    
+                  </div>
+
+                  {/* Tracking Add-on */}
+                  <div className="bg-secondary/50 border border-border rounded-lg p-4 col-span-full">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        id="includeTracking"
+                        checked={formData.includeTracking}
+                        onCheckedChange={(checked) => handleInputChange("includeTracking", checked === true)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label 
+                          htmlFor="includeTracking" 
+                          className="text-sm font-medium cursor-pointer flex items-center gap-2"
+                        >
+                          <Radio className="w-4 h-4 text-primary" />
+                          Get Tracking Link
+                          <span className="bg-primary text-primary-foreground text-xs font-semibold px-2 py-0.5 rounded-full">
+                            +R{TRACKING_FEE}
+                          </span>
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Receive a unique tracking link you can share with the recipient.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -356,6 +386,12 @@ const ParcelEstimator = () => {
                       <span className="text-muted-foreground">Category</span>
                       <span className="text-foreground">{priceBreakdown.distanceCategory}</span>
                     </div>
+                    {priceBreakdown.trackingIncluded && (
+                      <div className="flex justify-between text-primary font-medium">
+                        <span>Tracking Link</span>
+                        <span>+R{priceBreakdown.trackingFee}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center">
@@ -367,7 +403,8 @@ const ParcelEstimator = () => {
                           origin: formData.pickupLocation,
                           destination: formData.deliveryLocation, 
                           weight: parseFloat(formData.weight),
-                          price: priceBreakdown.finalPrice
+                          price: priceBreakdown.finalPrice,
+                          includeTracking: formData.includeTracking
                         } 
                       })}
                     >

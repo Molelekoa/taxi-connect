@@ -11,7 +11,6 @@ const Navbar = () => {
   const navLinks = [
     { label: "Home", path: "/" },
     { label: "How It Works", path: "/how-it-works" },
-    { label: "Send Parcel", path: "/small-parcel" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
