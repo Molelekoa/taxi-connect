@@ -113,7 +113,7 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
           >
-            <Link to="/small-parcel">
+            <Link to="/freight-estimator">
               <Button variant="coral" size="xl">
                 Send a Parcel
               </Button>
@@ -301,7 +301,7 @@ const Index = () => {
                 {parcelSizes.find((s) => s.id === selectedSize)?.description}
               </p>
               <div className="text-center">
-                <Link to="/small-parcel">
+                <Link to="/freight-estimator">
                   <Button variant="hero" size="lg">
                     Send {parcelSizes.find((s) => s.id === selectedSize)?.title} Parcel
                   </Button>
@@ -432,7 +432,7 @@ const Index = () => {
                   </div>
                 </div>
 
-                <Link to="/small-parcel">
+                <Link to="/freight-estimator">
                   <Button variant="hero" size="lg">
                     Send Cross-Border
                   </Button>
