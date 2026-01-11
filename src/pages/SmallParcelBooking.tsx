@@ -26,11 +26,17 @@ import {
 
 // Available cities for origin and destination
 const ORIGIN_CITIES = [
-  { value: "Johannesburg", label: "Johannesburg" },
-  { value: "Pretoria", label: "Pretoria" },
-  { value: "Durban", label: "Durban" },
-  { value: "Bloemfontein", label: "Bloemfontein" },
-  { value: "Cape Town", label: "Cape Town" },
+  // South Africa
+  { value: "Johannesburg", label: "Johannesburg (SA)" },
+  { value: "Pretoria", label: "Pretoria (SA)" },
+  { value: "Durban", label: "Durban (SA)" },
+  { value: "Bloemfontein", label: "Bloemfontein (SA)" },
+  { value: "Cape Town", label: "Cape Town (SA)" },
+  // Lesotho
+  { value: "Maseru", label: "Maseru (Lesotho)" },
+  // Zimbabwe
+  { value: "Harare", label: "Harare (Zimbabwe)" },
+  { value: "Bulawayo", label: "Bulawayo (Zimbabwe)" },
 ];
 
 const DESTINATION_CITIES = [
