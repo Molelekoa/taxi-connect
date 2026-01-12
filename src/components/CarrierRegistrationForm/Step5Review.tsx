@@ -3,9 +3,12 @@ import {
   User,
   CreditCard,
   Car,
-  MapPin,
+  Route,
+  Calendar,
+  Package,
   CheckCircle,
   AlertTriangle,
+  Users,
 } from "lucide-react";
 
 interface Step5Props {
@@ -42,11 +45,87 @@ const Step5Review = ({ formData }: Step5Props) => {
     return types[type] || type;
   };
 
-  const formatRegion = (region: string) => {
-    return region
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  const formatCity = (city: string) => {
+    const cities: Record<string, string> = {
+      johannesburg: "Johannesburg",
+      pretoria: "Pretoria",
+      durban: "Durban",
+      "cape-town": "Cape Town",
+      bloemfontein: "Bloemfontein",
+      "port-elizabeth": "Port Elizabeth",
+      "east-london": "East London",
+      polokwane: "Polokwane",
+      nelspruit: "Nelspruit",
+      kimberley: "Kimberley",
+      maseru: "Maseru (Lesotho)",
+      harare: "Harare (Zimbabwe)",
+      bulawayo: "Bulawayo (Zimbabwe)",
+    };
+    return cities[city] || city;
+  };
+
+  const formatFrequency = (freq: string) => {
+    const frequencies: Record<string, string> = {
+      daily: "Daily",
+      "2-3-weekly": "2-3 times per week",
+      weekly: "Weekly",
+      fortnightly: "Fortnightly",
+      monthly: "Monthly",
+      occasionally: "Occasionally",
+    };
+    return frequencies[freq] || freq;
+  };
+
+  const formatScheduleType = (type: string) => {
+    const types: Record<string, string> = {
+      fixed: "Fixed days",
+      somewhat: "Somewhat regular",
+      varies: "Varies week to week",
+    };
+    return types[type] || type;
+  };
+
+  const formatDepartureTime = (time: string) => {
+    const times: Record<string, string> = {
+      "early-morning": "Early morning (before 8am)",
+      morning: "Morning (8am - 12pm)",
+      afternoon: "Afternoon (12pm - 5pm)",
+      evening: "Evening (after 5pm)",
+      varies: "Varies",
+    };
+    return times[time] || time;
+  };
+
+  const formatAdvanceNotice = (notice: string) => {
+    const notices: Record<string, string> = {
+      "same-day": "Same day",
+      "24-hours": "24 hours",
+      "2-3-days": "2-3 days",
+      "1-week": "1 week or more",
+    };
+    return notices[notice] || notice;
+  };
+
+  const formatDays = (days: string[]) => {
+    const dayLabels: Record<string, string> = {
+      mon: "Mon",
+      tue: "Tue",
+      wed: "Wed",
+      thu: "Thu",
+      fri: "Fri",
+      sat: "Sat",
+      sun: "Sun",
+    };
+    return days.map((d) => dayLabels[d] || d).join(", ");
+  };
+
+  const formatReturnTrip = (value: string) => {
+    const options: Record<string, string> = {
+      yes: "Yes",
+      no: "No",
+      sometimes: "Sometimes",
+    };
+    return options[value] || value;
   };
 
   const cargoLabels: Record<string, string> = {
@@ -121,20 +200,65 @@ const Step5Review = ({ formData }: Step5Props) => {
           </div>
         </div>
 
-        {/* Operations Info */}
+        {/* Routes & Schedule */}
         <div className="p-4 rounded-lg bg-secondary/30 border border-border">
           <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" />
-            Operations
+            <Route className="w-4 h-4 text-primary" />
+            Routes & Schedule
           </h3>
           <div className="text-sm space-y-2">
-            <p><span className="text-muted-foreground">Primary Region:</span> {formatRegion(formData.primaryServiceRegion)}</p>
-            {formData.additionalRegions && formData.additionalRegions.length > 0 && (
-              <p><span className="text-muted-foreground">Additional Regions:</span> {formData.additionalRegions.map(formatRegion).join(", ")}</p>
+            <p>
+              <span className="text-muted-foreground">Primary Route:</span>{" "}
+              {formatCity(formData.primaryRouteFrom)} → {formatCity(formData.primaryRouteTo)}
+            </p>
+            <p>
+              <span className="text-muted-foreground">Return Trip:</span> {formatReturnTrip(formData.returnTrip)}
+            </p>
+            {formData.additionalRoutes && formData.additionalRoutes.length > 0 && (
+              <p>
+                <span className="text-muted-foreground">Additional Routes:</span>{" "}
+                {formData.additionalRoutes
+                  .filter((r) => r.from && r.to)
+                  .map((r) => `${formatCity(r.from)} → ${formatCity(r.to)}`)
+                  .join("; ")}
+              </p>
             )}
-            <p><span className="text-muted-foreground">Cargo Types:</span> {formData.cargoTypes?.map((c) => cargoLabels[c] || c).join(", ")}</p>
-            <p className="pt-2 border-t border-border mt-2">
-              <span className="text-muted-foreground">Emergency Contact:</span> {formData.emergencyContactName} ({formData.emergencyContactRelation}) - {formData.emergencyContactPhone}
+            <div className="pt-2 border-t border-border/50 mt-2 grid md:grid-cols-2 gap-2">
+              <p><span className="text-muted-foreground">Frequency:</span> {formatFrequency(formData.travelFrequency)}</p>
+              <p><span className="text-muted-foreground">Schedule:</span> {formatScheduleType(formData.scheduleType)}</p>
+              {formData.availableDays && formData.availableDays.length > 0 && (
+                <p><span className="text-muted-foreground">Available Days:</span> {formatDays(formData.availableDays)}</p>
+              )}
+              <p><span className="text-muted-foreground">Departure:</span> {formatDepartureTime(formData.departureTime)}</p>
+              <p><span className="text-muted-foreground">Notice Needed:</span> {formatAdvanceNotice(formData.advanceNotice)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Capacity & Cargo */}
+        <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Package className="w-4 h-4 text-primary" />
+            Capacity & Parcel Types
+          </h3>
+          <div className="text-sm space-y-2">
+            <p><span className="text-muted-foreground">Parcels per Trip:</span> {formData.parcelsPerTrip} parcels</p>
+            {formData.storageType && (
+              <p><span className="text-muted-foreground">Storage:</span> {formData.storageType === "dedicated" ? "Dedicated cargo area" : formData.storageType === "shared" ? "Shared with passenger space" : "Trailer/additional storage"}</p>
+            )}
+            <p><span className="text-muted-foreground">Parcel Types:</span> {formData.cargoTypes?.map((c) => cargoLabels[c] || c).join(", ")}</p>
+          </div>
+        </div>
+
+        {/* Emergency Contact */}
+        <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" />
+            Emergency Contact
+          </h3>
+          <div className="text-sm">
+            <p>
+              {formData.emergencyContactName} ({formData.emergencyContactRelation}) - {formData.emergencyContactPhone}
             </p>
           </div>
         </div>
