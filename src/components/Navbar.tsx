@@ -53,7 +53,7 @@ const Navbar = () => {
         <div className="hidden lg:flex items-center gap-3">
           <Link to="/carrier-signup">
             <Button variant="outline" size="sm">
-              Become a Partner
+              Join the Community
             </Button>
           </Link>
           <Link to="/freight-estimator">
@@ -94,7 +94,7 @@ const Navbar = () => {
             <div className="pt-4 border-t border-border space-y-2">
               <Link to="/carrier-signup" onClick={() => setIsOpen(false)}>
                 <Button variant="outline" className="w-full">
-                  Become a Partner
+                  Join the Community
                 </Button>
               </Link>
               <Link to="/freight-estimator" onClick={() => setIsOpen(false)}>

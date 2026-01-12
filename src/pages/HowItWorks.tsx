@@ -18,12 +18,12 @@ const steps = [
   },
   {
     step: "02",
-    title: "We Transport It",
-    description: "Your parcel is securely transported via our optimized logistics network. Our partners are established operators running daily scheduled routes.",
+    title: "Community Delivers",
+    description: "Your parcel is carried by a community member already traveling your route. They earn delivery fees to offset their petrol and toll costs — creating shared value for everyone.",
     details: [
-      "Daily departures on popular routes",
-      "Secure handling and tracking",
-      "Trusted transport partners",
+      "Community-powered delivery network",
+      "Secure handling by verified travelers",
+      "Shared value for drivers and senders",
     ],
     icon: Package,
   },
