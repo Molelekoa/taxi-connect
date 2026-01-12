@@ -100,16 +100,50 @@ const SmallParcelBooking = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
+  // Track if we should use the pre-calculated price from the estimator
+  const [usePrefilledPrice, setUsePrefilledPrice] = useState(
+    !!(prefilled?.price && prefilled?.origin && prefilled?.destination && prefilled?.weight)
+  );
 
-  // Calculate live price using new pricing calculator
-  const priceBreakdown = useMemo(() => {
+  // Calculate live price using new pricing calculator (only when not using prefilled price)
+  const calculatedPriceBreakdown = useMemo(() => {
+    if (usePrefilledPrice) return null; // Don't recalculate if using prefilled price
     if (!formData.originCity || !formData.destinationCity || !formData.weight) return null;
     if (formData.weight < WEIGHT_LIMITS.min || formData.weight > WEIGHT_LIMITS.max) return null;
     return calculateDeliveryPrice(formData.originCity, formData.destinationCity, formData.weight, undefined, formData.includeTracking || false);
-  }, [formData.originCity, formData.destinationCity, formData.weight, formData.includeTracking]);
+  }, [formData.originCity, formData.destinationCity, formData.weight, formData.includeTracking, usePrefilledPrice]);
+
+  // Use prefilled price or calculated price
+  const displayPrice = useMemo(() => {
+    if (usePrefilledPrice && prefilled?.price) {
+      return prefilled.price;
+    }
+    return calculatedPriceBreakdown?.finalPrice || null;
+  }, [usePrefilledPrice, prefilled?.price, calculatedPriceBreakdown?.finalPrice]);
+
+  // Build a price breakdown object for display (either from prefilled or calculated)
+  const priceBreakdown = useMemo(() => {
+    if (usePrefilledPrice && prefilled?.price) {
+      // Return a simplified breakdown using the prefilled price
+      return {
+        finalPrice: prefilled.price,
+        route: `${prefilled.origin} → ${prefilled.destination}`,
+        parcelWeightKg: prefilled.weight || 0,
+        distanceCategory: "Pre-quoted",
+        trackingIncluded: prefilled.includeTracking || false,
+        trackingFee: prefilled.includeTracking ? TRACKING_FEE : 0,
+      };
+    }
+    return calculatedPriceBreakdown;
+  }, [usePrefilledPrice, prefilled, calculatedPriceBreakdown]);
 
 
   const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
+    // If user changes any pricing-relevant field, stop using prefilled price
+    if (['originCity', 'destinationCity', 'weight', 'includeTracking'].includes(field)) {
+      setUsePrefilledPrice(false);
+    }
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
