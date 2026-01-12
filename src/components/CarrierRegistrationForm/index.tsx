@@ -9,6 +9,7 @@ import Step2License from "./Step2License";
 import Step3Vehicle from "./Step3Vehicle";
 import Step4Operations from "./Step4Operations";
 import Step5Review from "./Step5Review";
+import Step6Confirm from "./Step6Confirm";
 import {
   CarrierFormData,
   initialFormData,
@@ -17,10 +18,11 @@ import {
   step3Schema,
   step4Schema,
   step5Schema,
+  step6Schema,
 } from "./types";
 
 const STORAGE_KEY = "courierconnect-driver-registration";
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 const CarrierRegistrationForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -77,6 +79,9 @@ const CarrierRegistrationForm = () => {
         break;
       case 5:
         schema = step5Schema;
+        break;
+      case 6:
+        schema = step6Schema;
         break;
       default:
         return true;
@@ -139,6 +144,8 @@ const CarrierRegistrationForm = () => {
         return <Step4Operations {...stepProps} />;
       case 5:
         return <Step5Review {...stepProps} />;
+      case 6:
+        return <Step6Confirm {...stepProps} />;
       default:
         return null;
     }

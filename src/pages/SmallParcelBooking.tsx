@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, CheckCircle, MapPin, Radio } from "lucide-react";
+import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck } from "lucide-react";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -100,6 +100,7 @@ const SmallParcelBooking = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   
   // Track if we should use the pre-calculated price from the estimator
   const [usePrefilledPrice, setUsePrefilledPrice] = useState(
@@ -150,8 +151,8 @@ const SmallParcelBooking = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsSubmitting(true);
 
     try {
@@ -164,6 +165,7 @@ const SmallParcelBooking = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       console.log("Parcel booking submitted:", validated);
+      setShowReview(false);
       setIsSuccess(true);
       toast({
         title: "Booking Submitted!",
@@ -178,6 +180,7 @@ const SmallParcelBooking = () => {
           }
         });
         setErrors(fieldErrors);
+        setShowReview(false);
       }
     } finally {
       setIsSubmitting(false);
@@ -538,24 +541,202 @@ const SmallParcelBooking = () => {
                 </motion.div>
               )}
 
-              {/* Submit */}
+              {/* Review Button */}
               <Button
-                type="submit"
+                type="button"
                 variant="hero"
                 size="xl"
                 className="w-full"
-                disabled={isSubmitting || !formData.originCity || !formData.destinationCity || !priceBreakdown}
+                disabled={!formData.originCity || !formData.destinationCity || !priceBreakdown}
+                onClick={() => {
+                  // Validate form before showing review
+                  try {
+                    parcelBookingSchema.parse({
+                      ...formData,
+                      weight: Number(formData.weight),
+                    });
+                    setErrors({});
+                    setShowReview(true);
+                  } catch (error) {
+                    if (error instanceof z.ZodError) {
+                      const fieldErrors: Record<string, string> = {};
+                      error.errors.forEach(err => {
+                        if (err.path[0]) {
+                          fieldErrors[err.path[0] as string] = err.message;
+                        }
+                      });
+                      setErrors(fieldErrors);
+                    }
+                  }
+                }}
               >
-                {isSubmitting ? "Submitting..." : `Book Now${priceBreakdown ? ` — R${priceBreakdown.finalPrice}` : ''}`}
+                Review Booking{priceBreakdown ? ` — R${priceBreakdown.finalPrice}` : ''}
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">
-                By booking, you agree to our{" "}
-                <Link to="/terms-of-service" className="underline">Terms of Service</Link>.
-                We'll confirm your booking within 1 hour.
+                You'll be able to review all details before confirming.
               </p>
             </div>
           </motion.form>
+
+          {/* Review Section */}
+          {showReview && (
+            <motion.div
+              className="fixed inset-0 z-50 bg-background/95 overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="container-narrow max-w-3xl mx-auto py-8 px-4">
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="bg-foreground text-background p-6">
+                    <h2 className="font-display font-bold text-xl flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5" />
+                      Review Your Booking
+                    </h2>
+                    <p className="text-background/70 text-sm mt-1">
+                      Please verify all details are correct before confirming.
+                    </p>
+                  </div>
+
+                  <div className="p-6 md:p-8 space-y-6">
+                    {/* Disclaimer */}
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                      <div className="flex gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
+                            Please verify all details
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300">
+                            It is your responsibility to ensure the accuracy of all information provided. 
+                            Incorrect details may result in delivery delays or failed deliveries.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Summary Cards */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* Your Details */}
+                      <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <User className="w-4 h-4 text-primary" />
+                          Your Details
+                        </h3>
+                        <div className="space-y-1 text-sm">
+                          <p><span className="text-muted-foreground">Name:</span> {formData.contactName}</p>
+                          <p><span className="text-muted-foreground">Email:</span> {formData.email}</p>
+                          <p><span className="text-muted-foreground">Phone:</span> {formData.phone}</p>
+                        </div>
+                      </div>
+
+                      {/* Package Details */}
+                      <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <Package className="w-4 h-4 text-primary" />
+                          Package
+                        </h3>
+                        <div className="space-y-1 text-sm">
+                          <p><span className="text-muted-foreground">Weight:</span> {formData.weight} kg</p>
+                          <p><span className="text-muted-foreground">Tracking:</span> {formData.includeTracking ? "Yes (+R" + TRACKING_FEE + ")" : "No"}</p>
+                          {formData.description && (
+                            <p><span className="text-muted-foreground">Contents:</span> {formData.description}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Pickup Details */}
+                      <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-primary" />
+                          Pickup
+                        </h3>
+                        <div className="space-y-1 text-sm">
+                          <p><span className="text-muted-foreground">City:</span> {formData.originCity}</p>
+                          <p><span className="text-muted-foreground">Address:</span> {formData.pickupAddress}</p>
+                          {formData.pickupDate && (
+                            <p><span className="text-muted-foreground">Date:</span> {formData.pickupDate}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Delivery Details */}
+                      <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-primary" />
+                          Delivery
+                        </h3>
+                        <div className="space-y-1 text-sm">
+                          <p><span className="text-muted-foreground">City:</span> {formData.destinationCity}</p>
+                          <p><span className="text-muted-foreground">Address:</span> {formData.deliveryAddress}</p>
+                          <p><span className="text-muted-foreground">Recipient:</span> {formData.recipientName}</p>
+                          <p><span className="text-muted-foreground">Phone:</span> {formData.recipientPhone}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Price Summary */}
+                    {priceBreakdown && (
+                      <div className="bg-primary/10 border border-primary/20 rounded-xl p-6">
+                        <div className="text-center mb-4">
+                          <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
+                          <p className="font-display font-bold text-4xl text-primary">
+                            R{priceBreakdown.finalPrice.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="bg-background/50 rounded-lg p-3 text-xs space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Route</span>
+                            <span>{priceBreakdown.route}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Weight</span>
+                            <span>{priceBreakdown.parcelWeightKg} kg</span>
+                          </div>
+                          {priceBreakdown.trackingIncluded && (
+                            <div className="flex justify-between text-primary font-medium">
+                              <span>Parcel Tracking</span>
+                              <span>+R{priceBreakdown.trackingFee}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        className="sm:flex-1"
+                        onClick={() => setShowReview(false)}
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Edit Details
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="hero"
+                        size="lg"
+                        className="sm:flex-1"
+                        disabled={isSubmitting}
+                        onClick={handleSubmit}
+                      >
+                        {isSubmitting ? "Processing..." : "Confirm Booking"}
+                      </Button>
+                    </div>
+
+                    <p className="text-xs text-center text-muted-foreground">
+                      By confirming, you agree to our{" "}
+                      <Link to="/terms-of-service" className="underline">Terms of Service</Link>.
+                      We'll confirm your booking within 1 hour.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
       </main>
 

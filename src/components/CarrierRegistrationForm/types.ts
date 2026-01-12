@@ -57,8 +57,11 @@ export const step4Schema = z.object({
     .regex(/^[\d\s\-\(\)\+]+$/, "Please enter a valid phone number"),
 });
 
-// Step 5: Review & Submit
-export const step5Schema = z.object({
+// Step 5: Review (no validation needed - just viewing data)
+export const step5Schema = z.object({});
+
+// Step 6: Confirm & Submit
+export const step6Schema = z.object({
   referralSource: z.string().min(1, "Please tell us how you heard about us"),
   termsAccepted: z.boolean().refine((val) => val === true, {
     message: "You must accept the terms and conditions",
@@ -70,13 +73,14 @@ export const fullCarrierSchema = step1Schema
   .merge(step2Schema)
   .merge(step3Schema)
   .merge(step4Schema)
-  .merge(step5Schema);
+  .merge(step6Schema);
 
 export type Step1Data = z.infer<typeof step1Schema>;
 export type Step2Data = z.infer<typeof step2Schema>;
 export type Step3Data = z.infer<typeof step3Schema>;
 export type Step4Data = z.infer<typeof step4Schema>;
 export type Step5Data = z.infer<typeof step5Schema>;
+export type Step6Data = z.infer<typeof step6Schema>;
 export type CarrierFormData = z.infer<typeof fullCarrierSchema>;
 
 export const initialFormData: CarrierFormData = {
