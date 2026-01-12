@@ -54,7 +54,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               <li>
                 <Link to="/carrier-signup" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/30 group-hover:bg-primary transition-colors" />
-                  Partner With Us
+                  Join the Community
                 </Link>
               </li>
               <li>

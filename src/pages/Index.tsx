@@ -142,7 +142,7 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-accent" />
-              <span className="text-sm font-medium">Trusted drivers</span>
+              <span className="text-sm font-medium">Community of travelers</span>
             </div>
           </motion.div>
         </div>
@@ -343,8 +343,8 @@ const Index = () => {
               },
               {
                 step: "02",
-                title: "We Transport",
-                description: "Your parcel is securely transported via our optimized route network.",
+                title: "Community Delivers",
+                description: "A community member already traveling your route carries your parcel.",
               },
               {
                 step: "03",

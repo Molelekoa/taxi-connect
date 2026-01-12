@@ -162,17 +162,17 @@ const CarrierRegistrationForm = () => {
           <CheckCircle className="w-10 h-10 text-primary" />
         </div>
         <h2 className="font-display font-bold text-3xl text-foreground mb-4">
-          Application Submitted!
+          Welcome to the Community!
         </h2>
         <p className="text-muted-foreground text-lg mb-6 max-w-md mx-auto">
-          Thank you for applying to become a CourierConnect delivery partner. Our team will verify your 
-          documents and contact you within 2-3 business days.
+          Thank you for joining our network of travelers who help connect people across Southern Africa. 
+          Our team will verify your documents and contact you within 2-3 business days.
         </p>
         <div className="p-4 rounded-lg bg-secondary/50 border border-border">
           <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">What happens next?</strong><br />
-            We'll verify your ID, driver's license, and vehicle details. Once approved, 
-            you'll receive access to our driver app and can start accepting deliveries.
+            Once approved, you'll be able to pick up parcels along routes you're already traveling. 
+            The delivery fees you earn can help cover your petrol and toll costs.
           </p>
         </div>
       </motion.div>
