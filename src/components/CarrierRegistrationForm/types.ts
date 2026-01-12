@@ -46,7 +46,32 @@ export const step3Schema = z.object({
 
 // Step 4: Operations & Preferences
 export const step4Schema = z.object({
-  primaryServiceRegion: z.string().min(1, "Primary service region is required"),
+  // Route information
+  primaryRouteFrom: z.string().min(1, "Please select your departure city"),
+  primaryRouteTo: z.string().min(1, "Please select your destination city"),
+  returnTrip: z.enum(["yes", "no", "sometimes"], {
+    required_error: "Please select if you travel both directions",
+  }),
+  additionalRoutes: z.array(z.object({
+    from: z.string(),
+    to: z.string()
+  })).optional(),
+  
+  // Schedule information
+  travelFrequency: z.string().min(1, "Please select how often you travel"),
+  scheduleType: z.enum(["fixed", "somewhat", "varies"], {
+    required_error: "Please indicate your schedule type",
+  }),
+  availableDays: z.array(z.string()).optional(),
+  departureTime: z.string().min(1, "Please select your typical departure time"),
+  advanceNotice: z.string().min(1, "Please select how much notice you need"),
+  
+  // Capacity
+  parcelsPerTrip: z.string().min(1, "Please select your capacity"),
+  storageType: z.string().optional(),
+  
+  // Legacy fields (keeping for compatibility)
+  primaryServiceRegion: z.string().optional(),
   additionalRegions: z.array(z.string()).optional(),
   cargoTypes: z.array(z.string()).min(1, "Select at least one cargo type"),
   emergencyContactName: z.string().min(2, "Emergency contact name is required"),
@@ -108,7 +133,18 @@ export const initialFormData: CarrierFormData = {
   minLoadCapacity: "",
   maxLoadCapacity: "",
   hasValidInsurance: false,
-  // Step 4 - Operations
+  // Step 4 - Operations & Routes
+  primaryRouteFrom: "",
+  primaryRouteTo: "",
+  returnTrip: "yes",
+  additionalRoutes: [],
+  travelFrequency: "",
+  scheduleType: "fixed",
+  availableDays: [],
+  departureTime: "",
+  advanceNotice: "",
+  parcelsPerTrip: "",
+  storageType: "",
   primaryServiceRegion: "",
   additionalRegions: [],
   cargoTypes: [],
