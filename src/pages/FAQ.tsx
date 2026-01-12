@@ -13,77 +13,52 @@ import { Button } from "@/components/ui/button";
 const FAQ = () => {
   const faqCategories = [
     {
-      title: "General Questions",
+      title: "About Our Community",
       faqs: [
         {
           question: "What is Dyno Dash?",
-          answer: "Dyno Dash is a freight brokerage company based in Johannesburg, South Africa. We connect shippers with reliable carriers to transport goods across South Africa and the SADC region. As a broker, we handle the logistics coordination, carrier vetting, and shipment tracking so you can focus on your business."
+          answer: "Dyno Dash is a community-driven parcel delivery network based in Johannesburg, South Africa. We connect people who need parcels delivered with Traveler Partners who are already traveling to those destinations. It's a win-win: senders get affordable delivery, and travelers offset their petrol and toll costs."
+        },
+        {
+          question: "How is this different from traditional couriers?",
+          answer: "Traditional couriers run dedicated routes whether they have packages or not. Our community members are already traveling—they're simply carrying parcels along routes they're taking anyway. This makes delivery more affordable and environmentally friendly while creating earning opportunities for our Traveler Partners."
         },
         {
           question: "What areas do you service?",
-          answer: "We provide freight services throughout South Africa and the broader SADC region, including Botswana, Namibia, Zimbabwe, Mozambique, Zambia, Malawi, and other neighboring countries. Whether you need local delivery within Gauteng or cross-border transportation, we have carrier partners to meet your needs."
+          answer: "We service routes throughout South Africa and cross-border destinations including Lesotho, Zimbabwe, Botswana, Mozambique, and other SADC countries. Our network grows as more Traveler Partners join, so route availability expands with our community."
         },
         {
-          question: "How do I get started with Dyno Dash?",
-          answer: "Getting started is simple. Request a quote through our online form or call us at (011) 568 5343. Provide details about your shipment including origin, destination, cargo type, and weight. We'll match you with the right carrier and provide a competitive quote within hours."
-        },
-        {
-          question: "Do I need an account to ship with you?",
-          answer: "No account is required for one-time shipments. However, creating an account allows you to access preferential rates, track shipment history, and streamline future bookings. Business accounts with regular shipping volumes may qualify for credit terms."
+          question: "Is my parcel safe with a community member?",
+          answer: "Yes. All Traveler Partners go through a verification process including ID verification, vehicle documentation, and reference checks. We also provide tracking and maintain communication throughout the delivery process. Our community is built on trust and accountability."
         }
       ]
     },
     {
-      title: "Shipping & Services",
+      title: "Sending Parcels",
       faqs: [
         {
-          question: "What types of freight do you handle?",
-          answer: "We handle a wide range of freight including Full Truckload (FTL), Less Than Truckload (LTL), expedited/time-critical shipments, and specialized cargo. Our specialized services cover hazardous materials (with proper certification), temperature-controlled goods, oversized loads, and high-value cargo requiring extra security."
+          question: "What can I send?",
+          answer: "We handle small to medium-sized parcels weighing between 1kg and 20kg—roughly anything that fits in a suitcase. This includes documents, clothing, gifts, electronics, household items, and other everyday goods. We focus on cargo that's easy to transport safely."
         },
         {
-          question: "What is the difference between FTL and LTL?",
-          answer: "Full Truckload (FTL) means your cargo occupies the entire truck exclusively. It's ideal for large shipments over 10,000 kg or when you need direct, faster delivery. Less Than Truckload (LTL) combines your shipment with other cargo heading the same direction, making it cost-effective for smaller loads under 5,000 kg."
-        },
-        {
-          question: "Can you handle hazardous materials?",
-          answer: "Yes, we work with certified carriers who are licensed to transport hazardous materials. You must provide proper documentation including Safety Data Sheets (SDS), UN numbers, and hazard classifications. Additional permits and specialized equipment may be required, which we'll coordinate for you."
+          question: "What can't I send?",
+          answer: "We don't accept large or heavy packages (over 20kg), temperature-sensitive goods requiring refrigeration, hazardous materials, illegal items, or anything prohibited by law. Our service is designed for everyday parcels, not specialized freight."
         },
         {
           question: "Do you offer temperature-controlled shipping?",
-          answer: "Yes, we partner with carriers offering refrigerated (reefer) trucks for temperature-sensitive goods. We can maintain cold chain integrity for perishables, pharmaceuticals, and other temperature-critical cargo with real-time temperature monitoring throughout transit."
+          answer: "No, we don't offer temperature-controlled or refrigerated shipping. Our community model isn't suited for perishables or items requiring cold chain integrity. For temperature-sensitive goods, we recommend using a specialized courier service."
         },
         {
-          question: "Can you ship internationally?",
-          answer: "We specialize in cross-border shipping throughout the SADC region. Our team handles customs documentation, border clearances, and regulatory compliance. For destinations outside Africa, we can coordinate with international freight forwarders to provide end-to-end solutions."
-        }
-      ]
-    },
-    {
-      title: "Pricing & Quotes",
-      faqs: [
-        {
-          question: "How is freight pricing calculated?",
-          answer: "Freight rates depend on several factors: distance, cargo weight and dimensions, shipment type (FTL vs LTL), required equipment, pickup and delivery locations, and current market conditions including fuel costs. Special requirements like hazmat handling or temperature control also affect pricing."
+          question: "Can I send large or heavy items?",
+          answer: "Our service is limited to parcels under 20kg that can fit comfortably in a car boot or passenger space. We don't handle large furniture, heavy equipment, or freight-sized cargo. For larger shipments, you'll need a traditional freight service."
         },
         {
-          question: "How do I get a quote?",
-          answer: "You can request a quote through our online form, which takes about 2 minutes to complete. Alternatively, call us at (011) 568 5343 or email info@dynodash.com. Provide shipment details including pickup and delivery locations, cargo description, weight, and any special requirements for the most accurate quote."
+          question: "How do I book a delivery?",
+          answer: "Use our online booking form to enter your pickup and delivery locations, parcel details, and preferred timing. We'll match you with a Traveler Partner heading that way and provide a quote. Once confirmed, you'll arrange pickup with your matched partner."
         },
         {
-          question: "How long are quotes valid?",
-          answer: "Standard quotes are valid for 7 days from issue. Market conditions, fuel prices, and carrier availability can affect rates, so we recommend booking promptly. For time-sensitive shipments, quotes may be valid for shorter periods, which will be clearly indicated."
-        },
-        {
-          question: "Are there any hidden fees?",
-          answer: "We believe in transparent pricing. Your quote includes the base freight rate and any standard accessorial charges. Additional fees may apply for services like liftgate delivery, inside pickup/delivery, detention time, re-delivery attempts, or address corrections. All potential charges are disclosed upfront."
-        },
-        {
-          question: "What payment methods do you accept?",
-          answer: "We accept EFT bank transfers, credit cards, and approved credit terms for established business accounts. Payment is typically due within 30 days of invoice. All transactions are in South African Rand (ZAR) unless otherwise specified for international shipments."
-        },
-        {
-          question: "Do you offer volume discounts?",
-          answer: "Yes, we offer competitive rates for businesses with regular shipping needs. Contact us to discuss your shipping volume and frequency—we'll create a customized rate structure that provides savings while maintaining service quality."
+          question: "How much does delivery cost?",
+          answer: "Pricing depends on distance, parcel size, and route demand. Our community model typically offers rates lower than traditional couriers since our partners are traveling anyway. Use our quote tool for instant pricing on your specific route."
         }
       ]
     },
@@ -92,57 +67,90 @@ const FAQ = () => {
       faqs: [
         {
           question: "How long does delivery take?",
-          answer: "Delivery times depend on distance, shipment type, and service level. Local deliveries within Gauteng typically take 1-2 business days. National shipments range from 2-5 business days. Cross-border SADC shipments may take 3-7 business days depending on customs clearance. Expedited options are available for urgent cargo."
+          answer: "Delivery times depend on when a Traveler Partner is heading your way. Popular routes like Johannesburg to Maseru or Johannesburg to Harare often have daily travelers. Less common routes may take a few days to match. We'll always give you an estimated timeframe upfront."
         },
         {
-          question: "Can I track my shipment?",
-          answer: "Yes, we provide shipment tracking for all bookings. Once your shipment is picked up, you'll receive tracking information via email or SMS. You can monitor your cargo's progress and receive updates on estimated delivery times throughout transit."
+          question: "Can I track my parcel?",
+          answer: "Yes, once matched with a Traveler Partner, you'll receive updates at key milestones: pickup confirmation, departure, border crossing (for cross-border), and delivery. You can also communicate directly with your partner through our platform."
         },
         {
-          question: "What happens if my delivery is delayed?",
-          answer: "While we strive for on-time delivery, delays can occur due to weather, traffic, customs processing, or unforeseen circumstances. We proactively communicate any delays and work to minimize impact. For time-critical shipments, consider our expedited service with guaranteed delivery windows."
+          question: "What if my parcel is delayed?",
+          answer: "Since our partners are real travelers, occasional delays can happen due to traffic, border queues, or schedule changes. We keep you informed of any delays and work to find alternative partners if needed. For time-critical items, please factor in some flexibility."
         },
         {
-          question: "Do you offer same-day or next-day delivery?",
-          answer: "Yes, our expedited service offers same-day and next-day delivery options for urgent shipments within South Africa. These premium services use dedicated vehicles and priority routing. Contact us for availability and pricing on time-critical shipments."
+          question: "Do you offer same-day delivery?",
+          answer: "Same-day delivery is possible on busy routes if a Traveler Partner is heading out that day and has capacity. However, we recommend booking at least 24-48 hours ahead for the best chance of securing your preferred timing."
         },
         {
-          question: "What if no one is available to receive the delivery?",
-          answer: "For commercial deliveries, shipments are typically received at loading docks during business hours. If no authorized person is available, the driver will attempt to contact you. Failed delivery attempts may result in detention fees or re-delivery charges. Please ensure someone is available at the specified time window."
+          question: "What if nobody is home for delivery?",
+          answer: "Coordinate directly with your Traveler Partner on delivery timing. They'll contact you before arrival. If plans change, you can arrange an alternative time or location that works for both parties."
         }
       ]
     },
     {
-      title: "Insurance & Claims",
+      title: "Cross-Border Deliveries",
       faqs: [
         {
-          question: "Is my cargo insured during transit?",
-          answer: "Carriers maintain basic cargo liability coverage, typically limited to R100 per kilogram. For valuable shipments, we strongly recommend purchasing additional cargo insurance. We can arrange comprehensive coverage through our insurance partners to protect your goods' full value."
+          question: "Can you deliver to other countries?",
+          answer: "Yes! Cross-border delivery is one of our specialties. We have active routes to Lesotho, Zimbabwe, Botswana, Mozambique, and other SADC destinations. Many of our Traveler Partners regularly cross borders and are familiar with the process."
         },
         {
-          question: "How do I file a claim for damaged or lost goods?",
-          answer: "Report any damage or loss immediately. For visible damage, note it on the delivery receipt before signing. Photograph all damage and retain packaging. Contact us within 14 days for visible damage or 21 days for concealed damage. Submit a written claim with documentation including photos, invoices, and proof of value."
+          question: "How does customs work?",
+          answer: "Our Traveler Partners are experienced with border crossings. For personal items and gifts, customs is usually straightforward. You may need to provide an invoice or contents declaration. Duties and taxes, if applicable, are the recipient's responsibility."
         },
         {
-          question: "How long does the claims process take?",
-          answer: "We aim to resolve claims within 30-60 days, depending on complexity and carrier response. We act as your advocate throughout the process, coordinating with carriers and insurers to achieve fair resolution. You'll receive regular updates on claim status."
+          question: "Are there restrictions on cross-border parcels?",
+          answer: "Each country has import restrictions. Generally, everyday items like clothing, documents, and household goods are fine. Restricted items include certain foods, plants, medicines, and items exceeding duty-free allowances. When in doubt, check with us before booking."
+        },
+        {
+          question: "How long do cross-border deliveries take?",
+          answer: "Cross-border times vary by destination and border traffic. Lesotho deliveries from Johannesburg are often next-day. Zimbabwe typically takes 1-2 days. Border delays during peak periods can add time, so we recommend some flexibility for international routes."
         }
       ]
     },
     {
-      title: "Carrier Partnership",
+      title: "Pricing & Payment",
       faqs: [
         {
-          question: "How do I become a carrier partner?",
-          answer: "We welcome applications from professional carriers. Complete our online Carrier Signup form with your company details, fleet information, insurance documentation, and operating credentials. Our team will review your application and contact you within 3-5 business days."
+          question: "How is pricing calculated?",
+          answer: "Prices are based on distance, parcel weight/size, and route demand. Cross-border deliveries factor in border crossing complexity. Our community model means you're essentially sharing travel costs, making rates competitive with—or better than—traditional couriers."
         },
         {
-          question: "What are the requirements to partner with Dyno Dash?",
-          answer: "Carrier partners must maintain valid business registration, appropriate operating authority, adequate liability and cargo insurance, well-maintained vehicles, and a satisfactory safety record. We verify credentials and may conduct inspections before approving partnerships."
+          question: "When do I pay?",
+          answer: "Payment is collected when you confirm your booking. This secures your spot with a Traveler Partner. We hold the payment in escrow and release it to the partner once delivery is confirmed."
         },
         {
-          question: "How quickly do carriers get paid?",
-          answer: "We offer competitive payment terms to our carrier partners. Standard payment is processed within 30 days of delivery confirmation. Quick-pay options may be available for a small fee. We pride ourselves on reliable, on-time payments to maintain strong carrier relationships."
+          question: "What payment methods do you accept?",
+          answer: "We accept EFT bank transfers, credit/debit cards, and mobile money options. All transactions are in South African Rand (ZAR). Cross-border recipients can pay in local currency equivalent where available."
+        },
+        {
+          question: "What if my delivery doesn't arrive?",
+          answer: "In the rare event of non-delivery, contact us immediately. We investigate with the Traveler Partner and work to resolve the issue. Refunds are provided for undelivered parcels according to our terms of service. Our verification process helps minimize such occurrences."
+        }
+      ]
+    },
+    {
+      title: "Becoming a Traveler Partner",
+      faqs: [
+        {
+          question: "How do I join as a Traveler Partner?",
+          answer: "Complete our online registration form with your personal details, ID verification, and information about your regular travel routes. Once verified, you'll start receiving delivery opportunities matching your routes. It's free to join!"
+        },
+        {
+          question: "What are the requirements?",
+          answer: "You need a valid ID, reliable vehicle (or regular transport means), and commitment to safe, timely delivery. For cross-border routes, valid travel documents are required. No commercial license needed—you're simply carrying parcels on trips you're already making."
+        },
+        {
+          question: "How much can I earn?",
+          answer: "Earnings depend on your routes, frequency of travel, and how many parcels you carry. Many partners earn enough to cover their petrol and tolls, while frequent travelers on popular routes can earn meaningful supplemental income. You set your own availability."
+        },
+        {
+          question: "How do I get paid?",
+          answer: "Earnings are released to your account once delivery is confirmed. You can withdraw to your bank account or mobile money wallet. We offer fast payouts so you have your earnings quickly after completing deliveries."
+        },
+        {
+          question: "Can I choose which parcels to carry?",
+          answer: "Absolutely. You'll see delivery opportunities matching your registered routes and schedule. Accept the ones that work for you and decline others. You're in control of your availability and capacity."
         }
       ]
     }
@@ -152,7 +160,7 @@ const FAQ = () => {
     <>
       <Helmet>
         <title>Frequently Asked Questions | Dyno Dash</title>
-        <meta name="description" content="Find answers to common questions about freight shipping, pricing, delivery times, and our services at Dyno Dash." />
+        <meta name="description" content="Find answers about our community-driven parcel delivery network, sending parcels, becoming a Traveler Partner, and cross-border deliveries to Lesotho, Zimbabwe, and SADC." />
       </Helmet>
       
       <div className="min-h-screen flex flex-col">
@@ -166,7 +174,7 @@ const FAQ = () => {
                 Frequently Asked <span className="text-primary">Questions</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                Everything you need to know about shipping with Dyno Dash. Can't find what you're looking for? Contact our team.
+                Everything you need to know about our community-driven delivery network. Can't find your answer? We're here to help.
               </p>
             </div>
           </section>
@@ -219,10 +227,10 @@ const FAQ = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild size="lg" className="font-semibold">
-                  <Link to="/get-quote">Get a Quote</Link>
+                  <Link to="/small-parcel">Send a Parcel</Link>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="font-semibold">
-                  <a href="tel:+27115685343">Call (011) 568 5343</a>
+                  <Link to="/carrier-signup">Join as Traveler Partner</Link>
                 </Button>
               </div>
             </div>
