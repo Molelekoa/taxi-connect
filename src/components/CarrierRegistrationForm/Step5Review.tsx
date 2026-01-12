@@ -1,22 +1,12 @@
 import { CarrierFormData } from "./types";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   User,
   CreditCard,
   Car,
   MapPin,
   CheckCircle,
-  FileText,
+  AlertTriangle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 interface Step5Props {
   formData: CarrierFormData;
@@ -24,16 +14,7 @@ interface Step5Props {
   errors: Record<string, string>;
 }
 
-const Step5Review = ({ formData, updateFormData, errors }: Step5Props) => {
-  const referralOptions = [
-    "Google / Search Engine",
-    "Facebook / Social Media",
-    "Friend / Family Referral",
-    "Existing Driver Referral",
-    "Job Board / Advertisement",
-    "Other",
-  ];
-
+const Step5Review = ({ formData }: Step5Props) => {
   const formatLicenseType = (type: string) => {
     const types: Record<string, string> = {
       "code-a": "Code A (Motorcycle)",
@@ -159,64 +140,20 @@ const Step5Review = ({ formData, updateFormData, errors }: Step5Props) => {
         </div>
       </div>
 
-      {/* Referral Source */}
-      <div>
-        <Label htmlFor="referralSource">How did you hear about CourierConnect? *</Label>
-        <Select
-          value={formData.referralSource}
-          onValueChange={(value) => updateFormData({ referralSource: value })}
-        >
-          <SelectTrigger className={errors.referralSource ? "border-destructive" : ""}>
-            <SelectValue placeholder="Select an option" />
-          </SelectTrigger>
-          <SelectContent>
-            {referralOptions.map((option) => (
-              <SelectItem key={option} value={option.toLowerCase()}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.referralSource && (
-          <p className="text-sm text-destructive mt-1">{errors.referralSource}</p>
-        )}
-      </div>
-
-      {/* Terms & Conditions */}
-      <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-        <div className="flex items-start space-x-3">
-          <Checkbox
-            id="termsAccepted"
-            checked={formData.termsAccepted}
-            onCheckedChange={(checked) =>
-              updateFormData({ termsAccepted: checked === true })
-            }
-            className={errors.termsAccepted ? "border-destructive" : ""}
-          />
-          <div className="space-y-1">
-            <Label
-              htmlFor="termsAccepted"
-              className="cursor-pointer font-medium flex items-center gap-2"
-            >
-              <FileText className="w-4 h-4 text-primary" />
-              Accept Terms & Conditions *
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              I have read and agree to the CourierConnect{" "}
-              <Link to="/terms-of-service" className="text-primary hover:underline" target="_blank">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link to="/privacy-policy" className="text-primary hover:underline" target="_blank">
-                Privacy Policy
-              </Link>
-              . I confirm that all information provided is accurate and complete.
+      {/* Disclaimer */}
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+        <div className="flex gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
+              Please verify all details
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              It is your responsibility to ensure all details are accurate and complete. 
+              Inaccurate information may delay your application processing.
             </p>
           </div>
         </div>
-        {errors.termsAccepted && (
-          <p className="text-sm text-destructive mt-2">{errors.termsAccepted}</p>
-        )}
       </div>
     </div>
   );
