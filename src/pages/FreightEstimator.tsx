@@ -103,17 +103,16 @@ const ParcelEstimator = () => {
     }
   }, [deliveryCountry]);
 
-  // Calculate the effective distance
-  const effectiveDistance = detectedCrossBorder
-    ? SADC_DATA[detectedCrossBorder]?.distance || mapboxDistance
-    : mapboxDistance;
+  // Calculate the effective distance - prefer Mapbox, fallback to SADC data
+  const effectiveDistance = mapboxDistance 
+    || (detectedCrossBorder ? SADC_DATA[detectedCrossBorder]?.distance : null);
 
-  // Get cross-border coordinates for map visualization
+  // Get cross-border coordinates for map visualization - use actual geocoded coords when available
   const crossBorderCoordinates = detectedCrossBorder
     ? {
-        pickup: JHB_COORDINATES,
-        delivery: SADC_DATA[detectedCrossBorder]?.coordinates || null,
-        deliveryLabel: SADC_DATA[detectedCrossBorder]?.capital || 'Destination'
+        pickup: pickupCoordinates || JHB_COORDINATES,
+        delivery: deliveryCoordinates || SADC_DATA[detectedCrossBorder]?.coordinates || null,
+        deliveryLabel: deliveryPlace || SADC_DATA[detectedCrossBorder]?.capital || 'Destination'
       }
     : null;
 
@@ -283,7 +282,7 @@ const ParcelEstimator = () => {
                     <RouteMap
                       pickupCoordinates={crossBorderCoordinates.pickup}
                       deliveryCoordinates={crossBorderCoordinates.delivery}
-                      pickupLabel="Johannesburg"
+                      pickupLabel={pickupPlace || formData.pickupLocation || 'Origin'}
                       deliveryLabel={crossBorderCoordinates.deliveryLabel}
                     />
                   )}
