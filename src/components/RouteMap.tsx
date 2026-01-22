@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Coordinates } from '@/lib/mapbox';
@@ -27,7 +27,9 @@ const RouteMap = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const pickupMarker = useRef<mapboxgl.Marker | null>(null);
   const deliveryMarker = useRef<mapboxgl.Marker | null>(null);
+  const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
 
   const token = getMapboxToken();
@@ -95,85 +97,94 @@ const RouteMap = ({
           'line-opacity': 0.9,
         },
       });
+
+      // Mark map as ready AFTER sources/layers are added
+      setMapReady(true);
     });
 
     return () => {
+      setMapReady(false);
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+      pickupMarker.current?.remove();
+      deliveryMarker.current?.remove();
       map.current?.remove();
+      map.current = null;
     };
   }, [token]);
 
-  // Update markers and route when coordinates change
-  useEffect(() => {
+  // Route update function
+  const updateRoute = useCallback(async () => {
     if (!map.current || !pickupCoordinates || !deliveryCoordinates || !token) {
-      setRouteInfo(null);
       return;
     }
 
-    const updateRoute = async () => {
-      // Clear existing markers
-      pickupMarker.current?.remove();
-      deliveryMarker.current?.remove();
+    // Clear existing markers
+    pickupMarker.current?.remove();
+    deliveryMarker.current?.remove();
 
-      // Create custom marker elements
-      const createMarkerElement = (color: string, icon: 'pickup' | 'delivery') => {
-        const el = document.createElement('div');
-        el.className = 'flex items-center justify-center';
-        el.innerHTML = `
-          <div class="relative">
-            <div class="w-8 h-8 rounded-full ${color === 'green' ? 'bg-green-500' : 'bg-primary'} flex items-center justify-center shadow-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                ${icon === 'pickup' 
-                  ? '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>' 
-                  : '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'}
-              </svg>
-            </div>
-            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 ${color === 'green' ? 'bg-green-500' : 'bg-primary'} rotate-45"></div>
+    // Create custom marker elements
+    const createMarkerElement = (color: string, icon: 'pickup' | 'delivery') => {
+      const el = document.createElement('div');
+      el.className = 'flex items-center justify-center';
+      el.innerHTML = `
+        <div class="relative">
+          <div class="w-8 h-8 rounded-full ${color === 'green' ? 'bg-green-500' : 'bg-primary'} flex items-center justify-center shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              ${icon === 'pickup' 
+                ? '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>' 
+                : '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'}
+            </svg>
           </div>
-        `;
-        return el;
-      };
+          <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 ${color === 'green' ? 'bg-green-500' : 'bg-primary'} rotate-45"></div>
+        </div>
+      `;
+      return el;
+    };
 
-      // Add pickup marker (green)
-      pickupMarker.current = new mapboxgl.Marker({ element: createMarkerElement('green', 'pickup') })
-        .setLngLat([pickupCoordinates.lng, pickupCoordinates.lat])
-        .setPopup(new mapboxgl.Popup({ offset: 25, className: 'route-popup' }).setHTML(`
-          <div class="p-2">
-            <div class="font-semibold text-green-600 text-sm mb-1">📍 Pickup</div>
-            <div class="text-xs text-gray-700">${pickupLabel}</div>
-          </div>
-        `))
-        .addTo(map.current!);
+    // Add pickup marker (green)
+    pickupMarker.current = new mapboxgl.Marker({ element: createMarkerElement('green', 'pickup') })
+      .setLngLat([pickupCoordinates.lng, pickupCoordinates.lat])
+      .setPopup(new mapboxgl.Popup({ offset: 25, className: 'route-popup' }).setHTML(`
+        <div class="p-2">
+          <div class="font-semibold text-green-600 text-sm mb-1">📍 Pickup</div>
+          <div class="text-xs text-gray-700">${pickupLabel}</div>
+        </div>
+      `))
+      .addTo(map.current);
 
-      // Add delivery marker (orange)
-      deliveryMarker.current = new mapboxgl.Marker({ element: createMarkerElement('orange', 'delivery') })
-        .setLngLat([deliveryCoordinates.lng, deliveryCoordinates.lat])
-        .setPopup(new mapboxgl.Popup({ offset: 25, className: 'route-popup' }).setHTML(`
-          <div class="p-2">
-            <div class="font-semibold text-orange-600 text-sm mb-1">🚚 Delivery</div>
-            <div class="text-xs text-gray-700">${deliveryLabel}</div>
-          </div>
-        `))
-        .addTo(map.current!);
+    // Add delivery marker (orange)
+    deliveryMarker.current = new mapboxgl.Marker({ element: createMarkerElement('orange', 'delivery') })
+      .setLngLat([deliveryCoordinates.lng, deliveryCoordinates.lat])
+      .setPopup(new mapboxgl.Popup({ offset: 25, className: 'route-popup' }).setHTML(`
+        <div class="p-2">
+          <div class="font-semibold text-orange-600 text-sm mb-1">🚚 Delivery</div>
+          <div class="text-xs text-gray-700">${deliveryLabel}</div>
+        </div>
+      `))
+      .addTo(map.current);
 
-      // Fetch route geometry
-      try {
-        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickupCoordinates.lng},${pickupCoordinates.lat};${deliveryCoordinates.lng},${deliveryCoordinates.lat}?access_token=${token}&geometries=geojson&overview=full`;
-        
-        const response = await fetch(url);
-        const data = await response.json();
+    // Fetch route geometry
+    try {
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickupCoordinates.lng},${pickupCoordinates.lat};${deliveryCoordinates.lng},${deliveryCoordinates.lat}?access_token=${token}&geometries=geojson&overview=full`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
 
-        if (data.routes && data.routes.length > 0) {
-          const route = data.routes[0];
-          const routeGeometry = route.geometry;
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const routeGeometry = route.geometry;
 
-          // Update route info
-          setRouteInfo({
-            distance: Math.round(route.distance / 1000), // Convert to km
-            duration: Math.round(route.duration / 60), // Convert to minutes
-          });
+        // Update route info
+        setRouteInfo({
+          distance: Math.round(route.distance / 1000), // Convert to km
+          duration: Math.round(route.duration / 60), // Convert to minutes
+        });
 
-          // Update route source
-          const source = map.current?.getSource('route') as mapboxgl.GeoJSONSource;
+        // Safely update route source
+        if (map.current) {
+          const source = map.current.getSource('route') as mapboxgl.GeoJSONSource | undefined;
           if (source) {
             source.setData({
               type: 'Feature',
@@ -181,31 +192,56 @@ const RouteMap = ({
               geometry: routeGeometry,
             });
           }
+        }
 
-          // Fit bounds to show entire route
+        // Fit bounds to show entire route
+        if (map.current) {
           const bounds = new mapboxgl.LngLatBounds();
           routeGeometry.coordinates.forEach((coord: [number, number]) => {
             bounds.extend(coord);
           });
           
-          map.current?.fitBounds(bounds, {
+          map.current.fitBounds(bounds, {
             padding: { top: 60, bottom: 60, left: 60, right: 60 },
             duration: 1000,
           });
         }
-      } catch (error) {
-        console.error('Error fetching route:', error);
-        setRouteInfo(null);
       }
-    };
-
-    // Wait for map to be loaded before updating
-    if (map.current.isStyleLoaded()) {
-      updateRoute();
-    } else {
-      map.current.on('load', updateRoute);
+    } catch (error) {
+      console.error('Error fetching route:', error);
+      setRouteInfo(null);
     }
   }, [pickupCoordinates, deliveryCoordinates, pickupLabel, deliveryLabel, token]);
+
+  // Update markers and route when coordinates change
+  useEffect(() => {
+    // Clear route info if coordinates are missing
+    if (!pickupCoordinates || !deliveryCoordinates) {
+      setRouteInfo(null);
+      return;
+    }
+
+    // Wait for map to be fully ready with sources
+    if (!mapReady || !map.current) {
+      return;
+    }
+
+    // Clear pending update
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+
+    // Debounce route update to handle rapid changes
+    updateTimeoutRef.current = setTimeout(() => {
+      updateRoute();
+    }, 150);
+
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, [mapReady, pickupCoordinates, deliveryCoordinates, updateRoute]);
 
   // Format duration to hours and minutes
   const formatDuration = (minutes: number): string => {
