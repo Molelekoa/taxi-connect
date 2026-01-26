@@ -116,33 +116,51 @@ const SmallParcelBooking = () => {
   }, [formData.originCity, formData.destinationCity, formData.weight, formData.includeTracking, usePrefilledPrice]);
 
   // Use prefilled price or calculated price
+  // When using prefilled price, adjust for tracking toggle changes
   const displayPrice = useMemo(() => {
     if (usePrefilledPrice && prefilled?.price) {
-      return prefilled.price;
+      // Calculate base price without tracking from the prefilled price
+      const prefilledBasePrice = prefilled.includeTracking 
+        ? prefilled.price - TRACKING_FEE 
+        : prefilled.price;
+      
+      // Add tracking fee based on current form state
+      return formData.includeTracking 
+        ? prefilledBasePrice + TRACKING_FEE 
+        : prefilledBasePrice;
     }
     return calculatedPriceBreakdown?.finalPrice || null;
-  }, [usePrefilledPrice, prefilled?.price, calculatedPriceBreakdown?.finalPrice]);
+  }, [usePrefilledPrice, prefilled?.price, prefilled?.includeTracking, formData.includeTracking, calculatedPriceBreakdown?.finalPrice]);
 
   // Build a price breakdown object for display (either from prefilled or calculated)
   const priceBreakdown = useMemo(() => {
     if (usePrefilledPrice && prefilled?.price) {
-      // Return a simplified breakdown using the prefilled price
+      // Calculate the current price based on tracking toggle
+      const prefilledBasePrice = prefilled.includeTracking 
+        ? prefilled.price - TRACKING_FEE 
+        : prefilled.price;
+      const currentPrice = formData.includeTracking 
+        ? prefilledBasePrice + TRACKING_FEE 
+        : prefilledBasePrice;
+      
+      // Return a simplified breakdown using the adjusted prefilled price
       return {
-        finalPrice: prefilled.price,
+        finalPrice: currentPrice,
         route: `${prefilled.origin} → ${prefilled.destination}`,
         parcelWeightKg: prefilled.weight || 0,
         distanceCategory: "Pre-quoted",
-        trackingIncluded: prefilled.includeTracking || false,
-        trackingFee: prefilled.includeTracking ? TRACKING_FEE : 0,
+        trackingIncluded: formData.includeTracking || false,
+        trackingFee: formData.includeTracking ? TRACKING_FEE : 0,
       };
     }
     return calculatedPriceBreakdown;
-  }, [usePrefilledPrice, prefilled, calculatedPriceBreakdown]);
+  }, [usePrefilledPrice, prefilled, formData.includeTracking, calculatedPriceBreakdown]);
 
 
   const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
-    // If user changes any pricing-relevant field, stop using prefilled price
-    if (['originCity', 'destinationCity', 'weight', 'includeTracking'].includes(field)) {
+    // If user changes route or weight, stop using prefilled price and recalculate
+    // NOTE: Tracking changes should NOT invalidate prefilled price - we adjust it instead
+    if (['originCity', 'destinationCity', 'weight'].includes(field)) {
       setUsePrefilledPrice(false);
     }
     setFormData(prev => ({ ...prev, [field]: value }));
