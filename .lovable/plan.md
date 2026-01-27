@@ -1,149 +1,130 @@
 
-## Admin Dashboard for Parcel Booking Management
+
+## Legal Declaration and ID Upload for Parcel Booking
 
 ### Overview
-Build a complete admin system to view and manage parcel bookings, with email notifications for new bookings and status tracking through the delivery lifecycle.
-
----
-
-### Architecture
-
-```text
-+------------------+     +-------------------+     +------------------+
-|  Booking Form    | --> |  Supabase DB      | --> |  Admin Dashboard |
-|  (SmallParcel)   |     |  parcel_bookings  |     |  /admin          |
-+------------------+     +-------------------+     +------------------+
-         |                        |                        |
-         v                        v                        v
-+------------------+     +-------------------+     +------------------+
-|  Edge Function   |     |  Status Updates   |     |  Protected by    |
-|  send-email      |     |  (Collected,      |     |  Admin Login     |
-|  (Resend)        |     |   In Transit,     |     |                  |
-+------------------+     |   Delivered)      |     +------------------+
-                         +-------------------+
-```
+Add two critical compliance features to the Small Parcel Booking page:
+1. A mandatory legal declaration that the sender is not shipping illegal or stolen goods
+2. An ID/Passport upload field to ensure traceability of the person making the booking
 
 ---
 
 ### What You Will Get
 
-1. **Email Notifications**: Receive an email whenever someone books a parcel
-2. **Admin Dashboard**: View all bookings in a table with filtering and search
-3. **Status Tracking**: Update each parcel's status (Pending, Collected, In Transit, Delivered)
-4. **Simple Admin Login**: Password-protected access just for you
-5. **Booking Details**: Click any booking to see full details in a slide-out panel
+1. **Legal Declaration Checkbox** - A prominent declaration the sender must agree to before booking, stating:
+   - Contents are not illegal, stolen, or prohibited
+   - They accept personal liability under South African, Lesotho, and Zimbabwean law
+   - They understand false declarations may result in legal action
+
+2. **ID/Passport Upload** - A file upload field requiring:
+   - Valid ID document or passport photo
+   - File validation (PDF, JPEG, PNG only, max 5MB)
+   - Visual confirmation when file is uploaded
+
+3. **Review Integration** - Both the declaration status and ID upload will be shown in the review screen before final submission
 
 ---
 
-### Implementation Steps
+### User Experience Flow
 
-#### Step 1: Enable Supabase (Lovable Cloud)
-Set up the backend database to store bookings. This is a one-click action in Lovable.
-
-#### Step 2: Create Database Table
-Create a `parcel_bookings` table to store all booking data:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Unique booking ID |
-| booking_ref | text | Human-readable reference (e.g., CC-2024-001) |
-| contact_name | text | Sender's name |
-| email | text | Sender's email |
-| phone | text | Sender's phone |
-| origin_city | text | Pickup city |
-| pickup_address | text | Full pickup address |
-| pickup_date | date | Requested pickup date |
-| destination_city | text | Delivery city |
-| delivery_address | text | Full delivery address |
-| recipient_name | text | Recipient's name |
-| recipient_phone | text | Recipient's phone |
-| weight | decimal | Parcel weight in kg |
-| description | text | Contents description |
-| include_tracking | boolean | Tracking add-on |
-| price | decimal | Final quoted price |
-| status | text | Current status |
-| created_at | timestamp | When booking was made |
-| updated_at | timestamp | Last status update |
-
-#### Step 3: Set Up Admin Authentication
-Create a simple admin login system:
-- Single admin account (just you)
-- Protected `/admin` route
-- Session-based access using Supabase Auth
-
-#### Step 4: Create Admin Dashboard Page
-Build the `/admin` page with:
-- Login form (if not authenticated)
-- Bookings table with columns: Ref, Sender, Route, Date, Status
-- Search by booking ref or sender name
-- Filter by status (All, Pending, Collected, In Transit, Delivered)
-- Click row to view full details in a Sheet (slide-out panel)
-
-#### Step 5: Add Status Management
-- Dropdown to change status for each booking
-- Status options: Pending → Collected → In Transit → Delivered
-- Automatic timestamp update when status changes
-
-#### Step 6: Email Notifications (Optional Enhancement)
-Set up email alerts for new bookings:
-- Requires Resend API key
-- Edge function to send email when booking is created
-- Email includes booking details and link to admin dashboard
+```text
++-------------------+     +-------------------+     +-------------------+
+| Fill Booking Form | --> | Upload ID/Passport| --> | Tick Declaration  |
++-------------------+     +-------------------+     +-------------------+
+                                                           |
+                                                           v
+                                                   +-------------------+
+                                                   | Review Screen     |
+                                                   | (shows ID + decl) |
+                                                   +-------------------+
+                                                           |
+                                                           v
+                                                   +-------------------+
+                                                   | Confirm Booking   |
+                                                   +-------------------+
+```
 
 ---
 
-### Files to Create/Modify
+### Implementation Details
 
-| File | Action | Description |
-|------|--------|-------------|
-| `supabase/migrations/create_parcel_bookings.sql` | Create | Database table for bookings |
-| `src/pages/Admin.tsx` | Create | Admin dashboard page |
-| `src/components/admin/BookingTable.tsx` | Create | Table component for bookings list |
-| `src/components/admin/BookingDetails.tsx` | Create | Sheet component for booking details |
-| `src/components/admin/AdminLogin.tsx` | Create | Login form for admin access |
-| `src/hooks/useAdminAuth.ts` | Create | Hook for admin authentication |
-| `src/pages/SmallParcelBooking.tsx` | Modify | Save bookings to Supabase |
-| `src/App.tsx` | Modify | Add /admin route |
-| `supabase/functions/send-booking-email/index.ts` | Create | Email notification (if using Resend) |
+#### 1. Update Form Schema
+Add new required fields to the Zod validation schema:
 
----
+| Field | Type | Validation |
+|-------|------|------------|
+| `idDocument` | string | Required - stores filename of uploaded ID |
+| `legalDeclaration` | boolean | Must be `true` to proceed |
 
-### Admin Dashboard Preview
+#### 2. New "Sender Verification" Section
+Add a new section to the booking form after "Your Details" containing:
+- **ID/Passport Upload Box** - Reusing the upload pattern from Carrier Registration
+- **Legal Declaration Checkbox** - A styled checkbox with full declaration text
 
-The dashboard will show:
-- Summary stats at the top (Total bookings, Pending, In Transit, Delivered today)
-- Searchable, sortable table of all bookings
-- Color-coded status badges
-- Click-to-view details panel
-- Quick status update buttons
+#### 3. Declaration Text
+The declaration will read:
 
----
+> "I hereby declare that the contents of this parcel are not illegal, stolen, counterfeit, or prohibited under the laws of South Africa, Lesotho, or Zimbabwe. I understand that I will be held personally liable for any violation of applicable laws and that false declarations may result in legal action. I consent to my identification being recorded for traceability purposes."
 
-### Security Considerations
-- Admin route protected by Supabase Auth
-- RLS policies to ensure only admin can read/update bookings
-- Customers cannot access the admin dashboard
-- Booking data is only visible to the admin account
+#### 4. Review Screen Updates
+The review overlay will display:
+- Uploaded ID document filename
+- Confirmation that the legal declaration was accepted
+- A reminder of liability in the disclaimer section
 
 ---
 
-### Next Steps After Implementation
-Once the admin dashboard is built, you could optionally add:
-- Customer tracking page (enter booking ref to see status)
-- SMS notifications using Twilio
-- Export bookings to CSV
-- Daily/weekly summary reports
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/SmallParcelBooking.tsx` | Add ID upload, declaration checkbox, update schema, update review screen |
 
 ---
 
-### Technical Notes
+### Visual Design
 
-**Database**: Uses Lovable Cloud (Supabase) for data storage
+**ID Upload Section:**
+- Drag-and-drop styled box (matching Carrier Registration)
+- Shows checkmark and filename when uploaded
+- Error state with red border if missing
 
-**Authentication**: Supabase Auth with email/password for admin login
+**Declaration Section:**
+- Amber/warning-styled background to draw attention
+- Checkbox with a scale/legal icon
+- Full legal text visible (not hidden behind a link)
+- Required asterisk indicator
 
-**Email**: Resend integration (requires API key) for new booking notifications
+**Review Screen:**
+- New "Verification" summary card showing:
+  - ID document filename
+  - "Declaration accepted" confirmation
 
-**RLS Policies**: 
-- `parcel_bookings` table: Only authenticated admin can SELECT/UPDATE
-- Public can INSERT (to create bookings)
+---
+
+### Technical Approach
+
+1. **State Management**
+   - Add `idDocumentFile` state for the actual File object
+   - Add `idDocumentName` to formData for the filename
+   - Add `legalDeclarationAccepted` boolean to formData
+
+2. **File Upload Handler**
+   - Reuse validation logic from Carrier Registration (5MB max, PDF/JPEG/PNG only)
+   - Store filename in form state
+   - Show upload errors inline
+
+3. **Validation**
+   - Both fields required before "Review Booking" button activates
+   - Schema validation enforces both fields on submission
+
+4. **Review Display**
+   - Add a new summary card in the review overlay
+   - Show ID filename and declaration status
+
+---
+
+### Security Note
+
+The ID document upload will initially be client-side only (stored in browser memory during the session). Once Supabase/backend is connected, the file will be stored in secure blob storage and the reference saved to the database. The ID is never stored in the database directly - only a reference to the file in storage.
+
