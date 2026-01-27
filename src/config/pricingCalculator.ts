@@ -1,5 +1,5 @@
 // ==========================================
-// COURIERCONNECT PRICING ENGINE
+// PARCEL BUDDY PRICING ENGINE
 // INTERNAL USE ONLY - DO NOT EXPOSE TO UI
 // ==========================================
 

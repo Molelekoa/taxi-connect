@@ -58,7 +58,7 @@ const Step6Confirm = ({ formData, updateFormData, errors }: Step6Props) => {
 
       {/* Referral Source */}
       <div className="space-y-2">
-        <Label htmlFor="referralSource">How did you hear about CourierConnect? *</Label>
+        <Label htmlFor="referralSource">How did you hear about Parcel Buddy? *</Label>
         <Select
           value={formData.referralSource}
           onValueChange={(value) => updateFormData({ referralSource: value })}
@@ -99,7 +99,7 @@ const Step6Confirm = ({ formData, updateFormData, errors }: Step6Props) => {
               Accept Terms & Conditions *
             </Label>
             <p className="text-sm text-muted-foreground">
-              I have read and agree to the CourierConnect{" "}
+              I have read and agree to the Parcel Buddy{" "}
               <Link to="/terms-of-service" className="text-primary hover:underline" target="_blank">
                 Terms of Service
               </Link>{" "}

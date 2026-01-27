@@ -14,8 +14,8 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                 <Package className="h-5 w-5 text-primary-foreground" />
               </div>
               <span className="font-display font-bold text-2xl tracking-tight">
-                <span className="text-foreground">Courier</span>
-                <span className="text-primary">Connect</span>
+                <span className="text-foreground">Parcel</span>
+                <span className="text-primary">Buddy</span>
               </span>
             </Link>
             <p className="text-muted-foreground max-w-sm leading-relaxed">
@@ -76,8 +76,8 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                 </div>
                 <div>
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-0.5">Email</span>
-                  <a href="mailto:hello@courierconnect.co.za" className="text-foreground hover:text-primary transition-colors font-medium">
-                    hello@courierconnect.co.za
+                  <a href="mailto:hello@parcelbuddy.co.za" className="text-foreground hover:text-primary transition-colors font-medium">
+                    hello@parcelbuddy.co.za
                   </a>
                 </div>
               </li>
@@ -108,7 +108,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} CourierConnect. All rights reserved.
+            © {new Date().getFullYear()} Parcel Buddy. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>

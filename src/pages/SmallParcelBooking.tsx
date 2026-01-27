@@ -346,7 +346,7 @@ const SmallParcelBooking = () => {
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
               <Package className="w-4 h-4" />
-              CourierConnect Booking
+              Parcel Buddy Booking
             </div>
             <h1 className="font-display font-bold text-3xl md:text-4xl text-foreground mb-3">
               Book Your Parcel Delivery

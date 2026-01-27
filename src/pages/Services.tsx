@@ -76,8 +76,8 @@ const Services = () => {
               Our <span className="text-gradient">Services</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              From small documents to larger packages, CourierConnect handles parcels up to 20kg 
-              across South Africa, Lesotho, and Zimbabwe using our taxi and bus network.
+              From small documents to larger packages, Parcel Buddy handles parcels up to 20kg 
+              across South Africa, Lesotho, and Zimbabwe using our community network.
             </p>
           </div>
 
