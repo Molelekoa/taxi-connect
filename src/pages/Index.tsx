@@ -104,7 +104,7 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
           >
-            CourierConnect delivers your parcels across South Africa, Lesotho, and Zimbabwe — fast, affordable, and friendly.
+            Parcel Buddy delivers your parcels across South Africa, Lesotho, and Zimbabwe — fast, affordable, and friendly.
           </motion.p>
           
           <motion.div
@@ -176,7 +176,7 @@ const Index = () => {
             transition={{ duration: 0.6 }}
           >
             <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground mb-4">
-              Why <span className="text-gradient">CourierConnect</span>?
+              Why <span className="text-gradient">Parcel Buddy</span>?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Our optimized logistics network delivers faster and more affordably than traditional couriers.

@@ -24,8 +24,8 @@ const Navbar = () => {
             <PackageIcon size={20} className="text-primary-foreground" active />
           </div>
           <span className="font-display font-bold text-xl tracking-tight">
-            <span className="text-foreground">Courier</span>
-            <span className="text-primary">Connect</span>
+            <span className="text-foreground">Parcel</span>
+            <span className="text-primary">Buddy</span>
           </span>
         </Link>
 

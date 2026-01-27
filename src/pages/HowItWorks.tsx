@@ -50,7 +50,7 @@ const HowItWorks = () => {
           {/* Hero */}
           <div className="text-center mb-16 max-w-3xl mx-auto">
             <h1 className="font-display font-bold text-4xl md:text-5xl text-foreground mb-4">
-              How <span className="text-gradient">CourierConnect</span> Works
+              How <span className="text-gradient">Parcel Buddy</span> Works
             </h1>
             <p className="text-lg text-muted-foreground">
               We've built a smarter way to send parcels — using optimized logistics networks 
