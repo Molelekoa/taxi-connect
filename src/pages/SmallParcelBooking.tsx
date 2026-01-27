@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck } from "lucide-react";
+import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X } from "lucide-react";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -23,6 +23,10 @@ import {
   WEIGHT_LIMITS,
   TRACKING_FEE,
 } from "@/config/pricingCalculator";
+
+// File upload validation constants
+const ALLOWED_FILE_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 // Available cities for origin and destination
 const ORIGIN_CITIES = [
@@ -64,9 +68,14 @@ const parcelBookingSchema = z.object({
   weight: z.number().min(WEIGHT_LIMITS.min, `Minimum ${WEIGHT_LIMITS.min} kg`).max(WEIGHT_LIMITS.max, `Maximum ${WEIGHT_LIMITS.max} kg`),
   description: z.string().optional(),
   includeTracking: z.boolean().optional(),
+  idDocumentName: z.string().min(1, "ID or Passport upload is required"),
+  legalDeclarationAccepted: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the legal declaration to proceed" }),
+  }),
 });
 
 type FormData = z.infer<typeof parcelBookingSchema>;
+type FormDataInput = Partial<Omit<FormData, 'legalDeclarationAccepted'> & { legalDeclarationAccepted: boolean }>;
 
 const SmallParcelBooking = () => {
   const location = useLocation();
@@ -81,7 +90,7 @@ const SmallParcelBooking = () => {
     includeTracking?: boolean;
   } | null;
 
-  const [formData, setFormData] = useState<Partial<FormData>>({
+  const [formData, setFormData] = useState<FormDataInput>({
     contactName: "",
     email: "",
     phone: "",
@@ -95,12 +104,19 @@ const SmallParcelBooking = () => {
     weight: prefilled?.weight || undefined,
     description: "",
     includeTracking: prefilled?.includeTracking || false,
+    idDocumentName: "",
+    legalDeclarationAccepted: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  
+  // ID Document upload state
+  const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
+  const [idUploadError, setIdUploadError] = useState<string>("");
+  const idInputRef = useRef<HTMLInputElement>(null);
   
   // Track if we should use the pre-calculated price from the estimator
   const [usePrefilledPrice, setUsePrefilledPrice] = useState(
@@ -157,7 +173,7 @@ const SmallParcelBooking = () => {
   }, [usePrefilledPrice, prefilled, formData.includeTracking, calculatedPriceBreakdown]);
 
 
-  const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
+  const handleInputChange = (field: keyof FormDataInput, value: string | number | boolean) => {
     // If user changes route or weight, stop using prefilled price and recalculate
     // NOTE: Tracking changes should NOT invalidate prefilled price - we adjust it instead
     if (['originCity', 'destinationCity', 'weight'].includes(field)) {
@@ -166,6 +182,54 @@ const SmallParcelBooking = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  // ID Document upload handler
+  const handleIdUpload = (file: File | null) => {
+    setIdUploadError("");
+    
+    if (!file) {
+      setIdDocumentFile(null);
+      setFormData(prev => ({ ...prev, idDocumentName: "" }));
+      return;
+    }
+
+    // Validate file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      setIdUploadError("Please upload a PDF, JPEG, or PNG file");
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      setIdUploadError("File size must be less than 5MB");
+      return;
+    }
+
+    setIdDocumentFile(file);
+    setFormData(prev => ({ ...prev, idDocumentName: file.name }));
+    if (errors.idDocumentName) {
+      setErrors(prev => ({ ...prev, idDocumentName: "" }));
+    }
+  };
+
+  const handleIdDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleIdUpload(file);
+  };
+
+  const handleIdInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleIdUpload(file);
+  };
+
+  const removeIdDocument = () => {
+    setIdDocumentFile(null);
+    setFormData(prev => ({ ...prev, idDocumentName: "" }));
+    if (idInputRef.current) {
+      idInputRef.current.value = "";
     }
   };
 
@@ -347,6 +411,110 @@ const SmallParcelBooking = () => {
                     />
                     {errors.phone && <p className="text-destructive text-xs">{errors.phone}</p>}
                   </div>
+                </div>
+              </section>
+
+              {/* Sender Verification Section */}
+              <section className="space-y-4">
+                <h3 className="font-display font-semibold text-foreground border-b border-border pb-2">
+                  Sender Verification *
+                </h3>
+                
+                {/* ID Upload */}
+                <div className="space-y-2">
+                  <Label>ID Document / Passport *</Label>
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      idDocumentFile 
+                        ? 'border-primary bg-primary/5' 
+                        : errors.idDocumentName 
+                          ? 'border-destructive bg-destructive/5' 
+                          : 'border-border hover:border-primary/50'
+                    }`}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleIdDrop}
+                  >
+                    <input
+                      ref={idInputRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleIdInputChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    
+                    {idDocumentFile ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <FileCheck className="w-8 h-8 text-primary" />
+                        <div className="text-left">
+                          <p className="font-medium text-foreground">{idDocumentFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(idDocumentFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="ml-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeIdDocument();
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-foreground">Upload your ID or Passport</p>
+                          <p className="text-xs text-muted-foreground">
+                            PDF, JPEG, or PNG up to 5MB
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {(errors.idDocumentName || idUploadError) && (
+                    <p className="text-destructive text-xs">{idUploadError || errors.idDocumentName}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Your ID is required for traceability and will be stored securely.
+                  </p>
+                </div>
+
+                {/* Legal Declaration */}
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-4">
+                  <div className="flex gap-3">
+                    <Checkbox
+                      id="legalDeclaration"
+                      checked={formData.legalDeclarationAccepted || false}
+                      onCheckedChange={(checked) => {
+                        handleInputChange('legalDeclarationAccepted', checked === true);
+                      }}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <Label 
+                        htmlFor="legalDeclaration" 
+                        className="text-sm font-medium cursor-pointer flex items-center gap-2 text-amber-800 dark:text-amber-200"
+                      >
+                        <Scale className="w-4 h-4" />
+                        Legal Declaration *
+                      </Label>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 leading-relaxed">
+                        I hereby declare that the contents of this parcel are not illegal, stolen, counterfeit, 
+                        or prohibited under the laws of South Africa, Lesotho, or Zimbabwe. I understand that 
+                        I will be held personally liable for any violation of applicable laws and that false 
+                        declarations may result in legal action. I consent to my identification being recorded 
+                        for traceability purposes.
+                      </p>
+                    </div>
+                  </div>
+                  {errors.legalDeclarationAccepted && (
+                    <p className="text-destructive text-xs mt-2 ml-7">{errors.legalDeclarationAccepted}</p>
+                  )}
                 </div>
               </section>
 
@@ -690,6 +858,27 @@ const SmallParcelBooking = () => {
                           <p><span className="text-muted-foreground">Recipient:</span> {formData.recipientName}</p>
                           <p><span className="text-muted-foreground">Phone:</span> {formData.recipientPhone}</p>
                         </div>
+                      </div>
+
+                      {/* Verification Details */}
+                      <div className="p-4 rounded-lg bg-primary/10 border border-primary/30 md:col-span-2">
+                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <Scale className="w-4 h-4 text-primary" />
+                          Sender Verification
+                        </h3>
+                        <div className="space-y-1 text-sm">
+                          <p className="flex items-center gap-2">
+                            <FileCheck className="w-4 h-4 text-primary" />
+                            <span className="text-muted-foreground">ID Document:</span> {formData.idDocumentName}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-primary" />
+                            <span className="text-muted-foreground">Legal Declaration:</span> Accepted
+                          </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-3 italic">
+                          You have declared that the parcel contents are legal and agreed to be held personally liable under SA, Lesotho, and Zimbabwe law.
+                        </p>
                       </div>
                     </div>
 
