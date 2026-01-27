@@ -6,10 +6,10 @@ interface ProgressIndicatorProps {
 }
 
 const steps = [
-  { number: 1, label: "Company" },
+  { number: 1, label: "Personal" },
   { number: 2, label: "Compliance" },
-  { number: 3, label: "Fleet" },
-  { number: 4, label: "Operations" },
+  { number: 3, label: "Vehicle" },
+  { number: 4, label: "Routes" },
   { number: 5, label: "Review" },
 ];
 

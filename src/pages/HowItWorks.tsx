@@ -7,12 +7,12 @@ import { MapPin, Package, CheckCircle } from "lucide-react";
 const steps = [
   {
     step: "01",
-    title: "Book & Drop Off",
-    description: "Book your parcel online or via WhatsApp. Then drop off your package at one of our designated hubs across the region.",
+    title: "Book & Pay",
+    description: "Book your parcel online or via WhatsApp. Pay securely via card or EFT — then we'll arrange pickup or you can drop off with a nearby traveler.",
     details: [
       "Book online in under 2 minutes",
-      "Pay via EFT, card, or cash at hub",
-      "Hubs in Johannesburg & Pretoria",
+      "Pay via EFT or card (no cash)",
+      "Flexible pickup arrangements",
     ],
     icon: MapPin,
   },
@@ -30,7 +30,7 @@ const steps = [
   {
     step: "03",
     title: "Recipient Collects",
-    description: "The recipient is notified when the parcel arrives at the destination hub. They simply show ID and collect. We can also arrange last-mile delivery for an additional fee.",
+    description: "The recipient is notified when the parcel arrives. They meet the traveler at an agreed point, show ID and collect. We can also arrange last-mile delivery for an additional fee.",
     details: [
       "SMS notification on arrival",
       "ID verification for security",
@@ -136,7 +136,7 @@ const HowItWorks = () => {
                 Ready to Send a Parcel?
               </h3>
               <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                Book your delivery in under 2 minutes. Get instant pricing and drop off at your nearest hub.
+                Book your delivery in under 2 minutes. Get instant pricing and we'll connect you with a traveler on your route.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/small-parcel">

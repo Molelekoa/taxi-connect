@@ -349,7 +349,7 @@ const Index = () => {
               {
                 step: "03",
                 title: "Collect",
-                description: "Recipient picks up from the destination hub, or we deliver to their door.",
+                description: "Recipient meets the traveler at an agreed point, or we deliver to their door.",
               },
             ].map((item, index) => (
               <motion.div
