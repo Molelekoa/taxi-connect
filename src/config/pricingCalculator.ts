@@ -41,6 +41,12 @@ export const TRACKING_FEE = 100.00;
 /** Fallback fare per km when route not in database */
 export const FALLBACK_FARE_PER_KM = 1.50;
 
+/** Distance threshold for pricing adjustment (km) */
+export const DISTANCE_ADJUSTMENT_THRESHOLD_KM = 200;
+
+/** Price adjustment factor for long distances (0.65 = 35% reduction) */
+export const DISTANCE_ADJUSTMENT_FACTOR = 0.65;
+
 /** Default estimated distance for unknown routes (km) */
 export const DEFAULT_DISTANCE_KM = 400;
 
@@ -136,6 +142,7 @@ export interface PriceBreakdown {
   baseCalculatedPrice: number;
   afterMultiplier: number;
   minimumEnforced: boolean;
+  priceAdjustmentApplied: boolean;
   trackingIncluded: boolean;
   trackingFee: number;
   finalPrice: number;
@@ -182,14 +189,24 @@ export const calculateDeliveryPrice = (
   const afterMultiplier = baseCalculatedPrice * PRICE_MULTIPLIER;
   
   // 4. Enforce minimum price
-  const basePrice = Math.max(MINIMUM_PRICE, afterMultiplier);
+  let basePrice = Math.max(MINIMUM_PRICE, afterMultiplier);
   const minimumEnforced = basePrice === MINIMUM_PRICE;
   
-  // 5. Add tracking fee if requested
+  // 5. Apply distance-based pricing adjustment for routes over 200km
+  const effectiveDistance = distanceKm || DEFAULT_DISTANCE_KM;
+  const priceAdjustmentApplied = effectiveDistance > DISTANCE_ADJUSTMENT_THRESHOLD_KM;
+  
+  if (priceAdjustmentApplied) {
+    basePrice = basePrice * DISTANCE_ADJUSTMENT_FACTOR;
+    // Re-enforce minimum price after adjustment
+    basePrice = Math.max(MINIMUM_PRICE, basePrice);
+  }
+  
+  // 6. Add tracking fee if requested (not adjusted)
   const trackingFee = includeTracking ? TRACKING_FEE : 0;
   const finalPrice = basePrice + trackingFee;
   
-  // 6. Prepare result breakdown (internal details)
+  // 7. Prepare result breakdown (internal details)
   return {
     route: `${originCity} to ${destinationCity}`,
     distanceCategory: getDistanceCategory(originCity, destinationCity),
@@ -200,6 +217,7 @@ export const calculateDeliveryPrice = (
     baseCalculatedPrice: Math.round(baseCalculatedPrice * 100) / 100,
     afterMultiplier: Math.round(afterMultiplier * 100) / 100,
     minimumEnforced,
+    priceAdjustmentApplied,
     trackingIncluded: includeTracking,
     trackingFee: trackingFee,
     finalPrice: Math.round(finalPrice * 100) / 100,
