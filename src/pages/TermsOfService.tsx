@@ -6,8 +6,8 @@ const TermsOfService = () => {
   return (
     <>
       <Helmet>
-        <title>Terms of Service | Dyno Dash</title>
-        <meta name="description" content="Dyno Dash Terms of Service - Read our terms and conditions for using our freight brokerage services." />
+        <title>Terms of Service | Parcel Buddy</title>
+        <meta name="description" content="Parcel Buddy Terms of Service - Read our terms and conditions for using our community-driven delivery services." />
       </Helmet>
       
       <div className="min-h-screen flex flex-col">
@@ -22,7 +22,7 @@ const TermsOfService = () => {
               <section className="mb-10">
                 <h2 className="font-display text-2xl font-bold mb-4">1. Acceptance of Terms</h2>
                 <p className="text-muted-foreground mb-4">
-                  Welcome to Dyno Dash. These Terms of Service ("Terms") govern your use of our website and freight brokerage services. By accessing or using our services, you agree to be bound by these Terms and our Privacy Policy.
+                  Welcome to Parcel Buddy. These Terms of Service ("Terms") govern your use of our website and community-driven delivery services. By accessing or using our services, you agree to be bound by these Terms and our Privacy Policy.
                 </p>
                 <p className="text-muted-foreground">
                   If you do not agree to these Terms, you may not access or use our services. We reserve the right to modify these Terms at any time, and your continued use of our services constitutes acceptance of any modifications.
@@ -32,7 +32,7 @@ const TermsOfService = () => {
               <section className="mb-10">
                 <h2 className="font-display text-2xl font-bold mb-4">2. Description of Services</h2>
                 <p className="text-muted-foreground mb-4">
-                  Dyno Dash operates as a freight brokerage company, connecting shippers with qualified carriers for the transportation of goods. Our services include:
+                  Parcel Buddy operates as a community-driven delivery network, connecting senders with travelers who deliver parcels along routes they are already taking. Our services include:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                   <li>Full Truckload (FTL) shipping coordination</li>
@@ -141,7 +141,7 @@ const TermsOfService = () => {
               <section className="mb-10">
                 <h2 className="font-display text-2xl font-bold mb-4">9. Carrier Registration</h2>
                 <p className="text-muted-foreground mb-4">
-                  Carriers wishing to partner with Dyno Dash must:
+                  Community partners wishing to join Parcel Buddy must:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                   <li>Maintain valid operating authority and business registration</li>
@@ -158,14 +158,14 @@ const TermsOfService = () => {
               <section className="mb-10">
                 <h2 className="font-display text-2xl font-bold mb-4">10. Intellectual Property</h2>
                 <p className="text-muted-foreground">
-                  All content on our website, including text, graphics, logos, and software, is the property of Dyno Dash and is protected by intellectual property laws. You may not reproduce, distribute, or create derivative works without our express written consent.
+                  All content on our website, including text, graphics, logos, and software, is the property of Parcel Buddy and is protected by intellectual property laws. You may not reproduce, distribute, or create derivative works without our express written consent.
                 </p>
               </section>
 
               <section className="mb-10">
                 <h2 className="font-display text-2xl font-bold mb-4">11. Indemnification</h2>
                 <p className="text-muted-foreground">
-                  You agree to indemnify and hold harmless Dyno Dash, its officers, directors, employees, and agents from any claims, damages, losses, or expenses arising from your use of our services, violation of these Terms, or infringement of any third-party rights.
+                  You agree to indemnify and hold harmless Parcel Buddy, its officers, directors, employees, and agents from any claims, damages, losses, or expenses arising from your use of our services, violation of these Terms, or infringement of any third-party rights.
                 </p>
               </section>
 
@@ -204,7 +204,7 @@ const TermsOfService = () => {
                   For questions about these Terms of Service, please contact us:
                 </p>
                 <ul className="text-muted-foreground space-y-2">
-                  <li><strong>Email:</strong> info@dynodash.com</li>
+                  <li><strong>Email:</strong> hello@parcelbuddy.co.za</li>
                   <li><strong>Phone:</strong> (011) 568 5343</li>
                   <li><strong>Address:</strong> Johannesburg, South Africa</li>
                 </ul>
