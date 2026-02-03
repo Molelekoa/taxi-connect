@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -30,6 +30,12 @@ const CarrierRegistrationForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top of form when step changes
+  useEffect(() => {
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [currentStep]);
 
   // Load from session storage
   useEffect(() => {
@@ -180,7 +186,7 @@ const CarrierRegistrationForm = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div ref={formRef} className="max-w-3xl mx-auto">
       <ProgressIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />
 
       <div className="card-elevated p-6 md:p-8">
