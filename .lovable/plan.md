@@ -1,130 +1,94 @@
 
 
-## Legal Declaration and ID Upload for Parcel Booking
+## Pricing Adjustment for Routes Over 200km
 
 ### Overview
-Add two critical compliance features to the Small Parcel Booking page:
-1. A mandatory legal declaration that the sender is not shipping illegal or stolen goods
-2. An ID/Passport upload field to ensure traceability of the person making the booking
+Implement a 35% pricing adjustment for all parcel deliveries traveling more than 200km. This adjustment is applied internally within the pricing engine and will not be visible or referenced in any user-facing interface.
 
 ---
 
-### What You Will Get
+### What Will Change
 
-1. **Legal Declaration Checkbox** - A prominent declaration the sender must agree to before booking, stating:
-   - Contents are not illegal, stolen, or prohibited
-   - They accept personal liability under South African, Lesotho, and Zimbabwean law
-   - They understand false declarations may result in legal action
-
-2. **ID/Passport Upload** - A file upload field requiring:
-   - Valid ID document or passport photo
-   - File validation (PDF, JPEG, PNG only, max 5MB)
-   - Visual confirmation when file is uploaded
-
-3. **Review Integration** - Both the declaration status and ID upload will be shown in the review screen before final submission
+The pricing engine will automatically reduce prices by 35% when the calculated or estimated distance exceeds 200km. Users will simply see lower prices on long-distance routes without any indication of a "discount" or special pricing.
 
 ---
 
-### User Experience Flow
+### Technical Changes
+
+**File: `src/config/pricingCalculator.ts`**
+
+| Change | Description |
+|--------|-------------|
+| Add `DISTANCE_ADJUSTMENT_THRESHOLD_KM` constant | Set to `200` - the distance above which pricing adjustment applies |
+| Add `DISTANCE_ADJUSTMENT_FACTOR` constant | Set to `0.65` (65% of original = 35% reduction) |
+| Update `calculateDeliveryPrice` function | Apply the adjustment factor when distance exceeds threshold |
+| Update `PriceBreakdown` interface | Add internal tracking field `adjustedPrice` (not exposed to UI) |
+
+---
+
+### Updated Calculation Flow
 
 ```text
-+-------------------+     +-------------------+     +-------------------+
-| Fill Booking Form | --> | Upload ID/Passport| --> | Tick Declaration  |
-+-------------------+     +-------------------+     +-------------------+
-                                                           |
-                                                           v
-                                                   +-------------------+
-                                                   | Review Screen     |
-                                                   | (shows ID + decl) |
-                                                   +-------------------+
-                                                           |
-                                                           v
-                                                   +-------------------+
-                                                   | Confirm Booking   |
-                                                   +-------------------+
+Route Base Price
+      |
+      v
+Apply Weight Percentage (5-65%)
+      |
+      v
+Add Handling Fee (R25)
+      |
+      v
+Apply 2.5x Multiplier
+      |
+      v
+Enforce Minimum Price (R135)
+      |
+      v
+[If distance > 200km] --> Multiply by 0.65 (35% reduction)
+      |
+      v
+Re-enforce Minimum Price (R135)
+      |
+      v
+Add Tracking Fee (R100 if selected)
+      |
+      v
+FINAL PRICE
 ```
 
 ---
 
 ### Implementation Details
 
-#### 1. Update Form Schema
-Add new required fields to the Zod validation schema:
+1. **New Constants** (internal, not exposed):
+   - `DISTANCE_ADJUSTMENT_THRESHOLD_KM = 200`
+   - `DISTANCE_ADJUSTMENT_FACTOR = 0.65`
 
-| Field | Type | Validation |
-|-------|------|------------|
-| `idDocument` | string | Required - stores filename of uploaded ID |
-| `legalDeclaration` | boolean | Must be `true` to proceed |
+2. **Logic Update** in `calculateDeliveryPrice`:
+   - After enforcing minimum price, check if `distanceKm > 200`
+   - If true, multiply the base price by `0.65`
+   - Re-enforce minimum price of R135 after adjustment
+   - Add tracking fee last (tracking fee is NOT adjusted)
 
-#### 2. New "Sender Verification" Section
-Add a new section to the booking form after "Your Details" containing:
-- **ID/Passport Upload Box** - Reusing the upload pattern from Carrier Registration
-- **Legal Declaration Checkbox** - A styled checkbox with full declaration text
-
-#### 3. Declaration Text
-The declaration will read:
-
-> "I hereby declare that the contents of this parcel are not illegal, stolen, counterfeit, or prohibited under the laws of South Africa, Lesotho, or Zimbabwe. I understand that I will be held personally liable for any violation of applicable laws and that false declarations may result in legal action. I consent to my identification being recorded for traceability purposes."
-
-#### 4. Review Screen Updates
-The review overlay will display:
-- Uploaded ID document filename
-- Confirmation that the legal declaration was accepted
-- A reminder of liability in the disclaimer section
+3. **Interface Update** (internal only):
+   - Add `priceAdjustmentApplied: boolean` to `PriceBreakdown` for internal debugging
+   - This field is purely for internal use and will not be exposed in UI components
 
 ---
 
-### Files to Modify
+### UI Impact
 
-| File | Changes |
-|------|---------|
-| `src/pages/SmallParcelBooking.tsx` | Add ID upload, declaration checkbox, update schema, update review screen |
+**None** - The user interface will continue to display only the final calculated price. No references to "discount", "adjustment", or "long distance" will appear. The existing memory constraints about hiding internal pricing logic remain fully respected.
 
 ---
 
-### Visual Design
+### Price Examples After Implementation
 
-**ID Upload Section:**
-- Drag-and-drop styled box (matching Carrier Registration)
-- Shows checkmark and filename when uploaded
-- Error state with red border if missing
+**Short Routes (under 200km) - No change:**
+- Johannesburg to Pretoria: R135 - R562.50 (1kg - 20kg)
 
-**Declaration Section:**
-- Amber/warning-styled background to draw attention
-- Checkbox with a scale/legal icon
-- Full legal text visible (not hidden behind a link)
-- Required asterisk indicator
-
-**Review Screen:**
-- New "Verification" summary card showing:
-  - ID document filename
-  - "Declaration accepted" confirmation
-
----
-
-### Technical Approach
-
-1. **State Management**
-   - Add `idDocumentFile` state for the actual File object
-   - Add `idDocumentName` to formData for the filename
-   - Add `legalDeclarationAccepted` boolean to formData
-
-2. **File Upload Handler**
-   - Reuse validation logic from Carrier Registration (5MB max, PDF/JPEG/PNG only)
-   - Store filename in form state
-   - Show upload errors inline
-
-3. **Validation**
-   - Both fields required before "Review Booking" button activates
-   - Schema validation enforces both fields on submission
-
-4. **Review Display**
-   - Add a new summary card in the review overlay
-   - Show ID filename and declaration status
-
----
-
-### Security Note
-
-The ID document upload will initially be client-side only (stored in browser memory during the session). Once Supabase/backend is connected, the file will be stored in secure blob storage and the reference saved to the database. The ID is never stored in the database directly - only a reference to the file in storage.
+**Long Routes (over 200km) - 35% lower:**
+- Johannesburg to Durban: R135 - R568.75 (was R875.00 for 20kg)
+- Johannesburg to Harare: R138.13 - R1,308.13 (was R2,012.50 for 20kg)
+- Johannesburg to Maseru: R135 - R304.69 (was R468.75 for 20kg)
 
