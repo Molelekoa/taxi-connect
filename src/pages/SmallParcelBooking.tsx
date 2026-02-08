@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X } from "lucide-react";
+import DeliveryRating from "@/components/DeliveryRating";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -112,6 +113,7 @@ const SmallParcelBooking = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [showDeliveryRating, setShowDeliveryRating] = useState(false);
   
   // ID Document upload state
   const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
@@ -311,7 +313,7 @@ const SmallParcelBooking = () => {
                   </li>
                   <li className="flex gap-3">
                     <span className="font-bold text-primary">3.</span>
-                    Courier collects your parcel and provides tracking
+                    A traveler collects your parcel along their route
                   </li>
                   <li className="flex gap-3">
                     <span className="font-bold text-primary">4.</span>
@@ -320,8 +322,29 @@ const SmallParcelBooking = () => {
                 </ol>
               </div>
 
+              {/* Delivery Confirmation & Rating */}
+              {showDeliveryRating ? (
+                <div className="bg-secondary/50 border border-border rounded-lg p-6 mb-8">
+                  <DeliveryRating />
+                </div>
+              ) : (
+                <div className="mb-8">
+                  <Button
+                    onClick={() => setShowDeliveryRating(true)}
+                    variant="coral"
+                    size="lg"
+                    className="w-full"
+                  >
+                    Confirm Delivery Received
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Click once you've received your parcel to rate your traveler
+                  </p>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={() => setIsSuccess(false)} variant="outline">
+                <Button onClick={() => { setIsSuccess(false); setShowDeliveryRating(false); }} variant="outline">
                   Book Another Parcel
                 </Button>
                 <Link to="/">
