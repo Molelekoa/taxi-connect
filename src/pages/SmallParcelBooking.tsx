@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X } from "lucide-react";
-import DeliveryRating from "@/components/DeliveryRating";
+
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -113,7 +113,7 @@ const SmallParcelBooking = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showReview, setShowReview] = useState(false);
-  const [showDeliveryRating, setShowDeliveryRating] = useState(false);
+  
   
   // ID Document upload state
   const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
@@ -253,7 +253,7 @@ const SmallParcelBooking = () => {
       setIsSuccess(true);
       toast({
         title: "Booking Submitted!",
-        description: "We'll confirm your parcel pickup within 1 hour.",
+        description: "We'll contact you soon to confirm pickup details.",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -297,7 +297,7 @@ const SmallParcelBooking = () => {
                 Your parcel booking has been received.
               </p>
               <p className="text-muted-foreground mb-8">
-                We'll contact you within <strong className="text-foreground">1 hour</strong> to confirm pickup details.
+                We'll contact you soon to confirm pickup details.
               </p>
 
               <div className="bg-secondary/50 rounded-lg p-6 mb-8 text-left">
@@ -322,29 +322,9 @@ const SmallParcelBooking = () => {
                 </ol>
               </div>
 
-              {/* Delivery Confirmation & Rating */}
-              {showDeliveryRating ? (
-                <div className="bg-secondary/50 border border-border rounded-lg p-6 mb-8">
-                  <DeliveryRating />
-                </div>
-              ) : (
-                <div className="mb-8">
-                  <Button
-                    onClick={() => setShowDeliveryRating(true)}
-                    variant="coral"
-                    size="lg"
-                    className="w-full"
-                  >
-                    Confirm Delivery Received
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    Click once you've received your parcel to rate your traveler
-                  </p>
-                </div>
-              )}
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={() => { setIsSuccess(false); setShowDeliveryRating(false); }} variant="outline">
+                <Button onClick={() => setIsSuccess(false)} variant="outline">
                   Book Another Parcel
                 </Button>
                 <Link to="/">
