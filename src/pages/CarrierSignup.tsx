@@ -1,7 +1,9 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CarrierRegistrationForm from "@/components/CarrierRegistrationForm";
-import { Fuel, Coins, Calendar, Heart } from "lucide-react";
+import SenderRegistrationForm from "@/components/SenderRegistrationForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Fuel, Coins, Calendar, Heart, Truck, Package } from "lucide-react";
 
 const communityBenefits = [
   {
@@ -44,8 +46,8 @@ const CarrierSignup = () => {
               <span className="text-gradient">Community</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Already traveling between cities? Turn your trip into an opportunity. 
-              Deliver parcels along your route and earn extra income to cover your petrol and toll fees.
+              Whether you're traveling between cities or need to send a parcel,
+              join our community and get started today.
             </p>
           </div>
 
@@ -80,8 +82,43 @@ const CarrierSignup = () => {
             </div>
           </div>
 
-          {/* Multi-Step Form */}
-          <CarrierRegistrationForm />
+          {/* Tab-Based Role Selection */}
+          <Tabs defaultValue="traveler" className="space-y-8">
+            <TabsList className="w-full h-auto p-1 grid grid-cols-2 bg-muted rounded-xl">
+              <TabsTrigger
+                value="traveler"
+                className="flex items-center gap-2 py-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                <Truck className="w-4 h-4" />
+                I'm a Traveler
+              </TabsTrigger>
+              <TabsTrigger
+                value="sender"
+                className="flex items-center gap-2 py-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                <Package className="w-4 h-4" />
+                I'm a Sender
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="traveler" className="space-y-4">
+              <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">Travelers</strong> — I travel between cities and can deliver parcels along my route
+                </p>
+              </div>
+              <CarrierRegistrationForm />
+            </TabsContent>
+
+            <TabsContent value="sender" className="space-y-4">
+              <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">Senders</strong> — I need to send a parcel to someone in another city
+                </p>
+              </div>
+              <SenderRegistrationForm />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 
