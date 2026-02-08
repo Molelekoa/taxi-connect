@@ -32,18 +32,16 @@ const TermsOfService = () => {
               <section className="mb-10">
                 <h2 className="font-display text-2xl font-bold mb-4">2. Description of Services</h2>
                 <p className="text-muted-foreground mb-4">
-                  Parcel Buddy operates as a community-driven delivery network, connecting senders with travelers who deliver parcels along routes they are already taking. Our services include:
+                  Parcel Buddy operates as a community-driven delivery network, connecting senders with Traveler Partners who deliver parcels along routes they are already taking. Our services include:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li>Full Truckload (FTL) shipping coordination</li>
-                  <li>Less Than Truckload (LTL) shipping services</li>
-                  <li>Expedited and time-sensitive shipping</li>
-                  <li>Specialized freight handling (hazardous materials, temperature-controlled, etc.)</li>
-                  <li>Freight quotation and estimation services</li>
-                  <li>Shipment tracking and coordination</li>
+                  <li>Parcel delivery coordination between senders and Traveler Partners</li>
+                  <li>Route matching to connect senders with community members traveling to the same destination</li>
+                  <li>Delivery quotation and estimation services</li>
+                  <li>Delivery tracking and coordination</li>
                 </ul>
                 <p className="text-muted-foreground mt-4">
-                  As a broker, we arrange transportation services but do not own or operate the vehicles that transport your goods. We contract with independent carriers who are responsible for the actual transportation.
+                  Parcel Buddy facilitates connections between senders and Traveler Partners but does not directly transport goods. Traveler Partners are independent community members who carry parcels on routes they are already traveling.
                 </p>
               </section>
 
@@ -83,14 +81,12 @@ const TermsOfService = () => {
                   All quotes provided are estimates based on the information you provide. Final pricing may vary based on:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li>Actual weight and dimensions of the shipment</li>
-                  <li>Fuel surcharges and market conditions</li>
-                  <li>Additional services required (liftgate, inside delivery, etc.)</li>
-                  <li>Detention or waiting time at pickup or delivery locations</li>
+                  <li>Actual weight and dimensions of the parcel</li>
+                  <li>Distance between pickup and delivery locations</li>
                   <li>Re-delivery attempts or address corrections</li>
                 </ul>
                 <p className="text-muted-foreground mt-4">
-                  Quotes are valid for 7 days unless otherwise specified. We reserve the right to adjust pricing based on actual shipment characteristics.
+                  Quotes are valid for 7 days unless otherwise specified. We reserve the right to adjust pricing based on actual parcel characteristics.
                 </p>
               </section>
 
@@ -100,28 +96,25 @@ const TermsOfService = () => {
                   Payment terms are as follows:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li>Payment is due within 30 days of invoice date unless otherwise agreed</li>
-                  <li>We accept payment via EFT, credit card, or approved credit terms</li>
-                  <li>Late payments may incur interest at 2% per month on outstanding balances</li>
-                  <li>We reserve the right to suspend services for accounts with overdue balances</li>
+                  <li>Payment is released after the successful completion of a delivery, which must be confirmed by both the sender and the Traveler Partner</li>
+                  <li>We accept payment via EFT or credit card</li>
                   <li>All prices are quoted in South African Rand (ZAR) unless otherwise specified</li>
+                  <li>Parcel Buddy's service fee is deducted from the delivery payment before disbursement to the Traveler Partner</li>
                 </ul>
               </section>
 
               <section className="mb-10">
-                <h2 className="font-display text-2xl font-bold mb-4">7. Liability and Insurance</h2>
+                <h2 className="font-display text-2xl font-bold mb-4">7. Liability and Risk</h2>
                 <p className="text-muted-foreground mb-4">
-                  As a freight broker, our liability is limited as follows:
+                  Please note the following regarding liability:
                 </p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li>We are not liable for loss, damage, or delay caused by carriers</li>
-                  <li>Carrier liability is typically limited to R100 per kilogram unless additional insurance is purchased</li>
-                  <li>We strongly recommend purchasing additional cargo insurance for valuable shipments</li>
-                  <li>Claims must be filed within 14 days of delivery for visible damage, or within 21 days for concealed damage</li>
+                  <li>The risk of loss or damage to a parcel is borne solely by the sender</li>
+                  <li>Parcel Buddy does not offer liability insurance or cargo insurance of any kind</li>
+                  <li>We endeavor to vet all members of our community to maintain a trustworthy network</li>
+                  <li>In the event of theft, Parcel Buddy will assist by providing all information necessary to file a police report</li>
+                  <li>Senders are encouraged to arrange their own insurance for valuable items</li>
                 </ul>
-                <p className="text-muted-foreground mt-4">
-                  We maintain contingent cargo insurance and will assist in processing claims against carriers.
-                </p>
               </section>
 
               <section className="mb-10">
