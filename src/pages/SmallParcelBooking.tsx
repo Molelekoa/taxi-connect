@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X } from "lucide-react";
+import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
@@ -93,7 +94,11 @@ const SmallParcelBooking = () => {
     weight?: number;
     price?: number;
     includeTracking?: boolean;
+    distance?: number;
   } | null;
+
+  // Store prefilled distance for use when prefilled price is active
+  const [prefilledDistance] = useState(prefilled?.distance || null);
 
   const [formData, setFormData] = useState<FormDataInput>({
     contactName: "",
@@ -129,13 +134,25 @@ const SmallParcelBooking = () => {
     !!(prefilled?.price && prefilled?.origin && prefilled?.destination && prefilled?.weight)
   );
 
+  // Use Mapbox distance for live calculation when user enters origin/destination directly
+  const { distance: mapboxDistance } = useMapboxDistance(
+    formData.originCity || "",
+    formData.destinationCity || "",
+    usePrefilledPrice // skip API call when using prefilled price
+  );
+
+  // Effective distance: prefilled > mapbox > undefined
+  const effectiveDistance = usePrefilledPrice
+    ? prefilledDistance
+    : mapboxDistance;
+
   // Calculate live price using new pricing calculator (only when not using prefilled price)
   const calculatedPriceBreakdown = useMemo(() => {
     if (usePrefilledPrice) return null; // Don't recalculate if using prefilled price
     if (!formData.originCity || !formData.destinationCity || !formData.weight) return null;
     if (formData.weight < WEIGHT_LIMITS.min || formData.weight > WEIGHT_LIMITS.max) return null;
-    return calculateDeliveryPrice(formData.originCity, formData.destinationCity, formData.weight, undefined, formData.includeTracking || false);
-  }, [formData.originCity, formData.destinationCity, formData.weight, formData.includeTracking, usePrefilledPrice]);
+    return calculateDeliveryPrice(formData.originCity, formData.destinationCity, formData.weight, effectiveDistance || undefined, formData.includeTracking || false);
+  }, [formData.originCity, formData.destinationCity, formData.weight, formData.includeTracking, usePrefilledPrice, effectiveDistance]);
 
   // Use prefilled price or calculated price
   // When using prefilled price, adjust for tracking toggle changes

@@ -403,8 +403,9 @@ const ParcelEstimator = () => {
                           destination: formData.deliveryLocation, 
                           weight: parseFloat(formData.weight),
                           price: priceBreakdown.finalPrice,
-                          includeTracking: formData.includeTracking
-                        } 
+                          includeTracking: formData.includeTracking,
+                          distance: effectiveDistance
+                        }
                       })}
                     >
                       Book This Delivery
