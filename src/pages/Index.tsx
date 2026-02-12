@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
@@ -50,7 +50,7 @@ const scaleIn = {
 };
 
 const Index = () => {
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const navigate = useNavigate();
   const heroRef = useRef<HTMLElement>(null);
   
   const { scrollYProgress } = useScroll({
@@ -258,12 +258,8 @@ const Index = () => {
             {parcelSizes.map((size, index) => (
               <motion.button
                 key={size.id}
-                onClick={() => setSelectedSize(selectedSize === size.id ? null : size.id)}
-                className={`p-8 rounded-2xl border-2 transition-all duration-300 text-center ${
-                  selectedSize === size.id
-                    ? "border-primary bg-primary/10 shadow-lg shadow-primary/20"
-                    : "border-border bg-card hover:border-primary/50 hover:bg-secondary/50"
-                }`}
+                onClick={() => navigate('/small-parcel')}
+                className="p-8 rounded-2xl border-2 transition-all duration-300 text-center border-border bg-card hover:border-primary/50 hover:bg-secondary/50"
                 variants={scaleIn}
                 whileHover={{ 
                   y: -8, 
@@ -275,9 +271,7 @@ const Index = () => {
                 transition={{ duration: 0.4, delay: index * 0.1 }}
               >
                 {/* Size Letter */}
-                <div className={`font-display font-black text-5xl md:text-6xl mb-3 transition-colors ${
-                  selectedSize === size.id ? "text-primary" : "text-primary/70"
-                }`}>
+                <div className="font-display font-black text-5xl md:text-6xl mb-3 transition-colors text-primary/70">
                   {size.abbr}
                 </div>
                 <h3 className="font-display font-semibold text-foreground text-lg mb-1">
@@ -287,28 +281,6 @@ const Index = () => {
               </motion.button>
             ))}
           </motion.div>
-
-          {/* Selected Size Description */}
-          {selectedSize && (
-            <motion.div
-              className="mt-8 p-6 md:p-8 rounded-2xl bg-secondary/50 border border-border"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-6">
-                {parcelSizes.find((s) => s.id === selectedSize)?.description}
-              </p>
-              <div className="text-center">
-                <Link to="/freight-estimator">
-                  <Button variant="hero" size="lg">
-                    Send {parcelSizes.find((s) => s.id === selectedSize)?.title} Parcel
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          )}
         </div>
       </section>
 

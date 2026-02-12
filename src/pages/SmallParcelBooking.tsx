@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X } from "lucide-react";
@@ -81,6 +81,10 @@ type FormDataInput = Partial<Omit<FormData, 'legalDeclarationAccepted'> & { lega
 const SmallParcelBooking = () => {
   const location = useLocation();
   const { toast } = useToast();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   
   // Pre-fill from estimator if available
   const prefilled = location.state as { 
