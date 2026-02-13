@@ -1,47 +1,74 @@
 
+## Setting Up Environment Variables for Neon Connection String
 
-## Fix: Consistent Pricing Between Estimator and Booking Page
+### Your Current Setup Context
+- **Frontend**: React + Vite (client-side only, no .env files in this repo)
+- **Database**: Neon (external PostgreSQL)
+- **Backend**: Vercel serverless functions (not yet created in this repo)
+- **Note**: There is NO .env or .env.local file needed in your Lovable project because it's frontend-only
 
-### The Problem
+### Where Environment Variables Go
 
-Cape Town to Pretoria is not in the hardcoded route database, so the pricing engine falls back to distance-based calculation (`R1.50/km`).
+Since you're using **two separate platforms**, environment variables must be configured in each:
 
-- **FreightEstimator** uses Mapbox to get the real driving distance (~1,400 km), producing ~R750.
-- **SmallParcelBooking** (direct entry) passes `undefined` for distance, so the engine defaults to 400 km, producing ~R235.
+**1. Vercel (for API Routes / Serverless Functions)**
+   - This is where your Neon connection string lives
+   - Environment variables are set in the Vercel dashboard
+   - Your API routes will access them via `process.env.DATABASE_URL`
 
-### The Fix
+**2. Lovable Frontend (this project)**
+   - Frontend uses public environment variables only (prefixed with `VITE_`)
+   - Used for Mapbox API key, etc.
+   - NOT for sensitive secrets like database credentials
 
-**1. Pass distance from estimator to booking page**
+### Implementation Steps
 
-In `src/pages/FreightEstimator.tsx`, add `distance` to the navigation state when clicking "Book This Delivery":
+#### Step 1: Get Your Neon Connection String
+1. Log into your Neon dashboard
+2. Go to **Project Settings** → **Connection String**
+3. Copy the PostgreSQL connection string:
+   ```
+   postgresql://username:password@neon-hostname.neon.tech/database_name?sslmode=require
+   ```
 
+#### Step 2: Store in Vercel (for API Routes)
+1. Go to your **Vercel project settings**
+2. Navigate to **Settings** → **Environment Variables**
+3. Add a new variable:
+   - **Name**: `DATABASE_URL`
+   - **Value**: Paste your Neon connection string
+   - **Environments**: Select Development, Preview, and Production as needed
+4. Click **Save**
+
+#### Step 3: Use in Your Vercel API Routes
+When you create API routes (e.g., `/api/register-sender`), access it like:
+```javascript
+const dbUrl = process.env.DATABASE_URL;
+const client = new Client({ connectionString: dbUrl });
 ```
-state: {
-  origin, destination, weight, price, includeTracking,
-  distance: effectiveDistance   // <-- add this
-}
+
+#### Step 4: Verify Locally (Optional)
+If you're developing Vercel functions locally with the Vercel CLI:
+1. Install: `npm i -g vercel`
+2. Run: `vercel env pull` (pulls env vars into `.env.local` for local testing)
+3. Your API routes can now access `process.env.DATABASE_URL`
+
+### Important Security Notes
+- ✅ The `DATABASE_URL` is a **secret** — never commit it to GitHub
+- ✅ Vercel's **Environment Variables** are encrypted and securely stored
+- ✅ Only your Vercel functions can access it (not exposed to frontend)
+- ❌ Do NOT paste credentials into your React code or vite.config.ts
+
+### What's Next
+Once you've set up the connection string in Vercel, the next step is to create your first API route (e.g., `/api/auth/register-sender`) that connects to Neon and inserts data from the frontend forms.
+
+### Diagram
 ```
-
-**2. Use Mapbox distance in SmallParcelBooking when no prefilled price**
-
-In `src/pages/SmallParcelBooking.tsx`:
-
-- Accept `distance` from navigation state
-- Import and call `useMapboxDistance` hook to calculate distance when the user enters origin/destination directly (no prefilled data)
-- Pass the real distance to `calculateDeliveryPrice` on line 137 instead of `undefined`
-
-**3. Store prefilled distance for tracking-toggle adjustments**
-
-When the user came from the estimator with a prefilled price, store the distance so that if they toggle tracking (which doesn't invalidate the prefilled price), the price stays consistent. If they change origin/destination/weight, the prefilled price is already invalidated and the live Mapbox distance will be used instead.
-
-### Technical Changes
-
-| File | Change |
-|------|--------|
-| `src/pages/FreightEstimator.tsx` | Add `distance: effectiveDistance` to navigation state (1 line) |
-| `src/pages/SmallParcelBooking.tsx` | Accept `distance` from prefilled state; import and use `useMapboxDistance` hook for live calculation; pass distance to `calculateDeliveryPrice` |
-
-### Result
-
-Both entry points will use real driving distance, producing the same price for the same route and weight.
+Frontend (React)         Vercel Functions           Neon Database
+┌─────────────┐         ┌──────────────┐           ┌──────────────┐
+│  Form Data  │────────>│  API Route   │──────────>│  PostgreSQL  │
+│  (JSON)     │         │  Uses $DB_URL│           │  (Tables)    │
+└─────────────┘         └──────────────┘           └──────────────┘
+                        Env Var: DATABASE_URL
+```
 
