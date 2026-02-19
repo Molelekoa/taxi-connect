@@ -1,9 +1,75 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Full CORS header set required by Supabase client libraries
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+// Magic-number signatures for allowed file types
+const FILE_SIGNATURES: Array<{ mime: string; magic: number[] }> = [
+  { mime: "application/pdf", magic: [0x25, 0x50, 0x44, 0x46] }, // %PDF
+  { mime: "image/jpeg",      magic: [0xff, 0xd8, 0xff] },
+  { mime: "image/png",       magic: [0x89, 0x50, 0x4e, 0x47] }, // ‰PNG
+];
+
+function detectMimeType(buffer: Uint8Array): string | null {
+  for (const sig of FILE_SIGNATURES) {
+    if (sig.magic.every((byte, i) => buffer[i] === byte)) {
+      return sig.mime;
+    }
+  }
+  return null;
+}
+
+/** Sanitise a filename to prevent path traversal */
+function sanitiseFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
+}
+
+const MIME_TO_EXT: Record<string, string> = {
+  "application/pdf": "pdf",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+};
+
+async function validateAndUploadFile(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  file: File,
+  userId: string,
+  prefix: string,
+): Promise<{ path: string | null; error: string | null }> {
+  if (file.size === 0) return { path: null, error: null };
+
+  if (file.size > MAX_FILE_SIZE) {
+    return { path: null, error: "File too large (max 5 MB)" };
+  }
+
+  const buffer = new Uint8Array(await file.arrayBuffer());
+  const detectedMime = detectMimeType(buffer);
+
+  if (!detectedMime) {
+    return { path: null, error: "Invalid file type. Only PDF, JPEG, or PNG are allowed." };
+  }
+
+  const safeExt = MIME_TO_EXT[detectedMime];
+  const safeName = sanitiseFilename(file.name.replace(/\.[^.]+$/, ""));
+  const filePath = `${userId}/${prefix}-${safeName}-${Date.now()}.${safeExt}`;
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from("documents")
+    .upload(filePath, buffer, { upsert: true, contentType: detectedMime });
+
+  if (uploadError) {
+    console.error(`Upload error [${prefix}]:`, uploadError);
+    return { path: null, error: "Failed to upload document" };
+  }
+
+  return { path: filePath, error: null };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,7 +92,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(
-      authHeader.replace("Bearer ", "")
+      authHeader.replace("Bearer ", ""),
     );
 
     if (authError || !user) {
@@ -44,6 +110,27 @@ Deno.serve(async (req) => {
     const phone = formData.get("phone") as string;
     const country = formData.get("country") as string;
     const physicalAddress = formData.get("physicalAddress") as string;
+
+    // Server-side required field validation
+    if (!fullName || !phone || !country || !physicalAddress) {
+      return new Response(JSON.stringify({ error: "Missing required personal fields" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Server-side field length limits
+    if (
+      fullName.length > 150 ||
+      phone.length > 30 ||
+      country.length > 100 ||
+      physicalAddress.length > 500
+    ) {
+      return new Response(JSON.stringify({ error: "Field value too long" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // License info
     const licenseType = formData.get("licenseType") as string;
@@ -84,28 +171,33 @@ Deno.serve(async (req) => {
     const additionalRoutesRaw = formData.get("additionalRoutes") as string;
     const additionalRoutes = additionalRoutesRaw ? JSON.parse(additionalRoutesRaw) : [];
 
-    // Files
+    // Files — validate and upload with server-side checks
     const idCopyFile = formData.get("idCopy") as File | null;
     const licenseCopyFile = formData.get("licenseCopy") as File | null;
 
-    // Upload files
     let idCopyUrl: string | null = null;
     let licenseCopyUrl: string | null = null;
 
     if (idCopyFile && idCopyFile.size > 0) {
-      const ext = idCopyFile.name.split(".").pop();
-      const path = `${user.id}/id-copy-${Date.now()}.${ext}`;
-      const { error } = await supabaseAdmin.storage.from("documents").upload(path, idCopyFile, { upsert: true });
-      if (error) console.error("ID copy upload error:", error);
-      else idCopyUrl = path;
+      const result = await validateAndUploadFile(supabaseAdmin, idCopyFile, user.id, "id-copy");
+      if (result.error) {
+        return new Response(JSON.stringify({ error: result.error }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      idCopyUrl = result.path;
     }
 
     if (licenseCopyFile && licenseCopyFile.size > 0) {
-      const ext = licenseCopyFile.name.split(".").pop();
-      const path = `${user.id}/license-copy-${Date.now()}.${ext}`;
-      const { error } = await supabaseAdmin.storage.from("documents").upload(path, licenseCopyFile, { upsert: true });
-      if (error) console.error("License copy upload error:", error);
-      else licenseCopyUrl = path;
+      const result = await validateAndUploadFile(supabaseAdmin, licenseCopyFile, user.id, "license-copy");
+      if (result.error) {
+        return new Response(JSON.stringify({ error: result.error }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      licenseCopyUrl = result.path;
     }
 
     // Update profile
