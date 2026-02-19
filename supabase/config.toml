@@ -1,1 +1,7 @@
 project_id = "jlhyoqfsyadxvuhfesmc"
+
+[functions.register-sender]
+verify_jwt = false
+
+[functions.register-traveler]
+verify_jwt = false

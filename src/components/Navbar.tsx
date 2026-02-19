@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PackageIcon, HomeIcon, PricingIcon, SendPackageIcon, PartnerIcon, TrackIcon } from "@/components/icons/AppIcons";
+import { PackageIcon } from "@/components/icons/AppIcons";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   const navLinks = [
     { label: "Home", path: "/" },
@@ -29,9 +31,9 @@ const Navbar = () => {
           </span>
         </Link>
 
-        {/* Desktop Navigation - High Contrast Tabs */}
+        {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center gap-0.5">
-          {navLinks.slice(0, 4).map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
@@ -61,6 +63,23 @@ const Navbar = () => {
               Get Quote
             </Button>
           </Link>
+          {user ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-sm text-foreground">
+                <User className="w-4 h-4 text-muted-foreground" />
+                <span className="max-w-[120px] truncate">{user.email}</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <Link to="/auth">
+              <Button variant="outline" size="sm">
+                Log In
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -102,6 +121,22 @@ const Navbar = () => {
                   Get Quote
                 </Button>
               </Link>
+              {user ? (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-2 text-muted-foreground"
+                  onClick={() => { signOut(); setIsOpen(false); }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </Button>
+              ) : (
+                <Link to="/auth" onClick={() => setIsOpen(false)}>
+                  <Button variant="outline" className="w-full">
+                    Log In
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

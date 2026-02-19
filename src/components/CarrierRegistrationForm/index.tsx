@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import ProgressIndicator from "./ProgressIndicator";
 import Step1Personal from "./Step1Personal";
 import Step2License from "./Step2License";
@@ -123,17 +124,70 @@ const CarrierRegistrationForm = () => {
 
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("You must be logged in to submit.");
 
-    setIsLoading(false);
-    setIsSubmitted(true);
-    sessionStorage.removeItem(STORAGE_KEY);
+      const fd = new FormData();
+      // Personal
+      fd.append("fullName", formData.fullName);
+      fd.append("phone", formData.phone);
+      fd.append("country", formData.country);
+      fd.append("physicalAddress", formData.physicalAddress);
+      // License
+      fd.append("licenseType", formData.licenseType);
+      fd.append("yearsWithLicense", formData.yearsWithLicense);
+      fd.append("noCriminalRecord", String(formData.noCriminalRecord));
+      // Vehicle
+      fd.append("vehicleOwnership", formData.vehicleOwnership);
+      fd.append("vehicleType", formData.vehicleType);
+      fd.append("vehicleRegistration", formData.vehicleRegistration);
+      fd.append("vehicleYear", formData.vehicleYear);
+      fd.append("vehicleModel", formData.vehicleModel);
+      fd.append("vehicleColour", formData.vehicleColour);
+      fd.append("minLoadCapacity", formData.minLoadCapacity);
+      fd.append("maxLoadCapacity", formData.maxLoadCapacity);
+      fd.append("hasValidInsurance", String(formData.hasValidInsurance));
+      // Operations
+      fd.append("travelFrequency", formData.travelFrequency);
+      fd.append("scheduleType", formData.scheduleType);
+      fd.append("availableDays", JSON.stringify(formData.availableDays ?? []));
+      fd.append("departureTime", formData.departureTime);
+      fd.append("advanceNotice", formData.advanceNotice);
+      fd.append("parcelsPerTrip", formData.parcelsPerTrip);
+      fd.append("storageType", formData.storageType ?? "");
+      fd.append("cargoTypes", JSON.stringify(formData.cargoTypes));
+      fd.append("emergencyContactName", formData.emergencyContactName);
+      fd.append("emergencyContactRelation", formData.emergencyContactRelation);
+      fd.append("emergencyContactPhone", formData.emergencyContactPhone);
+      fd.append("referralSource", formData.referralSource);
+      // Routes
+      fd.append("routeFromPrimary", formData.primaryRouteFrom);
+      fd.append("routeToPrimary", formData.primaryRouteTo);
+      fd.append("returnTrip", formData.returnTrip);
+      fd.append("additionalRoutes", JSON.stringify(formData.additionalRoutes ?? []));
 
-    toast({
-      title: "Application Submitted Successfully!",
-      description: "Our team will review your application and contact you within 2-3 business days.",
-    });
+      const { data, error } = await supabase.functions.invoke("register-traveler", {
+        body: fd,
+      });
+
+      if (error || !data?.success) throw new Error(error?.message || "Submission failed");
+
+      setIsSubmitted(true);
+      sessionStorage.removeItem(STORAGE_KEY);
+      toast({
+        title: "Application Submitted Successfully!",
+        description: "Our team will review your application and contact you within 2-3 business days.",
+      });
+    } catch (err) {
+      toast({
+        title: "Submission failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderStep = () => {
