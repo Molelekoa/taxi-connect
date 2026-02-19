@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { senderSchema, type SenderFormInput } from "./types";
 
 const ALLOWED_FILE_TYPES = ["application/pdf", "image/jpeg", "image/png"];
@@ -79,7 +80,26 @@ const SenderRegistrationForm = () => {
     setIsSubmitting(true);
     try {
       senderSchema.parse(formData);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("You must be logged in to register.");
+
+      // Build multipart form
+      const fd = new FormData();
+      fd.append("fullName", formData.fullName ?? "");
+      fd.append("phone", formData.phone ?? "");
+      fd.append("country", formData.country ?? "");
+      fd.append("physicalAddress", formData.physicalAddress ?? "");
+      fd.append("legalDeclarationAccepted", String(formData.legalDeclarationAccepted));
+      if (idDocumentFile) fd.append("idDocument", idDocumentFile);
+
+      const { data, error } = await supabase.functions.invoke("register-sender", {
+        body: fd,
+      });
+
+      if (error || !data?.success) throw new Error(error?.message || "Registration failed");
+
       setIsSuccess(true);
       toast({
         title: "Registration Submitted!",
@@ -92,6 +112,12 @@ const SenderRegistrationForm = () => {
           if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
         });
         setErrors(fieldErrors);
+      } else {
+        toast({
+          title: "Submission failed",
+          description: error instanceof Error ? error.message : "Please try again.",
+          variant: "destructive",
+        });
       }
     } finally {
       setIsSubmitting(false);
