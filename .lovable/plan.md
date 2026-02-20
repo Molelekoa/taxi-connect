@@ -1,229 +1,110 @@
 
+# Admin Dashboard for Shipment Coordination
 
-# Full Backend Setup: Authentication, Tables, RLS, Storage, and Edge Functions
+## Security Scan Summary
 
-## Overview
-This plan sets up the complete Supabase backend for ParcelBuddy: authentication (email/password), database tables, Row Level Security policies, file storage for document uploads, and edge functions to handle registration.
-
----
-
-## Phase 1: Authentication
-
-### 1.1 Auth Pages
-- Create `/auth` page with Login and Signup tabs (email + password)
-- Create `/reset-password` page for password reset flow
-- Add `AuthProvider` context wrapping the app to manage session state via `onAuthStateChange`
-- Add protected route wrapper for future authenticated pages
-
-### 1.2 Auth UI Components
-- `AuthPage.tsx` -- Login/Signup form with email + password
-- `AuthProvider.tsx` -- Context providing `user`, `session`, `signOut`, `loading`
-- Login redirects to home; signup triggers profile creation via database trigger
-
-### 1.3 Navbar Updates
-- Show "Login" button when logged out
-- Show user avatar/email + "Sign Out" when logged in
+After loading the full security scan results, there are **zero findings at the "error" level**. All identified findings are at `warn` or `info` severity. Since you asked to only address `error`-level items, no security fixes are needed from this scan.
 
 ---
 
-## Phase 2: Database Tables (Migration)
+## Main Request: Admin Dashboard
 
-### 2.1 Roles System
-```text
-Table: user_roles
-- id (uuid, PK)
-- user_id (uuid, FK -> auth.users, CASCADE)
-- role (app_role enum: 'admin', 'user')
-- UNIQUE(user_id, role)
-```
-
-### 2.2 Profiles
-```text
-Table: profiles
-- id (uuid, PK, default gen_random_uuid())
-- auth_id (uuid, FK -> auth.users, CASCADE, NOT NULL, UNIQUE)
-- full_name (text)
-- email (text)
-- phone (text)
-- country (text)
-- physical_address (text)
-- role (text, CHECK: 'traveler' or 'sender')
-- id_document_url (text, nullable)
-- legal_declaration_accepted (boolean, default false)
-- created_at (timestamptz, default now())
-- updated_at (timestamptz, default now())
-```
-
-### 2.3 Traveler Profiles
-```text
-Table: traveler_profiles
-- id (uuid, PK)
-- profile_id (uuid, FK -> profiles, CASCADE, UNIQUE)
-- license_type (text)
-- years_with_license (text)
-- no_criminal_record (boolean)
-- id_copy_url (text)
-- license_copy_url (text)
-- vehicle_ownership (text)
-- vehicle_type (text)
-- vehicle_registration (text)
-- vehicle_year (text)
-- vehicle_model (text)
-- vehicle_colour (text)
-- min_load_capacity (text)
-- max_load_capacity (text)
-- has_valid_insurance (boolean)
-- travel_frequency (text)
-- schedule_type (text)
-- available_days (text[])
-- departure_time (text)
-- advance_notice (text)
-- parcels_per_trip (text)
-- storage_type (text)
-- cargo_types (text[])
-- emergency_contact_name (text)
-- emergency_contact_relation (text)
-- emergency_contact_phone (text)
-- referral_source (text)
-- created_at (timestamptz)
-```
-
-### 2.4 Traveler Routes
-```text
-Table: traveler_routes
-- id (uuid, PK)
-- traveler_profile_id (uuid, FK -> traveler_profiles, CASCADE)
-- route_from (text)
-- route_to (text)
-- return_trip (text)
-- is_primary (boolean, default false)
-- created_at (timestamptz)
-```
-
-### 2.5 Parcels
-```text
-Table: parcels
-- id (uuid, PK)
-- sender_id (uuid, FK -> profiles)
-- traveler_id (uuid, FK -> profiles, nullable)
-- pickup_location (text)
-- dropoff_location (text)
-- weight_kg (numeric)
-- description (text)
-- status (text, CHECK: pending/collected/in-transit/delivered)
-- price (numeric)
-- created_at / updated_at (timestamptz)
-```
-
-### 2.6 Delivery Ratings
-```text
-Table: delivery_ratings
-- id (uuid, PK)
-- parcel_id (uuid, FK -> parcels, UNIQUE)
-- rated_by (uuid, FK -> profiles)
-- rating (integer, CHECK 1-5)
-- review (text)
-- created_at (timestamptz)
-```
-
-### 2.7 Auto-create Profile Trigger
-A database trigger on `auth.users` INSERT that auto-creates a row in `profiles` with the user's `auth_id` and email.
+You need a way to track user data and coordinate shipments as an administrator. Here is what will be built:
 
 ---
 
-## Phase 3: Row Level Security
+## What Gets Built
 
-### 3.1 Helper Functions (SECURITY DEFINER)
-- `has_role(user_id, role)` -- checks `user_roles` table
-- `get_profile_id(auth_uid)` -- returns profile id for an auth user
-- `owns_profile(profile_id)` -- checks if current user owns profile
-- `owns_traveler_profile(tp_id)` -- checks ownership via profile chain
+### 1. Admin Role Hook (`src/hooks/useIsAdmin.ts`)
+A React hook that calls the existing `has_role` database function server-side to check if the current user is an admin. This is the secure, RLS-based approach — no client-side credential checks.
 
-### 3.2 RLS Policies
-- **profiles**: Users read/update own; admins read all
-- **traveler_profiles**: Owner read/update; admins full access
-- **traveler_routes**: Owner CRUD; admins full access
-- **parcels**: Sender or assigned traveler can read; admins full access
-- **delivery_ratings**: Related parties can read; creator can insert; admins full access
+### 2. Admin-Protected Route (`src/components/AdminRoute.tsx`)
+A route guard that:
+- Checks if the user is logged in (via `useAuth`)
+- Calls `useIsAdmin` to verify admin role from the database
+- Redirects non-admins to `/` with no access
+
+### 3. Admin Dashboard Page (`src/pages/AdminDashboard.tsx`)
+A full-screen admin panel at `/admin` with four tabbed sections:
+
+**Tab 1 — Overview (Summary Cards)**
+- Total registered users
+- Total senders vs travelers
+- Total parcels by status (pending, in-transit, delivered)
+- Recent registrations count
+
+**Tab 2 — Users & Registrations**
+A table listing all profiles showing:
+- Name, email, phone, country
+- Role (sender / traveler / unregistered)
+- Registration date
+- One-click copy of email/phone for contact
+- Link to view traveler profile details in a slide-out sheet
+
+**Tab 3 — Parcels & Shipments**
+A table of all parcels showing:
+- Pickup and dropoff locations
+- Weight, price, description
+- Current status with a colored badge (Pending / Collected / In Transit / Delivered)
+- Sender and traveler names (joined from profiles)
+- Admin can update parcel status using a dropdown inline
+
+**Tab 4 — Travelers**
+A table of all traveler profiles showing:
+- Name, vehicle type, routes (primary from/to)
+- License type, cargo types, capacity
+- Schedule and frequency
+- Emergency contact details for coordination
+
+### 4. Navbar Admin Link
+When the logged-in user is an admin, a "Admin" link appears in the navbar pointing to `/admin`.
+
+### 5. Route in App.tsx
+Add `/admin` as an `AdminRoute`-protected route.
 
 ---
 
-## Phase 4: Storage Buckets
+## Database Requirements
 
-### 4.1 Create Buckets
-- `documents` -- private bucket for ID copies, license copies
-- Files stored under path `{user_id}/{file_name}`
+The existing RLS policies already support admins reading all data:
+- `profiles` — "Users can view their own profile" allows `has_role(auth.uid(), 'admin')`
+- `traveler_profiles` — Admin SELECT allowed
+- `traveler_routes` — Admin SELECT allowed
+- `parcels` — "Parcel parties can view parcels" allows admin
+- Admin parcel UPDATE is also allowed
 
-### 4.2 Storage RLS
-- Users can upload to their own folder
-- Users can read their own files
-- Admins can read all files
-
----
-
-## Phase 5: Edge Functions
-
-### 5.1 `register-sender`
-- Receives sender form data + uploaded file
-- Updates the caller's profile with sender info (role, phone, country, address, legal declaration)
-- Uploads ID document to storage bucket
-- Returns success/failure
-
-### 5.2 `register-traveler`
-- Receives full traveler form data + uploaded files
-- Updates caller's profile with traveler info
-- Creates `traveler_profiles` row with vehicle/license details
-- Creates `traveler_routes` rows for primary + additional routes
-- Uploads ID copy and license copy to storage
-- Returns success/failure
+No new database migrations are needed. All admin data access works through the existing RLS policies.
 
 ---
 
-## Phase 6: Connect Forms to Backend
+## How You Become an Admin
 
-### 6.1 Sender Registration Form
-- Require authentication before showing form (redirect to `/auth` if not logged in)
-- On submit: call `register-sender` edge function with form data and file
-- On success: show confirmation, profile is updated in database
+To assign yourself admin access, run this SQL once in the Supabase SQL Editor (using your user's auth UUID):
 
-### 6.2 Carrier Registration Form
-- Same auth requirement
-- On submit: call `register-traveler` edge function with all form data and files
-- On success: show confirmation
+```sql
+INSERT INTO public.user_roles (user_id, role)
+VALUES ('<your-auth-user-id>', 'admin');
+```
+
+---
+
+## Files to Create/Modify
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/hooks/useIsAdmin.ts` | Create | Server-side admin role check |
+| `src/components/AdminRoute.tsx` | Create | Admin-only route guard |
+| `src/pages/AdminDashboard.tsx` | Create | Full admin panel UI |
+| `src/App.tsx` | Modify | Add `/admin` route |
+| `src/components/Navbar.tsx` | Modify | Show Admin link for admins |
 
 ---
 
 ## Technical Details
 
-### Files to Create
-| File | Purpose |
-|------|---------|
-| `src/pages/Auth.tsx` | Login/Signup page |
-| `src/pages/ResetPassword.tsx` | Password reset page |
-| `src/contexts/AuthContext.tsx` | Auth state provider |
-| `src/components/ProtectedRoute.tsx` | Route guard |
-| `supabase/functions/register-sender/index.ts` | Sender registration edge function |
-| `supabase/functions/register-traveler/index.ts` | Traveler registration edge function |
-
-### Files to Modify
-| File | Changes |
-|------|---------|
-| `src/App.tsx` | Add AuthProvider, Auth routes, ProtectedRoute |
-| `src/components/Navbar.tsx` | Add login/logout button based on auth state |
-| `src/components/SenderRegistrationForm/index.tsx` | POST to edge function instead of mock |
-| `src/components/CarrierRegistrationForm/index.tsx` | POST to edge function instead of mock |
-| `src/pages/CarrierSignup.tsx` | Redirect to auth if not logged in |
-| `supabase/config.toml` | Add edge function JWT config |
-
-### Database Migration (single SQL migration)
-- Create enum, tables, indexes, trigger, helper functions, and RLS policies all in one migration
-
-### Implementation Order
-1. Database migration (tables + RLS + trigger + functions)
-2. Storage bucket creation
-3. Auth context + Auth page + Reset password page
-4. Navbar auth state
-5. Edge functions (register-sender, register-traveler)
-6. Connect forms to edge functions
-7. Test end-to-end
-
+- The `useIsAdmin` hook calls `supabase.rpc('has_role', { _user_id: uid, _role: 'admin' })` — server-side, unforgeable
+- All data fetching uses `@tanstack/react-query` for caching and loading states
+- The admin dashboard fetches profiles, traveler_profiles with traveler_routes, and parcels separately and joins them client-side
+- Parcel status updates call `supabase.from('parcels').update({ status })` which is already allowed by the "Admins can update any parcel" RLS policy
+- Status badges use color-coded UI: Pending (yellow), Collected (blue), In Transit (orange), Delivered (green)
+- Contact info (email, phone) is displayed directly in the Users tab with a one-click copy button for quick coordination
