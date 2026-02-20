@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PackageIcon } from "@/components/icons/AppIcons";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   const navLinks = [
     { label: "Home", path: "/" },
@@ -53,6 +55,14 @@ const Navbar = () => {
 
         {/* CTA Buttons */}
         <div className="hidden lg:flex items-center gap-3">
+          {isAdmin && (
+            <Link to="/admin">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+                <ShieldCheck className="w-4 h-4" />
+                Admin
+              </Button>
+            </Link>
+          )}
           <Link to="/carrier-signup">
             <Button variant="outline" size="sm">
               Join the Community
@@ -111,6 +121,14 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="pt-4 border-t border-border space-y-2">
+              {isAdmin && (
+                <Link to="/admin" onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground">
+                    <ShieldCheck className="w-4 h-4" />
+                    Admin Dashboard
+                  </Button>
+                </Link>
+              )}
               <Link to="/carrier-signup" onClick={() => setIsOpen(false)}>
                 <Button variant="outline" className="w-full">
                   Join the Community
