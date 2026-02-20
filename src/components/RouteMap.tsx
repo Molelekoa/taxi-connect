@@ -114,6 +114,24 @@ const RouteMap = ({
     };
   }, [token]);
 
+  // Safely create popup DOM content (prevents XSS from user-controlled labels)
+  const createPopupContent = (emoji: string, title: string, colorClass: string, label: string) => {
+    const container = document.createElement('div');
+    container.className = 'p-2';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = `font-semibold ${colorClass} text-sm mb-1`;
+    titleDiv.textContent = `${emoji} ${title}`; // textContent auto-escapes HTML
+
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'text-xs text-gray-700';
+    labelDiv.textContent = label; // textContent auto-escapes HTML
+
+    container.appendChild(titleDiv);
+    container.appendChild(labelDiv);
+    return container;
+  };
+
   // Route update function
   const updateRoute = useCallback(async () => {
     if (!map.current || !pickupCoordinates || !deliveryCoordinates || !token) {
@@ -143,26 +161,22 @@ const RouteMap = ({
       return el;
     };
 
-    // Add pickup marker (green)
+    // Add pickup marker (green) — uses setDOMContent to prevent XSS
     pickupMarker.current = new mapboxgl.Marker({ element: createMarkerElement('green', 'pickup') })
       .setLngLat([pickupCoordinates.lng, pickupCoordinates.lat])
-      .setPopup(new mapboxgl.Popup({ offset: 25, className: 'route-popup' }).setHTML(`
-        <div class="p-2">
-          <div class="font-semibold text-green-600 text-sm mb-1">📍 Pickup</div>
-          <div class="text-xs text-gray-700">${pickupLabel}</div>
-        </div>
-      `))
+      .setPopup(
+        new mapboxgl.Popup({ offset: 25, className: 'route-popup' })
+          .setDOMContent(createPopupContent('📍', 'Pickup', 'text-green-600', pickupLabel))
+      )
       .addTo(map.current);
 
-    // Add delivery marker (orange)
+    // Add delivery marker (orange) — uses setDOMContent to prevent XSS
     deliveryMarker.current = new mapboxgl.Marker({ element: createMarkerElement('orange', 'delivery') })
       .setLngLat([deliveryCoordinates.lng, deliveryCoordinates.lat])
-      .setPopup(new mapboxgl.Popup({ offset: 25, className: 'route-popup' }).setHTML(`
-        <div class="p-2">
-          <div class="font-semibold text-orange-600 text-sm mb-1">🚚 Delivery</div>
-          <div class="text-xs text-gray-700">${deliveryLabel}</div>
-        </div>
-      `))
+      .setPopup(
+        new mapboxgl.Popup({ offset: 25, className: 'route-popup' })
+          .setDOMContent(createPopupContent('🚚', 'Delivery', 'text-orange-600', deliveryLabel))
+      )
       .addTo(map.current);
 
     // Fetch route geometry
