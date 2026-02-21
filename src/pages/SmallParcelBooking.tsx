@@ -3,6 +3,7 @@ import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X } from "lucide-react";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
+import WeightBandSelector from "@/components/WeightBandSelector";
 
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
@@ -21,8 +22,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  calculateDeliveryPrice,
-  WEIGHT_LIMITS,
+  calculateBandPrice,
+  getWeightBand,
+  WEIGHT_BANDS,
   TRACKING_FEE,
 } from "@/config/pricingCalculator";
 
@@ -67,7 +69,7 @@ const parcelBookingSchema = z.object({
   deliveryAddress: z.string().min(3, "Delivery address is required"),
   recipientName: z.string().min(2, "Recipient name is required"),
   recipientPhone: z.string().min(10, "Recipient phone required"),
-  weight: z.number().min(WEIGHT_LIMITS.min, `Minimum ${WEIGHT_LIMITS.min} kg`).max(WEIGHT_LIMITS.max, `Maximum ${WEIGHT_LIMITS.max} kg`),
+  weightBand: z.string().min(1, "Please select a weight band"),
   description: z.string().optional(),
   includeTracking: z.boolean().optional(),
   idDocumentName: z.string().min(1, "ID or Passport upload is required"),
@@ -92,6 +94,7 @@ const SmallParcelBooking = () => {
     origin?: string; 
     destination?: string; 
     weight?: number;
+    weightBand?: string;
     price?: number;
     includeTracking?: boolean;
     distance?: number;
@@ -111,7 +114,7 @@ const SmallParcelBooking = () => {
     deliveryAddress: "",
     recipientName: "",
     recipientPhone: "",
-    weight: prefilled?.weight || undefined,
+    weightBand: prefilled?.weightBand || "",
     description: "",
     includeTracking: prefilled?.includeTracking || false,
     idDocumentName: "",
@@ -148,11 +151,10 @@ const SmallParcelBooking = () => {
 
   // Calculate live price using new pricing calculator (only when not using prefilled price)
   const calculatedPriceBreakdown = useMemo(() => {
-    if (usePrefilledPrice) return null; // Don't recalculate if using prefilled price
-    if (!formData.originCity || !formData.destinationCity || !formData.weight) return null;
-    if (formData.weight < WEIGHT_LIMITS.min || formData.weight > WEIGHT_LIMITS.max) return null;
-    return calculateDeliveryPrice(formData.originCity, formData.destinationCity, formData.weight, effectiveDistance || undefined, formData.includeTracking || false);
-  }, [formData.originCity, formData.destinationCity, formData.weight, formData.includeTracking, usePrefilledPrice, effectiveDistance]);
+    if (usePrefilledPrice) return null;
+    if (!formData.originCity || !formData.destinationCity || !formData.weightBand) return null;
+    return calculateBandPrice(formData.originCity, formData.destinationCity, formData.weightBand, effectiveDistance || undefined, formData.includeTracking || false);
+  }, [formData.originCity, formData.destinationCity, formData.weightBand, formData.includeTracking, usePrefilledPrice, effectiveDistance]);
 
   // Use prefilled price or calculated price
   // When using prefilled price, adjust for tracking toggle changes
@@ -199,7 +201,7 @@ const SmallParcelBooking = () => {
   const handleInputChange = (field: keyof FormDataInput, value: string | number | boolean) => {
     // If user changes route or weight, stop using prefilled price and recalculate
     // NOTE: Tracking changes should NOT invalidate prefilled price - we adjust it instead
-    if (['originCity', 'destinationCity', 'weight'].includes(field)) {
+    if (['originCity', 'destinationCity', 'weightBand'].includes(field)) {
       setUsePrefilledPrice(false);
     }
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -263,7 +265,6 @@ const SmallParcelBooking = () => {
     try {
       const validated = parcelBookingSchema.parse({
         ...formData,
-        weight: Number(formData.weight),
       });
 
       // Simulate API call
@@ -376,7 +377,7 @@ const SmallParcelBooking = () => {
               Book Your Parcel Delivery
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Affordable parcel delivery ({WEIGHT_LIMITS.min}-{WEIGHT_LIMITS.max}kg) across South Africa, Lesotho, and Zimbabwe through our optimized logistics network.
+              Affordable parcel delivery (1–20 kg) across South Africa, Lesotho, and Zimbabwe through our optimized logistics network.
             </p>
           </div>
 
@@ -655,25 +656,24 @@ const SmallParcelBooking = () => {
                 <h3 className="font-display font-semibold text-foreground border-b border-border pb-2">
                   Package Details
                 </h3>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="weight">Weight (kg) *</Label>
-                    <Input
-                      id="weight"
-                      type="number"
-                      min={WEIGHT_LIMITS.min}
-                      max={WEIGHT_LIMITS.max}
-                      step="0.1"
-                      value={formData.weight || ''}
-                      onChange={(e) => handleInputChange('weight', parseFloat(e.target.value) || 0)}
-                      placeholder={`${WEIGHT_LIMITS.min}-${WEIGHT_LIMITS.max} kg`}
-                      className={errors.weight ? 'border-destructive' : ''}
+                    <Label>Weight Band *</Label>
+                    <WeightBandSelector
+                      value={formData.weightBand || ""}
+                      onChange={(bandId) => handleInputChange('weightBand', bandId)}
+                      error={errors.weightBand}
                     />
-                    {errors.weight && <p className="text-destructive text-xs">{errors.weight}</p>}
-                    <p className="text-xs text-muted-foreground">
-                      {WEIGHT_LIMITS.min}kg minimum — {WEIGHT_LIMITS.max}kg maximum
+                  </div>
+
+                  {/* Weight verification notice */}
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      Your parcel will be weighed at collection. If the actual weight falls in a different band, the price will be adjusted accordingly.
                     </p>
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="description">Contents Description (optional)</Label>
                     <Textarea
@@ -734,8 +734,10 @@ const SmallParcelBooking = () => {
                       <span>{priceBreakdown.route}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Weight</span>
-                      <span>{priceBreakdown.parcelWeightKg} kg</span>
+                      <span className="text-muted-foreground">Weight Band</span>
+                      <span>
+                        {getWeightBand(formData.weightBand || "")?.label ?? ""} ({getWeightBand(formData.weightBand || "")?.range[0]}–{getWeightBand(formData.weightBand || "")?.range[1]} kg)
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Category</span>
@@ -763,7 +765,6 @@ const SmallParcelBooking = () => {
                   try {
                     parcelBookingSchema.parse({
                       ...formData,
-                      weight: Number(formData.weight),
                     });
                     setErrors({});
                     setShowReview(true);
@@ -847,7 +848,7 @@ const SmallParcelBooking = () => {
                           Package
                         </h3>
                         <div className="space-y-1 text-sm">
-                          <p><span className="text-muted-foreground">Weight:</span> {formData.weight} kg</p>
+                          <p><span className="text-muted-foreground">Weight:</span> {getWeightBand(formData.weightBand || "")?.label ?? ""} ({getWeightBand(formData.weightBand || "")?.range[0]}–{getWeightBand(formData.weightBand || "")?.range[1]} kg)</p>
                           <p><span className="text-muted-foreground">Tracking:</span> {formData.includeTracking ? "Yes (+R" + TRACKING_FEE + ")" : "No"}</p>
                           {formData.description && (
                             <p><span className="text-muted-foreground">Contents:</span> {formData.description}</p>
@@ -921,8 +922,10 @@ const SmallParcelBooking = () => {
                             <span>{priceBreakdown.route}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Weight</span>
-                            <span>{priceBreakdown.parcelWeightKg} kg</span>
+                            <span className="text-muted-foreground">Weight Band</span>
+                            <span>
+                              {getWeightBand(formData.weightBand || "")?.label ?? ""} ({getWeightBand(formData.weightBand || "")?.range[0]}–{getWeightBand(formData.weightBand || "")?.range[1]} kg)
+                            </span>
                           </div>
                           {priceBreakdown.trackingIncluded && (
                             <div className="flex justify-between text-primary font-medium">
