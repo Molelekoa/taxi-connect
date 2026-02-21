@@ -1,90 +1,48 @@
 
-# Admin Dashboard for Shipment Coordination
 
-## Security Scan Summary
+# Weight Verification Strategy
 
-After loading the full security scan results, there are **zero findings at the "error" level**. All identified findings are at `warn` or `info` severity. Since you asked to only address `error`-level items, no security fixes are needed from this scan.
+## The Problem
+Users self-declare parcel weight (1-20kg) with no validation. The sliding scale means a dishonest declaration of 3kg instead of 10kg could cut the price roughly in half. There is no way to weigh parcels digitally before collection.
 
----
+## Recommended Solution: Weight Bands + Visual Guides + Collection Adjustment
 
-## Main Request: Admin Dashboard
+Instead of asking for an exact weight (which invites gaming), switch to **weight bands** with visual reference examples. This reduces the incentive to lie (you can't shave off 0.5kg to save money) and makes it psychologically harder to pick the wrong band when shown relatable reference objects.
 
-You need a way to track user data and coordinate shipments as an administrator. Here is what will be built:
+### What Changes
 
----
+### 1. Replace free-text weight input with Weight Band selector
 
-## What Gets Built
+Replace the current number input with 4 clear weight bands:
 
-### 1. Admin Role Hook (`src/hooks/useIsAdmin.ts`)
-A React hook that calls the existing `has_role` database function server-side to check if the current user is an admin. This is the secure, RLS-based approach — no client-side credential checks.
+| Band | Range | Visual Reference |
+|------|-------|-----------------|
+| Light | 1-5 kg | "A few books or a pair of shoes" |
+| Medium | 5-10 kg | "A microwave or a small suitcase" |
+| Heavy | 10-15 kg | "A large bag of dog food" |
+| Extra Heavy | 15-20 kg | "A car tyre or a full toolbox" |
 
-### 2. Admin-Protected Route (`src/components/AdminRoute.tsx`)
-A route guard that:
-- Checks if the user is logged in (via `useAuth`)
-- Calls `useIsAdmin` to verify admin role from the database
-- Redirects non-admins to `/` with no access
+Each band is a clickable card with an icon and the reference description. The pricing engine uses the **midpoint** of each band (3kg, 7.5kg, 12.5kg, 17.5kg) for calculation.
 
-### 3. Admin Dashboard Page (`src/pages/AdminDashboard.tsx`)
-A full-screen admin panel at `/admin` with four tabbed sections:
+### 2. Add a "Weight will be verified at collection" notice
 
-**Tab 1 — Overview (Summary Cards)**
-- Total registered users
-- Total senders vs travelers
-- Total parcels by status (pending, in-transit, delivered)
-- Recent registrations count
+A visible warning banner on both the estimator and booking pages:
 
-**Tab 2 — Users & Registrations**
-A table listing all profiles showing:
-- Name, email, phone, country
-- Role (sender / traveler / unregistered)
-- Registration date
-- One-click copy of email/phone for contact
-- Link to view traveler profile details in a slide-out sheet
+> "Your parcel will be weighed at collection. If the actual weight falls in a different band, the price will be adjusted accordingly."
 
-**Tab 3 — Parcels & Shipments**
-A table of all parcels showing:
-- Pickup and dropoff locations
-- Weight, price, description
-- Current status with a colored badge (Pending / Collected / In Transit / Delivered)
-- Sender and traveler names (joined from profiles)
-- Admin can update parcel status using a dropdown inline
+This creates accountability without requiring upfront verification technology.
 
-**Tab 4 — Travelers**
-A table of all traveler profiles showing:
-- Name, vehicle type, routes (primary from/to)
-- License type, cargo types, capacity
-- Schedule and frequency
-- Emergency contact details for coordination
+### 3. Add weight verification fields to the Admin Dashboard
 
-### 4. Navbar Admin Link
-When the logged-in user is an admin, a "Admin" link appears in the navbar pointing to `/admin`.
+In the Parcels tab, add two new columns:
+- **Declared Band** — what the sender selected
+- **Verified Weight** — editable field the admin/traveler fills in at collection
 
-### 5. Route in App.tsx
-Add `/admin` as an `AdminRoute`-protected route.
+When a verified weight is entered that falls in a different band, the admin sees a highlighted price discrepancy with the corrected price.
 
----
+### 4. Update the pricing calculator
 
-## Database Requirements
-
-The existing RLS policies already support admins reading all data:
-- `profiles` — "Users can view their own profile" allows `has_role(auth.uid(), 'admin')`
-- `traveler_profiles` — Admin SELECT allowed
-- `traveler_routes` — Admin SELECT allowed
-- `parcels` — "Parcel parties can view parcels" allows admin
-- Admin parcel UPDATE is also allowed
-
-No new database migrations are needed. All admin data access works through the existing RLS policies.
-
----
-
-## How You Become an Admin
-
-To assign yourself admin access, run this SQL once in the Supabase SQL Editor (using your user's auth UUID):
-
-```sql
-INSERT INTO public.user_roles (user_id, role)
-VALUES ('<your-auth-user-id>', 'admin');
-```
+Add a new function `calculateBandPrice()` that takes a band name instead of exact weight, using the band midpoint internally. The existing `calculateDeliveryPrice()` remains unchanged for backward compatibility.
 
 ---
 
@@ -92,19 +50,30 @@ VALUES ('<your-auth-user-id>', 'admin');
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `src/hooks/useIsAdmin.ts` | Create | Server-side admin role check |
-| `src/components/AdminRoute.tsx` | Create | Admin-only route guard |
-| `src/pages/AdminDashboard.tsx` | Create | Full admin panel UI |
-| `src/App.tsx` | Modify | Add `/admin` route |
-| `src/components/Navbar.tsx` | Modify | Show Admin link for admins |
+| `src/config/pricingCalculator.ts` | Modify | Add weight bands config and `calculateBandPrice()` helper |
+| `src/components/WeightBandSelector.tsx` | Create | Reusable card-based weight band picker with visual references |
+| `src/pages/FreightEstimator.tsx` | Modify | Replace weight number input with WeightBandSelector, add verification notice |
+| `src/pages/SmallParcelBooking.tsx` | Modify | Replace weight number input with WeightBandSelector, add verification notice, pass band to submission |
+| `src/pages/AdminDashboard.tsx` | Modify | Add declared band and verified weight columns to Parcels tab |
 
 ---
 
 ## Technical Details
 
-- The `useIsAdmin` hook calls `supabase.rpc('has_role', { _user_id: uid, _role: 'admin' })` — server-side, unforgeable
-- All data fetching uses `@tanstack/react-query` for caching and loading states
-- The admin dashboard fetches profiles, traveler_profiles with traveler_routes, and parcels separately and joins them client-side
-- Parcel status updates call `supabase.from('parcels').update({ status })` which is already allowed by the "Admins can update any parcel" RLS policy
-- Status badges use color-coded UI: Pending (yellow), Collected (blue), In Transit (orange), Delivered (green)
-- Contact info (email, phone) is displayed directly in the Users tab with a one-click copy button for quick coordination
+**Weight bands constant** (added to `pricingCalculator.ts`):
+```
+WEIGHT_BANDS = [
+  { id: "light", label: "Light", range: [1, 5], midpoint: 3, icon: "Feather", reference: "A few books or a pair of shoes" },
+  { id: "medium", label: "Medium", range: [5, 10], midpoint: 7.5, icon: "Package", reference: "A microwave or a small suitcase" },
+  { id: "heavy", label: "Heavy", range: [10, 15], midpoint: 12.5, icon: "Dumbbell", reference: "A large bag of dog food" },
+  { id: "extra-heavy", label: "Extra Heavy", range: [15, 20], midpoint: 17.5, icon: "Anvil", reference: "A car tyre or a full toolbox" },
+]
+```
+
+**WeightBandSelector component**: Renders 4 cards in a 2x2 grid (responsive). Each card shows the icon, band name, weight range, and everyday reference item. The selected band is highlighted with a primary border. On selection, it calls `onChange(bandId)`.
+
+**Pricing integration**: `calculateBandPrice(origin, destination, bandId, distance?, tracking?)` looks up the band midpoint and delegates to existing `calculateDeliveryPrice()`. No internal pricing logic is exposed.
+
+**Admin verification**: The verified weight field in the admin dashboard is a simple number input. When filled, the system recalculates price using the verified weight and shows the difference if the band changed (e.g., "Declared: Light (1-5kg) / Verified: 8kg (Medium) / Price difference: +R45").
+
+**Database**: No schema changes needed immediately. The `parcels.weight_kg` column stores the band midpoint at booking time. When an admin verifies, they update `weight_kg` to the actual weight via the existing admin UPDATE RLS policy.
