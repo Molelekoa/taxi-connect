@@ -13,7 +13,7 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 active:scale-[0.98]",
         
         // Coral CTA - vibrant, action-oriented with white text
-        coral: "bg-accent text-accent-foreground rounded-xl font-bold hover:bg-accent/90 active:scale-[0.98] shadow-coral-glow",
+        coral: "bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 active:scale-[0.98] shadow-[var(--shadow-primary-glow)]",
         
         // Hero button - prominent blue
         hero: "bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 active:scale-[0.98] shadow-soft",
