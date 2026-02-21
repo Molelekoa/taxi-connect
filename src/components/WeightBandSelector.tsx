@@ -1,8 +1,9 @@
-import { Feather, Package, Dumbbell, Weight } from "lucide-react";
+import { Mail, Feather, Package, Dumbbell, Weight } from "lucide-react";
 import { WEIGHT_BANDS, type WeightBand } from "@/config/pricingCalculator";
 import { cn } from "@/lib/utils";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Mail,
   Feather,
   Package,
   Dumbbell,
@@ -19,7 +20,7 @@ const WeightBandSelector = ({ value, onChange, error }: WeightBandSelectorProps)
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
-        {WEIGHT_BANDS.map((band) => {
+        {WEIGHT_BANDS.map((band, index) => {
           const Icon = iconMap[band.icon] || Package;
           const isSelected = value === band.id;
 
@@ -30,6 +31,7 @@ const WeightBandSelector = ({ value, onChange, error }: WeightBandSelectorProps)
               onClick={() => onChange(band.id)}
               className={cn(
                 "relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-left",
+                index === 0 && "col-span-2",
                 "hover:border-primary/50 hover:bg-primary/5",
                 isSelected
                   ? "border-primary bg-primary/10 shadow-sm"
