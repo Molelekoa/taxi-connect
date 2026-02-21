@@ -56,6 +56,48 @@ export const WEIGHT_LIMITS = {
   max: 20,
 } as const;
 
+/** Weight band definition */
+export interface WeightBand {
+  id: string;
+  label: string;
+  range: [number, number];
+  midpoint: number;
+  icon: string;
+  reference: string;
+}
+
+/** Weight bands for parcel service */
+export const WEIGHT_BANDS: WeightBand[] = [
+  { id: "light", label: "Light", range: [1, 5], midpoint: 3, icon: "Feather", reference: "A few books or a pair of shoes" },
+  { id: "medium", label: "Medium", range: [5, 10], midpoint: 7.5, icon: "Package", reference: "A microwave or a small suitcase" },
+  { id: "heavy", label: "Heavy", range: [10, 15], midpoint: 12.5, icon: "Dumbbell", reference: "A large bag of dog food" },
+  { id: "extra-heavy", label: "Extra Heavy", range: [15, 20], midpoint: 17.5, icon: "Weight", reference: "A car tyre or a full toolbox" },
+];
+
+/** Get a weight band by ID */
+export const getWeightBand = (bandId: string): WeightBand | undefined =>
+  WEIGHT_BANDS.find((b) => b.id === bandId);
+
+/** Determine which band a given weight falls into */
+export const getBandForWeight = (weightKg: number): WeightBand | undefined =>
+  WEIGHT_BANDS.find((b) => weightKg >= b.range[0] && weightKg <= b.range[1]);
+
+/**
+ * Calculate delivery price using a weight band instead of exact weight.
+ * Uses the band midpoint internally.
+ */
+export const calculateBandPrice = (
+  originCity: string,
+  destinationCity: string,
+  bandId: string,
+  distanceKm?: number,
+  includeTracking: boolean = false
+): PriceBreakdown | null => {
+  const band = getWeightBand(bandId);
+  if (!band) return null;
+  return calculateDeliveryPrice(originCity, destinationCity, band.midpoint, distanceKm, includeTracking);
+};
+
 /**
  * Calculates the sliding percentage of bus fare based on parcel weight.
  * 

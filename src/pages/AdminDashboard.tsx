@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -28,6 +28,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import {
+  getBandForWeight,
+  getWeightBand,
+  WEIGHT_BANDS,
+  calculateDeliveryPrice,
+  type WeightBand,
+} from "@/config/pricingCalculator";
 import {
   Users,
   Package,
@@ -248,6 +256,19 @@ const AdminDashboard = () => {
     },
   });
 
+  // Parcel verified weight update mutation
+  const updateVerifiedWeight = useMutation({
+    mutationFn: async ({ id, weight }: { id: string; weight: number }) => {
+      const { error } = await supabase.from("parcels").update({ weight_kg: weight }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-parcels"] });
+      toast({ title: "Verified weight updated" });
+    },
+    onError: () => toast({ title: "Failed to update weight", variant: "destructive" }),
+  });
+
   // Parcel status update mutation
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -416,11 +437,12 @@ const AdminDashboard = () => {
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       <Table>
-                        <TableHeader>
+                         <TableHeader>
                           <TableRow>
                             <TableHead>Pickup</TableHead>
                             <TableHead>Dropoff</TableHead>
-                            <TableHead>Weight</TableHead>
+                            <TableHead>Declared Band</TableHead>
+                            <TableHead>Verified Weight</TableHead>
                             <TableHead>Price</TableHead>
                             <TableHead>Sender</TableHead>
                             <TableHead>Traveler</TableHead>
@@ -431,7 +453,7 @@ const AdminDashboard = () => {
                         <TableBody>
                           {parcels.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">No parcels found.</TableCell>
+                              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">No parcels found.</TableCell>
                             </TableRow>
                           ) : parcels.map((parcel) => {
                             const sender = profileById(parcel.sender_id);
@@ -444,7 +466,12 @@ const AdminDashboard = () => {
                                 <TableCell className="max-w-[130px]">
                                   <span className="truncate block text-xs" title={parcel.dropoff_location ?? ""}>{parcel.dropoff_location ?? "—"}</span>
                                 </TableCell>
-                                <TableCell className="text-xs">{parcel.weight_kg != null ? `${parcel.weight_kg} kg` : "—"}</TableCell>
+                                <TableCell className="text-xs">
+                                  <DeclaredBandCell weightKg={parcel.weight_kg} />
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  <VerifiedWeightCell parcel={parcel} onUpdate={(id, weight) => updateVerifiedWeight.mutate({ id, weight })} />
+                                </TableCell>
                                 <TableCell className="text-xs">{parcel.price != null ? `R${parcel.price}` : "—"}</TableCell>
                                 <TableCell className="text-xs">{sender?.full_name ?? sender?.email ?? "—"}</TableCell>
                                 <TableCell className="text-xs">{traveler?.full_name ?? traveler?.email ?? "—"}</TableCell>
@@ -557,6 +584,64 @@ const AdminDashboard = () => {
         onClose={() => { setSheetTraveler(null); setSheetProfile(null); }}
       />
     </div>
+  );
+};
+
+// ── Declared band cell ─────────────────────────────────────────────────────────
+
+const DeclaredBandCell = ({ weightKg }: { weightKg: number | null }) => {
+  if (weightKg == null) return <span className="text-muted-foreground">—</span>;
+  const band = getBandForWeight(weightKg);
+  if (band) {
+    return <span>{band.label} ({band.range[0]}–{band.range[1]} kg)</span>;
+  }
+  // If weight doesn't match a band midpoint exactly, show the raw weight
+  return <span>{weightKg} kg</span>;
+};
+
+// ── Verified weight cell ───────────────────────────────────────────────────────
+
+const VerifiedWeightCell = ({ parcel, onUpdate }: { parcel: Parcel; onUpdate: (id: string, weight: number) => void }) => {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+
+  const handleSave = () => {
+    const num = parseFloat(value);
+    if (!isNaN(num) && num > 0) {
+      onUpdate(parcel.id, num);
+      setEditing(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          step="0.1"
+          min="0.1"
+          className="h-7 w-20 text-xs"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSave()}
+          autoFocus
+        />
+        <button onClick={handleSave} className="text-xs text-primary hover:underline">Save</button>
+        <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground hover:underline">✕</button>
+      </div>
+    );
+  }
+
+  // Determine if verified weight differs from declared band
+  const declaredBand = parcel.weight_kg != null ? getBandForWeight(parcel.weight_kg) : null;
+
+  return (
+    <button
+      onClick={() => { setValue(""); setEditing(true); }}
+      className="text-xs text-primary/70 hover:text-primary hover:underline"
+    >
+      Verify weight
+    </button>
   );
 };
 

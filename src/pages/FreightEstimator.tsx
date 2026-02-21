@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Info, Package, Radio } from "lucide-react";
+import { Loader2, Info, Package, Radio, AlertTriangle } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import WeightBandSelector from "@/components/WeightBandSelector";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -18,8 +19,9 @@ import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 import RouteMap from "@/components/RouteMap";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  calculateDeliveryPrice,
-  WEIGHT_LIMITS,
+  calculateBandPrice,
+  WEIGHT_BANDS,
+  getWeightBand,
   TRACKING_FEE,
   type PriceBreakdown,
 } from "@/config/pricingCalculator";
@@ -66,7 +68,7 @@ const ParcelEstimator = () => {
   const [formData, setFormData] = useState({
     pickupLocation: "",
     deliveryLocation: "",
-    weight: "",
+    weightBand: "",
     includeTracking: false,
   });
 
@@ -123,31 +125,27 @@ const ParcelEstimator = () => {
   };
 
   const calculateEstimate = () => {
-    const weight = parseFloat(formData.weight) || 0;
-    if (weight < WEIGHT_LIMITS.min || weight > WEIGHT_LIMITS.max) return;
+    if (!formData.weightBand) return;
     if (!formData.pickupLocation || !formData.deliveryLocation) return;
 
-    const result = calculateDeliveryPrice(
+    const result = calculateBandPrice(
       formData.pickupLocation,
       formData.deliveryLocation,
-      weight,
+      formData.weightBand,
       effectiveDistance || undefined,
       formData.includeTracking
     );
 
-    setPriceBreakdown(result);
-    setShowResult(true);
+    if (result) {
+      setPriceBreakdown(result);
+      setShowResult(true);
+    }
   };
 
   const isFormValid =
     formData.pickupLocation &&
     formData.deliveryLocation &&
-    formData.weight &&
-    parseFloat(formData.weight) >= WEIGHT_LIMITS.min &&
-    parseFloat(formData.weight) <= WEIGHT_LIMITS.max;
-
-  const weightValue = parseFloat(formData.weight) || 0;
-  const isWeightValid = weightValue >= WEIGHT_LIMITS.min && weightValue <= WEIGHT_LIMITS.max;
+    formData.weightBand;
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,7 +160,7 @@ const ParcelEstimator = () => {
                 Parcel Buddy Pricing
               </h1>
               <p className="text-primary-foreground/80">
-                Get instant pricing for parcels 1-20kg. Our optimized routes mean lower costs for you.
+                Get instant pricing for parcels 1–20 kg. Our optimized routes mean lower costs for you.
               </p>
             </div>
 
@@ -288,25 +286,19 @@ const ParcelEstimator = () => {
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="weight">Parcel Weight (kg) *</Label>
-                    <Input
-                      id="weight"
-                      type="number"
-                      placeholder="e.g., 5"
-                      min={WEIGHT_LIMITS.min}
-                      max={WEIGHT_LIMITS.max}
-                      value={formData.weight}
-                      onChange={(e) => handleInputChange("weight", e.target.value)}
+                    <Label>Parcel Weight *</Label>
+                    <WeightBandSelector
+                      value={formData.weightBand}
+                      onChange={(bandId) => handleInputChange("weightBand", bandId)}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Min {WEIGHT_LIMITS.min}kg — Max {WEIGHT_LIMITS.max}kg
+                  </div>
+
+                  {/* Weight verification notice */}
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      Your parcel will be weighed at collection. If the actual weight falls in a different band, the price will be adjusted accordingly.
                     </p>
-                    
-                    {formData.weight && !isWeightValid && (
-                      <p className="text-xs text-destructive">
-                        Weight must be between {WEIGHT_LIMITS.min} and {WEIGHT_LIMITS.max}kg
-                      </p>
-                    )}
                   </div>
 
                   {/* Tracking Add-on */}
@@ -378,8 +370,10 @@ const ParcelEstimator = () => {
                       <span className="text-foreground">{priceBreakdown.route}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Weight</span>
-                      <span className="text-foreground">{priceBreakdown.parcelWeightKg} kg</span>
+                      <span className="text-muted-foreground">Weight Band</span>
+                      <span className="text-foreground">
+                        {getWeightBand(formData.weightBand)?.label ?? ""} ({getWeightBand(formData.weightBand)?.range[0]}–{getWeightBand(formData.weightBand)?.range[1]} kg)
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Category</span>
@@ -401,7 +395,8 @@ const ParcelEstimator = () => {
                         state: { 
                           origin: formData.pickupLocation,
                           destination: formData.deliveryLocation, 
-                          weight: parseFloat(formData.weight),
+                          weightBand: formData.weightBand,
+                          weight: getWeightBand(formData.weightBand)?.midpoint,
                           price: priceBreakdown.finalPrice,
                           includeTracking: formData.includeTracking,
                           distance: effectiveDistance
