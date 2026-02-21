@@ -59,6 +59,13 @@ export const WEIGHT_LIMITS = {
 /** Envelope band discount factor (15% cheaper) */
 export const ENVELOPE_DISCOUNT = 0.85;
 
+/** Envelope long-distance pricing: sliding scale for routes over 500km */
+export const ENVELOPE_DISTANCE_THRESHOLD_KM = 500;
+export const ENVELOPE_MIN_LONG_DISTANCE_PRICE = 220.00;
+export const ENVELOPE_MAX_LONG_DISTANCE_PRICE = 500.00;
+/** Distance at which the envelope max price is reached */
+export const ENVELOPE_MAX_DISTANCE_KM = 2000;
+
 /** Weight band definition */
 export interface WeightBand {
   id: string;
@@ -101,7 +108,18 @@ export const calculateBandPrice = (
   if (!band) return null;
   const result = calculateDeliveryPrice(originCity, destinationCity, band.midpoint, distanceKm, includeTracking);
   if (bandId === "envelope") {
-    result.finalPrice = Math.max(MINIMUM_PRICE, Math.round(result.finalPrice * ENVELOPE_DISCOUNT * 100) / 100);
+    const effectiveDistance = distanceKm || DEFAULT_DISTANCE_KM;
+    const trackingFee = includeTracking ? TRACKING_FEE : 0;
+    
+    if (effectiveDistance > ENVELOPE_DISTANCE_THRESHOLD_KM) {
+      // Sliding scale: R220 at 500km, linearly increasing to R500 at 2000km
+      const distanceRatio = Math.min(1, (effectiveDistance - ENVELOPE_DISTANCE_THRESHOLD_KM) / (ENVELOPE_MAX_DISTANCE_KM - ENVELOPE_DISTANCE_THRESHOLD_KM));
+      const distancePrice = ENVELOPE_MIN_LONG_DISTANCE_PRICE + distanceRatio * (ENVELOPE_MAX_LONG_DISTANCE_PRICE - ENVELOPE_MIN_LONG_DISTANCE_PRICE);
+      result.finalPrice = Math.round(distancePrice * 100) / 100 + trackingFee;
+    } else {
+      // Short distance envelope: apply 15% discount with standard minimum
+      result.finalPrice = Math.max(MINIMUM_PRICE, Math.round(result.finalPrice * ENVELOPE_DISCOUNT * 100) / 100);
+    }
   }
   return result;
 };
