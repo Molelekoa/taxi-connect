@@ -41,9 +41,9 @@ const CarrierSignup = () => {
               <Heart className="w-4 h-4" />
               Community-Powered Delivery
             </div>
-            <h1 className="font-display font-bold text-4xl md:text-5xl text-foreground mb-4">
+             <h1 className="font-display font-bold text-4xl md:text-5xl text-primary mb-4">
               Join the{" "}
-              <span className="text-gradient">Community</span>
+              <span className="text-accent">Community</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Whether you're traveling between cities or need to send a parcel,
@@ -54,7 +54,7 @@ const CarrierSignup = () => {
           {/* Community Benefits Section */}
           <div className="card-elevated p-8 mb-12">
             <h2 className="font-display font-bold text-xl text-foreground text-center mb-2">
-              Traveling anyway? <span className="text-gradient">Earn along the way.</span>
+              Traveling anyway? <span className="text-accent">Earn along the way.</span>
             </h2>
             <p className="text-muted-foreground text-center mb-8 max-w-lg mx-auto">
               Join our community of travelers who deliver parcels on routes they're already taking.
