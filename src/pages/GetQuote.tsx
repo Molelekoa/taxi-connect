@@ -11,8 +11,8 @@ const GetQuote = () => {
         <div className="container-narrow">
           {/* Hero Text */}
           <div className="text-center mb-10 max-w-2xl mx-auto">
-             <h1 className="font-display font-bold text-4xl md:text-5xl text-primary mb-4">
-              Request a <span className="text-accent">Free Quote</span>
+            <h1 className="font-display font-bold text-4xl md:text-5xl text-foreground mb-4">
+              Request a <span className="text-gradient">Free Quote</span>
             </h1>
             <p className="text-lg text-muted-foreground">
               Complete the form below and our team will respond within 1 business hour 
