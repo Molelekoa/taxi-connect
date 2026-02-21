@@ -52,9 +52,12 @@ export const DEFAULT_DISTANCE_KM = 400;
 
 /** Weight limits for parcel service */
 export const WEIGHT_LIMITS = {
-  min: 1,
+  min: 0,
   max: 20,
 } as const;
+
+/** Envelope band discount factor (15% cheaper) */
+export const ENVELOPE_DISCOUNT = 0.85;
 
 /** Weight band definition */
 export interface WeightBand {
@@ -68,6 +71,7 @@ export interface WeightBand {
 
 /** Weight bands for parcel service */
 export const WEIGHT_BANDS: WeightBand[] = [
+  { id: "envelope", label: "Envelope", range: [0, 1], midpoint: 0.5, icon: "Mail", reference: "Documents, medication, or a phone" },
   { id: "light", label: "Light", range: [1, 5], midpoint: 3, icon: "Feather", reference: "A few books or a pair of shoes" },
   { id: "medium", label: "Medium", range: [5, 10], midpoint: 7.5, icon: "Package", reference: "A microwave or a small suitcase" },
   { id: "heavy", label: "Heavy", range: [10, 15], midpoint: 12.5, icon: "Dumbbell", reference: "A large bag of dog food" },
@@ -95,7 +99,11 @@ export const calculateBandPrice = (
 ): PriceBreakdown | null => {
   const band = getWeightBand(bandId);
   if (!band) return null;
-  return calculateDeliveryPrice(originCity, destinationCity, band.midpoint, distanceKm, includeTracking);
+  const result = calculateDeliveryPrice(originCity, destinationCity, band.midpoint, distanceKm, includeTracking);
+  if (bandId === "envelope") {
+    result.finalPrice = Math.max(MINIMUM_PRICE, Math.round(result.finalPrice * ENVELOPE_DISCOUNT * 100) / 100);
+  }
+  return result;
 };
 
 /**
