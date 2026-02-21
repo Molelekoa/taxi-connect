@@ -67,11 +67,11 @@ const Index = () => {
       <Navbar />
 
       {/* Hero Section - Light, Airy, Friendly */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 bg-gradient-to-b from-background via-secondary/30 to-background">
-        {/* Soft decorative shapes */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
+      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 bg-gradient-to-b from-background via-secondary/40 to-background">
+        {/* Warm decorative shapes */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-accent/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary/8 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-secondary rounded-full blur-3xl" />
 
         <div className="container-narrow relative z-10 text-center py-12">
           {/* Friendly badge */}
@@ -88,14 +88,14 @@ const Index = () => {
           </motion.div>
           
           <motion.h1
-            className="font-display font-bold text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight"
+            className="font-display font-bold text-4xl md:text-5xl lg:text-6xl text-primary leading-tight"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
             Parcel delivery made
             <br />
-            <span className="text-gradient">simple & affordable</span>
+            <span className="text-accent">simple & affordable</span>
           </motion.h1>
           
           <motion.p
@@ -175,8 +175,8 @@ const Index = () => {
             variants={fadeInUp}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground mb-4">
-              Why <span className="text-gradient">Parcel Buddy</span>?
+            <h2 className="font-display font-bold text-3xl md:text-4xl text-primary mb-4">
+              Why <span className="text-accent">Parcel Buddy</span>?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Our optimized logistics network delivers faster and more affordably than traditional couriers.
@@ -239,8 +239,8 @@ const Index = () => {
             variants={fadeInUp}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground">
-              What are you <span className="text-gradient">sending?</span>
+            <h2 className="font-display font-bold text-3xl md:text-4xl text-primary">
+              What are you <span className="text-accent">sending?</span>
             </h2>
             <p className="text-muted-foreground mt-4">
               We handle parcels from 1kg to 20kg — perfect for e-commerce, personal items, and essential goods.
@@ -295,8 +295,8 @@ const Index = () => {
             variants={fadeInUp}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground">
-              How It <span className="text-gradient">Works</span>
+            <h2 className="font-display font-bold text-3xl md:text-4xl text-primary">
+              How It <span className="text-accent">Works</span>
             </h2>
           </motion.div>
 
@@ -385,8 +385,8 @@ const Index = () => {
                 <div className="inline-block px-3 py-1 rounded-full bg-accent/20 text-accent text-sm font-semibold mb-4">
                   CROSS-BORDER
                 </div>
-                <h2 className="font-display font-bold text-2xl md:text-3xl text-foreground mb-3">
-                  South Africa • Lesotho • <span className="text-gradient">Zimbabwe</span>
+                <h2 className="font-display font-bold text-2xl md:text-3xl text-primary mb-3">
+                  South Africa • Lesotho • <span className="text-accent">Zimbabwe</span>
                 </h2>
                 <p className="text-muted-foreground mb-6 max-w-md">
                   Send parcels across borders with our established cross-border network. Transparent pricing, reliable delivery.
