@@ -341,10 +341,59 @@ const SmallParcelBooking = () => {
         ...formData,
       });
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!user) {
+        toast({ title: "Please log in to book a parcel", variant: "destructive" });
+        return;
+      }
 
-      console.log("Parcel booking submitted:", validated);
+      // Get profile ID
+      const { data: profileId, error: profileError } = await supabase.rpc('get_profile_id', { _auth_uid: user.id });
+      if (profileError || !profileId) {
+        toast({ title: "Could not find your profile. Please register first.", variant: "destructive" });
+        return;
+      }
+
+      // Upload ID document if not verified sender
+      if (!isVerifiedSender && idDocumentFile) {
+        const fileExt = idDocumentFile.name.split('.').pop();
+        const filePath = `${profileId}/id-document.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(filePath, idDocumentFile, { upsert: true });
+        if (uploadError) {
+          toast({ title: "Failed to upload ID document", description: uploadError.message, variant: "destructive" });
+          return;
+        }
+      }
+
+      // Get selected band info for weight midpoint
+      const selectedBand = WEIGHT_BANDS.find(b => b.id === formData.weightBand);
+
+      // Insert parcel into database
+      const { error: insertError } = await supabase.from('parcels').insert({
+        sender_id: profileId,
+        pickup_location: formData.originCity,
+        dropoff_location: formData.destinationCity,
+        pickup_address: formData.pickupAddress,
+        delivery_address: formData.deliveryAddress,
+        recipient_name: formData.recipientName,
+        recipient_phone: formData.recipientPhone,
+        weight_band: formData.weightBand,
+        weight_kg: selectedBand ? (selectedBand.range[0] + selectedBand.range[1]) / 2 : null,
+        price: displayPrice,
+        include_tracking: formData.includeTracking || false,
+        description: formData.description || null,
+        sender_name: isVerifiedSender ? (profileData?.full_name || '') : (formData.contactName || ''),
+        sender_email: isVerifiedSender ? (profileData?.email || '') : (formData.email || ''),
+        sender_phone: isVerifiedSender ? (profileData?.phone || '') : (formData.phone || ''),
+        status: 'pending',
+      } as any);
+
+      if (insertError) {
+        toast({ title: "Booking failed", description: insertError.message, variant: "destructive" });
+        return;
+      }
+
       setShowReview(false);
       setIsSuccess(true);
       toast({
