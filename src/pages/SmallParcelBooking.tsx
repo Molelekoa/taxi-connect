@@ -1,9 +1,11 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X } from "lucide-react";
+import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X, ShieldCheck, ExternalLink } from "lucide-react";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 import WeightBandSelector from "@/components/WeightBandSelector";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
@@ -78,16 +80,65 @@ const parcelBookingSchema = z.object({
   }),
 });
 
+// Lighter schema for verified senders — no contact details or ID/legal required
+const verifiedSenderSchema = z.object({
+  contactName: z.string().optional(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  originCity: z.string().min(2, "Origin city is required"),
+  pickupAddress: z.string().min(5, "Pickup address is required"),
+  pickupDate: z.string().optional(),
+  destinationCity: z.string().min(2, "Destination city is required"),
+  deliveryAddress: z.string().min(3, "Delivery address is required"),
+  recipientName: z.string().min(2, "Recipient name is required"),
+  recipientPhone: z.string().min(10, "Recipient phone required"),
+  weightBand: z.string().min(1, "Please select a weight band"),
+  description: z.string().optional(),
+  includeTracking: z.boolean().optional(),
+  idDocumentName: z.string().optional(),
+  legalDeclarationAccepted: z.boolean().optional(),
+});
+
 type FormData = z.infer<typeof parcelBookingSchema>;
 type FormDataInput = Partial<Omit<FormData, 'legalDeclarationAccepted'> & { legalDeclarationAccepted: boolean }>;
 
 const SmallParcelBooking = () => {
   const location = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Profile state for verified senders
+  const [isVerifiedSender, setIsVerifiedSender] = useState(false);
+  const [profileData, setProfileData] = useState<{
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+  } | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Fetch profile to check if user is a verified sender
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('full_name, email, phone, id_document_url, legal_declaration_accepted')
+        .eq('auth_id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.full_name && data?.id_document_url && data?.legal_declaration_accepted) {
+            setProfileData({ full_name: data.full_name, email: data.email, phone: data.phone });
+            setIsVerifiedSender(true);
+          }
+          setProfileLoading(false);
+        });
+    } else {
+      setProfileLoading(false);
+    }
+  }, [user]);
   
   // Pre-fill from estimator if available
   const prefilled = location.state as { 
@@ -125,6 +176,23 @@ const SmallParcelBooking = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showReview, setShowReview] = useState(false);
+
+  // Pre-fill form with profile data when verified sender
+  useEffect(() => {
+    if (isVerifiedSender && profileData) {
+      setFormData(prev => ({
+        ...prev,
+        contactName: profileData.full_name || "",
+        email: profileData.email || "",
+        phone: profileData.phone || "",
+        idDocumentName: "on-file",
+        legalDeclarationAccepted: true,
+      }));
+    }
+  }, [isVerifiedSender, profileData]);
+
+  // Pick the right schema based on sender status
+  const activeSchema = isVerifiedSender ? verifiedSenderSchema : parcelBookingSchema;
   
   
   // ID Document upload state
@@ -263,7 +331,7 @@ const SmallParcelBooking = () => {
     setIsSubmitting(true);
 
     try {
-      const validated = parcelBookingSchema.parse({
+      const validated = activeSchema.parse({
         ...formData,
       });
 
@@ -398,150 +466,179 @@ const SmallParcelBooking = () => {
             </div>
 
             <div className="p-6 md:p-8 space-y-8">
-              {/* Contact Details */}
-              <section className="space-y-4">
-                <h3 className="font-display font-semibold text-foreground border-b border-border pb-2">
-                  Your Details
-                </h3>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="contactName">Full Name *</Label>
-                    <Input
-                      id="contactName"
-                      value={formData.contactName}
-                      onChange={(e) => handleInputChange('contactName', e.target.value)}
-                      className={errors.contactName ? 'border-destructive' : ''}
-                    />
-                    {errors.contactName && <p className="text-destructive text-xs">{errors.contactName}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className={errors.email ? 'border-destructive' : ''}
-                    />
-                    {errors.email && <p className="text-destructive text-xs">{errors.email}</p>}
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="e.g., 082 123 4567"
-                      className={errors.phone ? 'border-destructive' : ''}
-                    />
-                    {errors.phone && <p className="text-destructive text-xs">{errors.phone}</p>}
-                  </div>
-                </div>
-              </section>
-
-              {/* Sender Verification Section */}
-              <section className="space-y-4">
-                <h3 className="font-display font-semibold text-foreground border-b border-border pb-2">
-                  Sender Verification *
-                </h3>
-                
-                {/* ID Upload */}
-                <div className="space-y-2">
-                  <Label>ID Document / Passport *</Label>
-                  <div
-                    className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                      idDocumentFile 
-                        ? 'border-primary bg-primary/5' 
-                        : errors.idDocumentName 
-                          ? 'border-destructive bg-destructive/5' 
-                          : 'border-border hover:border-primary/50'
-                    }`}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={handleIdDrop}
-                  >
-                    <input
-                      ref={idInputRef}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={handleIdInputChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    
-                    {idDocumentFile ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <FileCheck className="w-8 h-8 text-primary" />
-                        <div className="text-left">
-                          <p className="font-medium text-foreground">{idDocumentFile.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {(idDocumentFile.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="ml-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeIdDocument();
-                          }}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+              {/* Verified Sender Banner OR Contact + Verification sections */}
+              {isVerifiedSender && profileData ? (
+                <section className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <ShieldCheck className="w-5 h-5 text-primary" />
                       </div>
-                    ) : (
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">
+                          Booking as {profileData.full_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {profileData.email} · {profileData.phone}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      to="/auth"
+                      className="text-xs text-primary hover:underline flex items-center gap-1"
+                    >
+                      Edit profile <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </section>
+              ) : (
+                <>
+                  {/* Contact Details */}
+                  <section className="space-y-4">
+                    <h3 className="font-display font-semibold text-foreground border-b border-border pb-2">
+                      Your Details
+                    </h3>
+                    <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Upload your ID or Passport</p>
-                          <p className="text-xs text-muted-foreground">
-                            PDF, JPEG, or PNG up to 5MB
-                          </p>
-                        </div>
+                        <Label htmlFor="contactName">Full Name *</Label>
+                        <Input
+                          id="contactName"
+                          value={formData.contactName}
+                          onChange={(e) => handleInputChange('contactName', e.target.value)}
+                          className={errors.contactName ? 'border-destructive' : ''}
+                        />
+                        {errors.contactName && <p className="text-destructive text-xs">{errors.contactName}</p>}
                       </div>
-                    )}
-                  </div>
-                  {(errors.idDocumentName || idUploadError) && (
-                    <p className="text-destructive text-xs">{idUploadError || errors.idDocumentName}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Your ID is required for traceability and will be stored securely.
-                  </p>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          className={errors.email ? 'border-destructive' : ''}
+                        />
+                        {errors.email && <p className="text-destructive text-xs">{errors.email}</p>}
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="phone">Phone Number *</Label>
+                        <Input
+                          id="phone"
+                          value={formData.phone}
+                          onChange={(e) => handleInputChange('phone', e.target.value)}
+                          placeholder="e.g., 082 123 4567"
+                          className={errors.phone ? 'border-destructive' : ''}
+                        />
+                        {errors.phone && <p className="text-destructive text-xs">{errors.phone}</p>}
+                      </div>
+                    </div>
+                  </section>
 
-                {/* Legal Declaration */}
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-4">
-                  <div className="flex gap-3">
-                    <Checkbox
-                      id="legalDeclaration"
-                      checked={formData.legalDeclarationAccepted || false}
-                      onCheckedChange={(checked) => {
-                        handleInputChange('legalDeclarationAccepted', checked === true);
-                      }}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <Label 
-                        htmlFor="legalDeclaration" 
-                        className="text-sm font-medium cursor-pointer flex items-center gap-2 text-amber-800 dark:text-amber-200"
+                  {/* Sender Verification Section */}
+                  <section className="space-y-4">
+                    <h3 className="font-display font-semibold text-foreground border-b border-border pb-2">
+                      Sender Verification *
+                    </h3>
+                    
+                    {/* ID Upload */}
+                    <div className="space-y-2">
+                      <Label>ID Document / Passport *</Label>
+                      <div
+                        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                          idDocumentFile 
+                            ? 'border-primary bg-primary/5' 
+                            : errors.idDocumentName 
+                              ? 'border-destructive bg-destructive/5' 
+                              : 'border-border hover:border-primary/50'
+                        }`}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleIdDrop}
                       >
-                        <Scale className="w-4 h-4" />
-                        Legal Declaration *
-                      </Label>
-                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 leading-relaxed">
-                        I hereby declare that the contents of this parcel are not illegal, stolen, counterfeit, 
-                        or prohibited under the laws of South Africa, Lesotho, or Zimbabwe. I understand that 
-                        I will be held personally liable for any violation of applicable laws and that false 
-                        declarations may result in legal action. I consent to my identification being recorded 
-                        for traceability purposes.
+                        <input
+                          ref={idInputRef}
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={handleIdInputChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        
+                        {idDocumentFile ? (
+                          <div className="flex items-center justify-center gap-3">
+                            <FileCheck className="w-8 h-8 text-primary" />
+                            <div className="text-left">
+                              <p className="font-medium text-foreground">{idDocumentFile.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {(idDocumentFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeIdDocument();
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                            <div>
+                              <p className="font-medium text-foreground">Upload your ID or Passport</p>
+                              <p className="text-xs text-muted-foreground">
+                                PDF, JPEG, or PNG up to 5MB
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {(errors.idDocumentName || idUploadError) && (
+                        <p className="text-destructive text-xs">{idUploadError || errors.idDocumentName}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Your ID is required for traceability and will be stored securely.
                       </p>
                     </div>
-                  </div>
-                  {errors.legalDeclarationAccepted && (
-                    <p className="text-destructive text-xs mt-2 ml-7">{errors.legalDeclarationAccepted}</p>
-                  )}
-                </div>
-              </section>
+
+                    {/* Legal Declaration */}
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-4">
+                      <div className="flex gap-3">
+                        <Checkbox
+                          id="legalDeclaration"
+                          checked={formData.legalDeclarationAccepted || false}
+                          onCheckedChange={(checked) => {
+                            handleInputChange('legalDeclarationAccepted', checked === true);
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <Label 
+                            htmlFor="legalDeclaration" 
+                            className="text-sm font-medium cursor-pointer flex items-center gap-2 text-amber-800 dark:text-amber-200"
+                          >
+                            <Scale className="w-4 h-4" />
+                            Legal Declaration *
+                          </Label>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 leading-relaxed">
+                            I hereby declare that the contents of this parcel are not illegal, stolen, counterfeit, 
+                            or prohibited under the laws of South Africa, Lesotho, or Zimbabwe. I understand that 
+                            I will be held personally liable for any violation of applicable laws and that false 
+                            declarations may result in legal action. I consent to my identification being recorded 
+                            for traceability purposes.
+                          </p>
+                        </div>
+                      </div>
+                      {errors.legalDeclarationAccepted && (
+                        <p className="text-destructive text-xs mt-2 ml-7">{errors.legalDeclarationAccepted}</p>
+                      )}
+                    </div>
+                  </section>
+                </>
+              )}
 
               {/* Pickup Details */}
               <section className="space-y-4">
@@ -763,7 +860,7 @@ const SmallParcelBooking = () => {
                 onClick={() => {
                   // Validate form before showing review
                   try {
-                    parcelBookingSchema.parse({
+                    activeSchema.parse({
                       ...formData,
                     });
                     setErrors({});
@@ -885,7 +982,8 @@ const SmallParcelBooking = () => {
                         </div>
                       </div>
 
-                      {/* Verification Details */}
+                      {/* Verification Details — only for non-verified senders */}
+                      {!isVerifiedSender && (
                       <div className="p-4 rounded-lg bg-primary/10 border border-primary/30 md:col-span-2">
                         <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                           <Scale className="w-4 h-4 text-primary" />
@@ -905,6 +1003,7 @@ const SmallParcelBooking = () => {
                           You have declared that the parcel contents are legal and agreed to be held personally liable under SA, Lesotho, and Zimbabwe law.
                         </p>
                       </div>
+                      )}
                     </div>
 
                     {/* Price Summary */}

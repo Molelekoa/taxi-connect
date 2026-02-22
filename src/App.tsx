@@ -36,7 +36,11 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/get-quote" element={<GetQuote />} />
             <Route path="/freight-estimator" element={<FreightEstimator />} />
-            <Route path="/small-parcel" element={<SmallParcelBooking />} />
+            <Route path="/small-parcel" element={
+              <ProtectedRoute>
+                <SmallParcelBooking />
+              </ProtectedRoute>
+            } />
             <Route path="/carrier-signup" element={
               <ProtectedRoute>
                 <CarrierSignup />
