@@ -1,78 +1,69 @@
 
 
-# Streamlined Booking for Registered Users
+# Fix Pricing: Envelope Minimum R175 + Light at 2x Envelope
 
-## The Idea
+## The Problem
 
-Yes to both of your instincts:
+The current R135 minimum price floor combined with the 0.65 distance adjustment flattens all prices for shorter/medium routes. Envelope and Light end up at nearly the same price because both get pushed down to the floor. There is no incentive for travelers to carry heavier parcels.
 
-1. **Pricing stays public** -- anyone can use the Freight Estimator (/freight-estimator) without an account. This lets people discover affordable pricing before committing.
+## The Fix
 
-2. **Booking requires an account** -- when they click "Book This Delivery", if they are not logged in they get redirected to sign up / log in first. Once logged in, their profile data (name, email, phone, ID document, legal declaration) is already on file, so the booking form becomes much shorter.
+Two changes to the pricing engine:
 
-### What the booking form looks like for a registered sender
+### 1. Raise envelope minimum to R175
 
-Currently the form has 5 sections. For a registered user it shrinks to just 3:
+The `MINIMUM_PRICE` stays at R135 as a system-wide floor, but a new `ENVELOPE_MINIMUM_PRICE = 175` constant is introduced specifically for the envelope band. The envelope sliding scale for routes over 500km stays as-is (R220 to R500).
 
-| Section | Currently | After (registered user) |
-|---------|-----------|------------------------|
-| Your Details (name, email, phone) | Manual input | Auto-filled from profile, shown as read-only summary |
-| Sender Verification (ID upload, legal declaration) | Required every time | Skipped entirely -- already on file |
-| Pickup Details | Manual input | Manual input (changes each booking) |
-| Delivery Details | Manual input | Manual input (changes each booking) |
-| Parcel Details (weight band, tracking, description) | Manual input | Manual input (changes each booking) |
+### 2. Compute all non-envelope bands as multiples of the envelope price
 
-A small "Booking as [Name]" banner at the top confirms their identity with an option to update their profile if details have changed.
+Instead of relying on the natural calculation (which gets flattened), each band's price is derived from the envelope price for the same route:
 
-For users who are **not** registered as senders (e.g. they only have an auth account but never completed sender registration), the full form is shown as it is today -- they still need to provide ID and legal declaration for that booking.
+| Band | Multiplier | Rationale |
+|------|-----------|-----------|
+| Envelope | 1x | Base price |
+| Light | 2.0x | 100% increase as requested |
+| Medium | 2.5x | Progressive increase |
+| Heavy | 3.0x | Progressive increase |
+| Extra Heavy | 3.5x | Progressive increase |
 
-## Files to Modify
+### Example pricing across all routes
 
-| File | Change |
-|------|--------|
-| `src/App.tsx` | Wrap `/small-parcel` route in `ProtectedRoute` so booking requires login |
-| `src/pages/SmallParcelBooking.tsx` | Fetch logged-in user's profile on mount; if profile has `full_name`, `email`, `phone`, `id_document_url`, and `legal_declaration_accepted`, auto-fill those fields and hide the manual input sections; show a compact identity banner instead; keep route/parcel/recipient fields as-is |
-| `src/pages/FreightEstimator.tsx` | No changes needed -- stays fully public |
+**Short/Medium routes (under 500km) -- Envelope = R175 minimum:**
 
-## Technical Details
+| Route | ~Distance | Envelope | Light | Medium | Heavy | Extra Heavy |
+|-------|-----------|----------|-------|--------|-------|-------------|
+| JHB - Pretoria | 60 km | R175 | R350 | R438 | R525 | R613 |
+| Bloemfontein - Maseru | 170 km | R175 | R350 | R438 | R525 | R613 |
+| JHB - Maseru | 400 km | R175 | R350 | R438 | R525 | R613 |
+| JHB - Bloemfontein | 400 km | R175 | R350 | R438 | R525 | R613 |
 
-**Profile fetch on SmallParcelBooking mount:**
-```
-const { user } = useAuth();
+**Long routes (over 500km) -- Envelope sliding scale kicks in:**
 
-// Fetch profile if logged in
-useEffect(() => {
-  if (user) {
-    supabase.from('profiles')
-      .select('full_name, email, phone, id_document_url, legal_declaration_accepted')
-      .eq('auth_id', user.id)
-      .single()
-      .then(({ data }) => {
-        if (data?.full_name && data?.id_document_url && data?.legal_declaration_accepted) {
-          // Profile is complete -- auto-fill and mark as verified sender
-          setProfileData(data);
-          setIsVerifiedSender(true);
-        }
-      });
-  }
-}, [user]);
-```
+| Route | ~Distance | Envelope | Light | Medium | Heavy | Extra Heavy |
+|-------|-----------|----------|-------|--------|-------|-------------|
+| Durban - Maseru | 500 km | R220 | R440 | R550 | R660 | R770 |
+| JHB - Durban | 570 km | R233 | R466 | R583 | R699 | R816 |
+| JHB - Bulawayo | 900 km | R295 | R590 | R738 | R885 | R1,033 |
+| JHB - Harare | 1,100 km | R332 | R664 | R830 | R996 | R1,162 |
+| Pretoria - Harare | 1,200 km | R351 | R702 | R878 | R1,053 | R1,229 |
+| Pretoria - Durban | 600 km | R239 | R478 | R598 | R717 | R836 |
 
-**When `isVerifiedSender` is true:**
-- The "Your Details" section becomes a compact read-only card showing name, email, phone with a small "Edit profile" link
-- The "Sender Verification" section (ID upload + legal declaration) is hidden entirely
-- The form validation schema switches to a lighter version that omits `contactName`, `email`, `phone`, `idDocumentName`, and `legalDeclarationAccepted`
-- The form pre-fills `contactName`, `email`, and `phone` from the profile so they are included in submission data
+Key outcomes:
+- Envelope is always the cheapest option
+- Light is always exactly 2x envelope (100% more)
+- Each heavier band costs progressively more
+- Distance clearly affects price for routes over 500km
+- Shorter routes all share the R175 envelope floor (so Light = R350 minimum)
 
-**When `isVerifiedSender` is false** (logged in but incomplete profile, or edge case):
-- Full form is shown exactly as today
-- No change in behavior
+## File to Modify
 
-**ProtectedRoute on `/small-parcel`:**
-- When an unauthenticated user clicks "Book This Delivery" on the estimator, they land on `/small-parcel` which redirects to `/auth` with a return URL
-- After login/signup, they are sent back to `/small-parcel` with the pricing state preserved (React Router state persists through the redirect since ProtectedRoute stores it)
+**`src/config/pricingCalculator.ts`** -- all changes are in this single file:
 
-**ProtectedRoute state preservation:**
-- The existing `ProtectedRoute` component will be updated to pass `location.state` through to the auth redirect so the prefilled pricing data (origin, destination, weight band, price) survives the login round-trip
-- This is done by encoding the return path and state in the redirect
+- Add `ENVELOPE_MINIMUM_PRICE = 175` constant
+- Add `BAND_MULTIPLIERS` object mapping band IDs to multipliers
+- Rewrite `calculateBandPrice()` to:
+  1. First compute the envelope price for the given route (using existing envelope logic with new R175 minimum)
+  2. If band is "envelope", return that price
+  3. For any other band, multiply the envelope price by the band's multiplier
+- The existing `calculateDeliveryPrice()` and `calculateWeightPercentage()` functions remain unchanged (they still work for any direct weight-based calculations)
 
