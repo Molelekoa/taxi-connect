@@ -7,45 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+  Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import {
-  getBandForWeight,
-  getWeightBand,
-  WEIGHT_BANDS,
-  calculateDeliveryPrice,
-  type WeightBand,
+  getBandForWeight, getWeightBand, WEIGHT_BANDS, calculateDeliveryPrice, type WeightBand,
 } from "@/config/pricingCalculator";
 import {
-  Users,
-  Package,
-  Truck,
-  LayoutDashboard,
-  Copy,
-  Check,
-  Phone,
-  Mail,
-  Eye,
+  Users, Package, Truck, LayoutDashboard, Copy, Check, Phone, Mail, Eye,
+  DollarSign, MapPin, Scale, Search, TrendingUp,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -72,6 +49,15 @@ type Parcel = {
   sender_id: string | null;
   traveler_id: string | null;
   created_at: string;
+  recipient_name: string | null;
+  recipient_phone: string | null;
+  pickup_address: string | null;
+  delivery_address: string | null;
+  weight_band: string | null;
+  include_tracking: boolean | null;
+  sender_name: string | null;
+  sender_email: string | null;
+  sender_phone: string | null;
 };
 
 type TravelerRoute = {
@@ -102,10 +88,10 @@ type TravelerProfile = {
 const STATUSES = ["pending", "collected", "in-transit", "delivered"] as const;
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pending:    { label: "Pending",    className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-  collected:  { label: "Collected",  className: "bg-blue-100 text-blue-800 border-blue-200" },
+  pending:      { label: "Pending",    className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  collected:    { label: "Collected",  className: "bg-blue-100 text-blue-800 border-blue-200" },
   "in-transit": { label: "In Transit", className: "bg-orange-100 text-orange-800 border-orange-200" },
-  delivered:  { label: "Delivered",  className: "bg-green-100 text-green-800 border-green-200" },
+  delivered:    { label: "Delivered",  className: "bg-green-100 text-green-800 border-green-200" },
 };
 
 const StatusBadge = ({ status }: { status: string | null }) => {
@@ -116,6 +102,18 @@ const StatusBadge = ({ status }: { status: string | null }) => {
     </span>
   );
 };
+
+// ── Weight band label helper ──────────────────────────────────────────────────
+
+const BAND_LABELS: Record<string, string> = {
+  envelope: "Envelope",
+  light: "Light",
+  medium: "Medium",
+  heavy: "Heavy",
+  "extra-heavy": "Extra Heavy",
+};
+
+const bandLabel = (band: string | null) => band ? (BAND_LABELS[band] ?? band) : "—";
 
 // ── Copy button ────────────────────────────────────────────────────────────────
 
@@ -128,11 +126,7 @@ const CopyButton = ({ text }: { text: string | null }) => {
     setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <button
-      onClick={handleCopy}
-      className="flex items-center gap-1 text-xs text-foreground hover:text-primary transition-colors"
-      title={`Copy ${text}`}
-    >
+    <button onClick={handleCopy} className="flex items-center gap-1 text-xs text-foreground hover:text-primary transition-colors" title={`Copy ${text}`}>
       <span className="truncate max-w-[140px]">{text}</span>
       {copied ? <Check className="w-3 h-3 text-green-500 shrink-0" /> : <Copy className="w-3 h-3 text-muted-foreground shrink-0" />}
     </button>
@@ -141,17 +135,7 @@ const CopyButton = ({ text }: { text: string | null }) => {
 
 // ── Traveler detail sheet ──────────────────────────────────────────────────────
 
-const TravelerSheet = ({
-  traveler,
-  profile,
-  open,
-  onClose,
-}: {
-  traveler: TravelerProfile | null;
-  profile: Profile | null;
-  open: boolean;
-  onClose: () => void;
-}) => (
+const TravelerSheet = ({ traveler, profile, open, onClose }: { traveler: TravelerProfile | null; profile: Profile | null; open: boolean; onClose: () => void }) => (
   <Sheet open={open} onOpenChange={onClose}>
     <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
       <SheetHeader>
@@ -177,18 +161,74 @@ const TravelerSheet = ({
           <Section title="Routes">
             {traveler.traveler_routes.length === 0 ? (
               <p className="text-muted-foreground">No routes added.</p>
-            ) : (
-              traveler.traveler_routes.map((r) => (
-                <Row key={r.id} label={r.is_primary ? "Primary ★" : "Route"}>
-                  {r.route_from} → {r.route_to}
-                </Row>
-              ))
-            )}
+            ) : traveler.traveler_routes.map((r) => (
+              <Row key={r.id} label={r.is_primary ? "Primary ★" : "Route"}>
+                {r.route_from} → {r.route_to}
+              </Row>
+            ))}
           </Section>
           <Section title="Emergency Contact">
             <Row label="Name">{traveler.emergency_contact_name ?? "—"}</Row>
             <Row label="Relation">{traveler.emergency_contact_relation ?? "—"}</Row>
             <Row label="Phone"><CopyButton text={traveler.emergency_contact_phone ?? null} /></Row>
+          </Section>
+        </div>
+      )}
+    </SheetContent>
+  </Sheet>
+);
+
+// ── Parcel detail sheet ────────────────────────────────────────────────────────
+
+const ParcelDetailSheet = ({ parcel, open, onClose, onStatusChange }: {
+  parcel: Parcel | null; open: boolean; onClose: () => void;
+  onStatusChange: (id: string, status: string) => void;
+}) => (
+  <Sheet open={open} onOpenChange={onClose}>
+    <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetHeader>
+        <SheetTitle>Booking Details</SheetTitle>
+      </SheetHeader>
+      {parcel && (
+        <div className="mt-6 space-y-5 text-sm">
+          <Section title="Sender">
+            <Row label="Name">{parcel.sender_name ?? "—"}</Row>
+            <Row label="Email"><CopyButton text={parcel.sender_email} /></Row>
+            <Row label="Phone"><CopyButton text={parcel.sender_phone} /></Row>
+          </Section>
+          <Section title="Recipient">
+            <Row label="Name">{parcel.recipient_name ?? "—"}</Row>
+            <Row label="Phone"><CopyButton text={parcel.recipient_phone} /></Row>
+          </Section>
+          <Section title="Route">
+            <Row label="Origin">{parcel.pickup_location ?? "—"}</Row>
+            <Row label="Pickup Address">{parcel.pickup_address ?? "—"}</Row>
+            <Row label="Destination">{parcel.dropoff_location ?? "—"}</Row>
+            <Row label="Delivery Address">{parcel.delivery_address ?? "—"}</Row>
+          </Section>
+          <Section title="Parcel">
+            <Row label="Weight Band">{bandLabel(parcel.weight_band)}</Row>
+            <Row label="Weight">{parcel.weight_kg != null ? `${parcel.weight_kg} kg` : "—"}</Row>
+            <Row label="Tracking">{parcel.include_tracking ? "Yes" : "No"}</Row>
+            <Row label="Description">{parcel.description ?? "—"}</Row>
+          </Section>
+          <Section title="Financials">
+            <Row label="Price">{parcel.price != null ? `R${parcel.price}` : "—"}</Row>
+          </Section>
+          <Section title="Status">
+            <Row label="Current">
+              <Select value={parcel.status ?? "pending"} onValueChange={(val) => onStatusChange(parcel.id, val)}>
+                <SelectTrigger className="h-7 text-xs w-32 border-0 p-0 shadow-none">
+                  <SelectValue><StatusBadge status={parcel.status} /></SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}><StatusBadge status={s} /></SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Row>
+            <Row label="Created">{new Date(parcel.created_at).toLocaleString()}</Row>
           </Section>
         </div>
       )}
@@ -217,15 +257,17 @@ const AdminDashboard = () => {
   const queryClient = useQueryClient();
   const [sheetTraveler, setSheetTraveler] = useState<TravelerProfile | null>(null);
   const [sheetProfile, setSheetProfile] = useState<Profile | null>(null);
+  const [sheetParcel, setSheetParcel] = useState<Parcel | null>(null);
+
+  // Filter state for parcels tab
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch all profiles
   const { data: profiles = [], isLoading: profilesLoading } = useQuery({
     queryKey: ["admin-profiles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data as Profile[];
     },
@@ -235,12 +277,9 @@ const AdminDashboard = () => {
   const { data: parcels = [], isLoading: parcelsLoading } = useQuery({
     queryKey: ["admin-parcels"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("parcels")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("parcels").select("*").order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Parcel[];
+      return (data as unknown) as Parcel[];
     },
   });
 
@@ -248,60 +287,85 @@ const AdminDashboard = () => {
   const { data: travelerProfiles = [], isLoading: travelersLoading } = useQuery({
     queryKey: ["admin-traveler-profiles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("traveler_profiles")
-        .select("*, traveler_routes(*)");
+      const { data, error } = await supabase.from("traveler_profiles").select("*, traveler_routes(*)");
       if (error) throw error;
       return (data ?? []) as TravelerProfile[];
     },
   });
 
-  // Parcel verified weight update mutation
+  // Mutations
   const updateVerifiedWeight = useMutation({
     mutationFn: async ({ id, weight }: { id: string; weight: number }) => {
       const { error } = await supabase.from("parcels").update({ weight_kg: weight }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-parcels"] });
-      toast({ title: "Verified weight updated" });
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-parcels"] }); toast({ title: "Verified weight updated" }); },
     onError: () => toast({ title: "Failed to update weight", variant: "destructive" }),
   });
 
-  // Parcel status update mutation
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from("parcels").update({ status }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-parcels"] });
-      toast({ title: "Status updated" });
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-parcels"] }); toast({ title: "Status updated" }); },
     onError: () => toast({ title: "Failed to update status", variant: "destructive" }),
   });
 
   // Helpers
-  const profileById = (id: string | null) =>
-    id ? profiles.find((p) => p.id === id) : undefined;
+  const profileById = (id: string | null) => id ? profiles.find((p) => p.id === id) : undefined;
+  const travelerProfileByProfileId = (profileId: string) => travelerProfiles.find((tp) => tp.profile_id === profileId);
 
-  const travelerProfileByProfileId = (profileId: string) =>
-    travelerProfiles.find((tp) => tp.profile_id === profileId);
-
-  // Overview counts
+  // ── Overview stats ──────────────────────────────────────────────────────────
   const senderCount = profiles.filter((p) => p.role === "sender").length;
   const travelerCount = profiles.filter((p) => p.role === "traveler" || travelerProfiles.some((tp) => tp.profile_id === p.id)).length;
-  const parcelsByStatus = STATUSES.reduce((acc, s) => {
-    acc[s] = parcels.filter((p) => p.status === s).length;
-    return acc;
-  }, {} as Record<string, number>);
-  const recentUsers = profiles.filter((p) => {
-    const created = new Date(p.created_at);
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 7);
-    return created >= cutoff;
-  }).length;
+  const parcelsByStatus = STATUSES.reduce((acc, s) => { acc[s] = parcels.filter((p) => p.status === s).length; return acc; }, {} as Record<string, number>);
+  const recentUsers = profiles.filter((p) => { const d = new Date(p.created_at); const c = new Date(); c.setDate(c.getDate() - 7); return d >= c; }).length;
+
+  // Income stats
+  const totalIncome = parcels.reduce((sum, p) => sum + (p.price || 0), 0);
+  const deliveredIncome = parcels.filter(p => p.status === 'delivered').reduce((sum, p) => sum + (p.price || 0), 0);
+  const pendingIncome = parcels.filter(p => p.status !== 'delivered').reduce((sum, p) => sum + (p.price || 0), 0);
+
+  // Weight band breakdown
+  const parcelsByBand = useMemo(() => {
+    const counts: Record<string, number> = {};
+    parcels.forEach(p => {
+      const band = p.weight_band || "unknown";
+      counts[band] = (counts[band] || 0) + 1;
+    });
+    return counts;
+  }, [parcels]);
+
+  // Top routes
+  const topRoutes = useMemo(() => {
+    const routeCounts: Record<string, { count: number; income: number }> = {};
+    parcels.forEach(p => {
+      if (p.pickup_location && p.dropoff_location) {
+        const key = `${p.pickup_location} → ${p.dropoff_location}`;
+        if (!routeCounts[key]) routeCounts[key] = { count: 0, income: 0 };
+        routeCounts[key].count++;
+        routeCounts[key].income += p.price || 0;
+      }
+    });
+    return Object.entries(routeCounts).sort((a, b) => b[1].count - a[1].count).slice(0, 5);
+  }, [parcels]);
+
+  // ── Filtered parcels for Parcels tab ────────────────────────────────────────
+  const filteredParcels = useMemo(() => {
+    let result = parcels;
+    if (statusFilter !== "all") result = result.filter(p => p.status === statusFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(p =>
+        (p.sender_name?.toLowerCase().includes(q)) ||
+        (p.recipient_name?.toLowerCase().includes(q)) ||
+        (p.pickup_location?.toLowerCase().includes(q)) ||
+        (p.dropoff_location?.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [parcels, statusFilter, searchQuery]);
 
   const loading = profilesLoading || parcelsLoading || travelersLoading;
 
@@ -310,7 +374,6 @@ const AdminDashboard = () => {
       <Navbar />
       <main className="pt-20 pb-12">
         <div className="container-narrow">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-display font-bold text-foreground">Admin Dashboard</h1>
             <p className="text-muted-foreground mt-1">Manage shipments, users, and traveler registrations.</p>
@@ -323,29 +386,58 @@ const AdminDashboard = () => {
           ) : (
             <Tabs defaultValue="overview">
               <TabsList className="mb-6 flex flex-wrap gap-1 h-auto">
-                <TabsTrigger value="overview" className="flex items-center gap-1.5">
-                  <LayoutDashboard className="w-4 h-4" /> Overview
-                </TabsTrigger>
-                <TabsTrigger value="users" className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4" /> Users ({profiles.length})
-                </TabsTrigger>
-                <TabsTrigger value="parcels" className="flex items-center gap-1.5">
-                  <Package className="w-4 h-4" /> Parcels ({parcels.length})
-                </TabsTrigger>
-                <TabsTrigger value="travelers" className="flex items-center gap-1.5">
-                  <Truck className="w-4 h-4" /> Travelers ({travelerProfiles.length})
-                </TabsTrigger>
+                <TabsTrigger value="overview" className="flex items-center gap-1.5"><LayoutDashboard className="w-4 h-4" /> Overview</TabsTrigger>
+                <TabsTrigger value="users" className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Users ({profiles.length})</TabsTrigger>
+                <TabsTrigger value="parcels" className="flex items-center gap-1.5"><Package className="w-4 h-4" /> Parcels ({parcels.length})</TabsTrigger>
+                <TabsTrigger value="travelers" className="flex items-center gap-1.5"><Truck className="w-4 h-4" /> Travelers ({travelerProfiles.length})</TabsTrigger>
               </TabsList>
 
               {/* ── TAB 1: OVERVIEW ─────────────────────────────────────────── */}
               <TabsContent value="overview">
+                {/* User stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   <StatCard title="Total Users" value={profiles.length} icon={<Users className="w-5 h-5" />} />
                   <StatCard title="Senders" value={senderCount} icon={<Package className="w-5 h-5" />} />
                   <StatCard title="Travelers" value={travelerCount} icon={<Truck className="w-5 h-5" />} />
                   <StatCard title="New (7 days)" value={recentUsers} icon={<Users className="w-5 h-5" />} />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                {/* Income stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Income</CardTitle>
+                        <DollarSign className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <span className="text-3xl font-bold text-foreground">R{totalIncome.toLocaleString()}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{parcels.length} bookings</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Delivered Income</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <span className="text-2xl font-bold text-green-600">R{deliveredIncome.toLocaleString()}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{parcels.filter(p => p.status === 'delivered').length} delivered</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Pending Income</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <span className="text-2xl font-bold text-yellow-600">R{pendingIncome.toLocaleString()}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{parcels.filter(p => p.status !== 'delivered').length} in pipeline</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Parcels by status */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   {STATUSES.map((s) => (
                     <Card key={s}>
                       <CardHeader className="pb-2">
@@ -360,6 +452,48 @@ const AdminDashboard = () => {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+
+                {/* Weight band breakdown + Top routes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium flex items-center gap-2"><Scale className="w-4 h-4" /> Parcels by Weight Band</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {Object.keys(parcelsByBand).length === 0 ? (
+                        <p className="text-muted-foreground text-sm">No parcels yet.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {Object.entries(parcelsByBand).map(([band, count]) => (
+                            <div key={band} className="flex items-center justify-between text-sm">
+                              <span className="text-foreground">{bandLabel(band)}</span>
+                              <span className="font-semibold text-foreground">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Top Routes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {topRoutes.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">No routes yet.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {topRoutes.map(([route, data]) => (
+                            <div key={route} className="flex items-center justify-between text-sm">
+                              <span className="text-foreground truncate max-w-[180px]" title={route}>{route}</span>
+                              <span className="text-muted-foreground shrink-0">{data.count} bookings · R{data.income.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               </TabsContent>
 
@@ -382,41 +516,20 @@ const AdminDashboard = () => {
                         </TableHeader>
                         <TableBody>
                           {profiles.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">No users found.</TableCell>
-                            </TableRow>
+                            <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No users found.</TableCell></TableRow>
                           ) : profiles.map((p) => {
                             const tp = travelerProfileByProfileId(p.id);
                             return (
                               <TableRow key={p.id}>
                                 <TableCell className="font-medium">{p.full_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    <Mail className="w-3 h-3 text-muted-foreground shrink-0" />
-                                    <CopyButton text={p.email} />
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="w-3 h-3 text-muted-foreground shrink-0" />
-                                    <CopyButton text={p.phone} />
-                                  </div>
-                                </TableCell>
+                                <TableCell><div className="flex items-center gap-1"><Mail className="w-3 h-3 text-muted-foreground shrink-0" /><CopyButton text={p.email} /></div></TableCell>
+                                <TableCell><div className="flex items-center gap-1"><Phone className="w-3 h-3 text-muted-foreground shrink-0" /><CopyButton text={p.phone} /></div></TableCell>
                                 <TableCell>{p.country ?? <span className="text-muted-foreground">—</span>}</TableCell>
-                                <TableCell>
-                                  <RoleBadge role={p.role} hasTravelerProfile={!!tp} />
-                                </TableCell>
-                                <TableCell className="text-muted-foreground text-xs">
-                                  {new Date(p.created_at).toLocaleDateString()}
-                                </TableCell>
+                                <TableCell><RoleBadge role={p.role} hasTravelerProfile={!!tp} /></TableCell>
+                                <TableCell className="text-muted-foreground text-xs">{new Date(p.created_at).toLocaleDateString()}</TableCell>
                                 <TableCell>
                                   {tp && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2"
-                                      onClick={() => { setSheetTraveler(tp); setSheetProfile(p); }}
-                                    >
+                                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setSheetTraveler(tp); setSheetProfile(p); }}>
                                       <Eye className="w-3.5 h-3.5" />
                                     </Button>
                                   )}
@@ -433,73 +546,86 @@ const AdminDashboard = () => {
 
               {/* ── TAB 3: PARCELS ──────────────────────────────────────────── */}
               <TabsContent value="parcels">
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search sender, recipient, or location…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      {STATUSES.map(s => (
+                        <SelectItem key={s} value={s}>{statusConfig[s].label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <Card>
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       <Table>
-                         <TableHeader>
+                        <TableHeader>
                           <TableRow>
-                            <TableHead>Pickup</TableHead>
-                            <TableHead>Dropoff</TableHead>
-                            <TableHead>Declared Band</TableHead>
-                            <TableHead>Verified Weight</TableHead>
-                            <TableHead>Price</TableHead>
+                            <TableHead>Route</TableHead>
                             <TableHead>Sender</TableHead>
-                            <TableHead>Traveler</TableHead>
+                            <TableHead>Recipient</TableHead>
+                            <TableHead>Band</TableHead>
+                            <TableHead>Tracking</TableHead>
+                            <TableHead>Price</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Created</TableHead>
+                            <TableHead></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {parcels.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">No parcels found.</TableCell>
+                          {filteredParcels.length === 0 ? (
+                            <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No parcels found.</TableCell></TableRow>
+                          ) : filteredParcels.map((parcel) => (
+                            <TableRow key={parcel.id}>
+                              <TableCell className="text-xs max-w-[160px]">
+                                <span className="truncate block" title={`${parcel.pickup_location} → ${parcel.dropoff_location}`}>
+                                  {parcel.pickup_location ?? "—"} → {parcel.dropoff_location ?? "—"}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                <div>{parcel.sender_name ?? "—"}</div>
+                                {parcel.sender_phone && <div className="text-muted-foreground">{parcel.sender_phone}</div>}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                <div>{parcel.recipient_name ?? "—"}</div>
+                                {parcel.recipient_phone && <div className="text-muted-foreground">{parcel.recipient_phone}</div>}
+                              </TableCell>
+                              <TableCell className="text-xs">{bandLabel(parcel.weight_band)}</TableCell>
+                              <TableCell className="text-xs">{parcel.include_tracking ? "✓" : "—"}</TableCell>
+                              <TableCell className="text-xs font-medium">{parcel.price != null ? `R${parcel.price}` : "—"}</TableCell>
+                              <TableCell>
+                                <Select value={parcel.status ?? "pending"} onValueChange={(val) => updateStatus.mutate({ id: parcel.id, status: val })}>
+                                  <SelectTrigger className="h-7 text-xs w-32 border-0 p-0 shadow-none">
+                                    <SelectValue><StatusBadge status={parcel.status} /></SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {STATUSES.map((s) => (<SelectItem key={s} value={s}><StatusBadge status={s} /></SelectItem>))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-xs">{new Date(parcel.created_at).toLocaleDateString()}</TableCell>
+                              <TableCell>
+                                <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setSheetParcel(parcel)}>
+                                  <Eye className="w-3.5 h-3.5" />
+                                </Button>
+                              </TableCell>
                             </TableRow>
-                          ) : parcels.map((parcel) => {
-                            const sender = profileById(parcel.sender_id);
-                            const traveler = profileById(parcel.traveler_id);
-                            return (
-                              <TableRow key={parcel.id}>
-                                <TableCell className="max-w-[130px]">
-                                  <span className="truncate block text-xs" title={parcel.pickup_location ?? ""}>{parcel.pickup_location ?? "—"}</span>
-                                </TableCell>
-                                <TableCell className="max-w-[130px]">
-                                  <span className="truncate block text-xs" title={parcel.dropoff_location ?? ""}>{parcel.dropoff_location ?? "—"}</span>
-                                </TableCell>
-                                <TableCell className="text-xs">
-                                  <DeclaredBandCell weightKg={parcel.weight_kg} />
-                                </TableCell>
-                                <TableCell className="text-xs">
-                                  <VerifiedWeightCell parcel={parcel} onUpdate={(id, weight) => updateVerifiedWeight.mutate({ id, weight })} />
-                                </TableCell>
-                                <TableCell className="text-xs">{parcel.price != null ? `R${parcel.price}` : "—"}</TableCell>
-                                <TableCell className="text-xs">{sender?.full_name ?? sender?.email ?? "—"}</TableCell>
-                                <TableCell className="text-xs">{traveler?.full_name ?? traveler?.email ?? "—"}</TableCell>
-                                <TableCell>
-                                  <Select
-                                    value={parcel.status ?? "pending"}
-                                    onValueChange={(val) => updateStatus.mutate({ id: parcel.id, status: val })}
-                                  >
-                                    <SelectTrigger className="h-7 text-xs w-32 border-0 p-0 shadow-none">
-                                      <SelectValue>
-                                        <StatusBadge status={parcel.status} />
-                                      </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {STATUSES.map((s) => (
-                                        <SelectItem key={s} value={s}>
-                                          <StatusBadge status={s} />
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                                <TableCell className="text-muted-foreground text-xs">
-                                  {new Date(parcel.created_at).toLocaleDateString()}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
+                          ))}
                         </TableBody>
                       </Table>
                     </div>
@@ -528,9 +654,7 @@ const AdminDashboard = () => {
                         </TableHeader>
                         <TableBody>
                           {travelerProfiles.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">No traveler profiles found.</TableCell>
-                            </TableRow>
+                            <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No traveler profiles found.</TableCell></TableRow>
                           ) : travelerProfiles.map((tp) => {
                             const profile = profileById(tp.profile_id);
                             const primaryRoute = tp.traveler_routes.find((r) => r.is_primary) ?? tp.traveler_routes[0];
@@ -538,13 +662,9 @@ const AdminDashboard = () => {
                               <TableRow key={tp.id}>
                                 <TableCell className="font-medium text-sm">{profile?.full_name ?? "—"}</TableCell>
                                 <TableCell className="text-xs">{tp.vehicle_type ?? "—"}</TableCell>
-                                <TableCell className="text-xs">
-                                  {primaryRoute ? `${primaryRoute.route_from} → ${primaryRoute.route_to}` : "—"}
-                                </TableCell>
+                                <TableCell className="text-xs">{primaryRoute ? `${primaryRoute.route_from} → ${primaryRoute.route_to}` : "—"}</TableCell>
                                 <TableCell className="text-xs">{tp.license_type ?? "—"}</TableCell>
-                                <TableCell className="text-xs max-w-[120px]">
-                                  <span className="truncate block" title={tp.cargo_types?.join(", ")}>{tp.cargo_types?.join(", ") ?? "—"}</span>
-                                </TableCell>
+                                <TableCell className="text-xs max-w-[120px]"><span className="truncate block" title={tp.cargo_types?.join(", ")}>{tp.cargo_types?.join(", ") ?? "—"}</span></TableCell>
                                 <TableCell className="text-xs">{tp.min_load_capacity} – {tp.max_load_capacity} kg</TableCell>
                                 <TableCell className="text-xs">{tp.travel_frequency ?? "—"}</TableCell>
                                 <TableCell>
@@ -554,12 +674,7 @@ const AdminDashboard = () => {
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2"
-                                    onClick={() => { setSheetTraveler(tp); setSheetProfile(profile ?? null); }}
-                                  >
+                                  <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setSheetTraveler(tp); setSheetProfile(profile ?? null); }}>
                                     <Eye className="w-3.5 h-3.5" />
                                   </Button>
                                 </TableCell>
@@ -583,65 +698,13 @@ const AdminDashboard = () => {
         open={!!sheetTraveler}
         onClose={() => { setSheetTraveler(null); setSheetProfile(null); }}
       />
+      <ParcelDetailSheet
+        parcel={sheetParcel}
+        open={!!sheetParcel}
+        onClose={() => setSheetParcel(null)}
+        onStatusChange={(id, status) => updateStatus.mutate({ id, status })}
+      />
     </div>
-  );
-};
-
-// ── Declared band cell ─────────────────────────────────────────────────────────
-
-const DeclaredBandCell = ({ weightKg }: { weightKg: number | null }) => {
-  if (weightKg == null) return <span className="text-muted-foreground">—</span>;
-  const band = getBandForWeight(weightKg);
-  if (band) {
-    return <span>{band.label} ({band.range[0]}–{band.range[1]} kg)</span>;
-  }
-  // If weight doesn't match a band midpoint exactly, show the raw weight
-  return <span>{weightKg} kg</span>;
-};
-
-// ── Verified weight cell ───────────────────────────────────────────────────────
-
-const VerifiedWeightCell = ({ parcel, onUpdate }: { parcel: Parcel; onUpdate: (id: string, weight: number) => void }) => {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState("");
-
-  const handleSave = () => {
-    const num = parseFloat(value);
-    if (!isNaN(num) && num > 0) {
-      onUpdate(parcel.id, num);
-      setEditing(false);
-    }
-  };
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-1">
-        <Input
-          type="number"
-          step="0.1"
-          min="0.1"
-          className="h-7 w-20 text-xs"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSave()}
-          autoFocus
-        />
-        <button onClick={handleSave} className="text-xs text-primary hover:underline">Save</button>
-        <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground hover:underline">✕</button>
-      </div>
-    );
-  }
-
-  // Determine if verified weight differs from declared band
-  const declaredBand = parcel.weight_kg != null ? getBandForWeight(parcel.weight_kg) : null;
-
-  return (
-    <button
-      onClick={() => { setValue(""); setEditing(true); }}
-      className="text-xs text-primary/70 hover:text-primary hover:underline"
-    >
-      Verify weight
-    </button>
   );
 };
 
