@@ -117,8 +117,9 @@ const SmallParcelBooking = () => {
   const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, []);
+
 
   // Fetch profile to check if user is a verified sender
   useEffect(() => {
@@ -176,6 +177,11 @@ const SmallParcelBooking = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showReview, setShowReview] = useState(false);
+
+  // Scroll to top when switching between form and review
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [showReview]);
 
   // Pre-fill form with profile data when verified sender
   useEffect(() => {

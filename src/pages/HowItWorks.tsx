@@ -8,35 +8,35 @@ const steps = [
   {
     step: "01",
     title: "Book & Pay",
-    description: "Book your parcel online or via WhatsApp. Pay securely via card or EFT — then we'll arrange pickup or you can drop off with a nearby traveler.",
+    description: "Book your parcel online or via WhatsApp. Pay securely via card or EFT — then we'll arrange for a traveler on your route to pick up your parcel directly from you.",
     details: [
       "Book online in under 2 minutes",
       "Pay via EFT or card (no cash)",
-      "Flexible pickup arrangements",
+      "A traveler picks up from your location",
     ],
     icon: MapPin,
   },
   {
     step: "02",
-    title: "Community Delivers",
-    description: "Your parcel is carried by a community member already traveling your route. They earn delivery fees to offset their petrol and toll costs — creating shared value for everyone.",
+    title: "Traveler Delivers",
+    description: "Your parcel is carried by a verified community member already traveling your route. They earn delivery fees to offset their petrol and toll costs — creating shared value for everyone.",
     details: [
       "Community-powered delivery network",
       "Secure handling by verified travelers",
-      "Shared value for drivers and senders",
+      "No warehouses or middlemen",
     ],
     icon: Package,
   },
   {
     step: "03",
     title: "Recipient Collects",
-    description: "The recipient is notified when the parcel arrives. They meet the traveler at an agreed point, show ID and collect. We can also arrange last-mile delivery for an additional fee.",
+    description: "The recipient is notified when the parcel arrives. They meet the traveler at an agreed point and show ID to collect.",
     details: [
       "SMS notification on arrival",
       "ID verification for security",
-      "Optional door-to-door delivery",
+      "Meet at a mutually agreed point",
     ],
-    icon: Package,
+    icon: CheckCircle,
   },
 ];
 

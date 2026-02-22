@@ -84,7 +84,7 @@ const Index = () => {
             <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
               <Package className="h-4 w-4 text-primary" />
             </div>
-            <span className="text-sm text-foreground font-medium">Smart, efficient delivery</span>
+            <span className="text-sm text-foreground font-medium">Community-powered parcel delivery</span>
           </motion.div>
           
           <motion.h1
@@ -104,7 +104,16 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
           >
-            Parcel Buddy delivers your parcels across South Africa, Lesotho, and Zimbabwe — fast, affordable, and friendly.
+            Send parcels across South Africa, Lesotho & Zimbabwe with verified travelers already on your route. No warehouses, no middlemen — just affordable, community-powered delivery.
+          </motion.p>
+          
+          <motion.p
+            className="mt-3 text-sm text-primary font-medium"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.7, delay: 0.25 }}
+          >
+            Create a free account to book — pricing is always free to check.
           </motion.p>
           
           <motion.div
@@ -310,18 +319,18 @@ const Index = () => {
             {[
               {
                 step: "01",
-                title: "Drop Off",
-                description: "Bring your parcel to one of our convenient collection points.",
+                title: "Book & Pay",
+                description: "Book online in 2 minutes. Pay securely via card or EFT — then a traveler on your route picks up your parcel.",
               },
               {
                 step: "02",
-                title: "Community Delivers",
-                description: "A community member already traveling your route carries your parcel.",
+                title: "Traveler Delivers",
+                description: "A verified community member already traveling your route carries your parcel — no warehouses, no middlemen.",
               },
               {
                 step: "03",
-                title: "Collect",
-                description: "Recipient meets the traveler at an agreed point, or we deliver to their door.",
+                title: "Recipient Collects",
+                description: "The recipient is notified, meets the traveler at an agreed point, and collects with ID verification.",
               },
             ].map((item, index) => (
               <motion.div
