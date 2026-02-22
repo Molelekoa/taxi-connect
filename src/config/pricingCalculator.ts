@@ -35,6 +35,18 @@ export const PRICE_MULTIPLIER = 2.50;
 /** Minimum price floor (ZAR) */
 export const MINIMUM_PRICE = 135.00;
 
+/** Envelope-specific minimum price (ZAR) */
+export const ENVELOPE_MINIMUM_PRICE = 175.00;
+
+/** Band multipliers: every non-envelope band is a multiple of the envelope price */
+export const BAND_MULTIPLIERS: Record<string, number> = {
+  envelope: 1.0,
+  light: 2.0,
+  medium: 2.5,
+  heavy: 3.0,
+  "extra-heavy": 3.5,
+};
+
 /** Parcel tracking add-on fee (ZAR) */
 export const TRACKING_FEE = 100.00;
 
@@ -106,21 +118,32 @@ export const calculateBandPrice = (
 ): PriceBreakdown | null => {
   const band = getWeightBand(bandId);
   if (!band) return null;
-  const result = calculateDeliveryPrice(originCity, destinationCity, band.midpoint, distanceKm, includeTracking);
-  if (bandId === "envelope") {
-    const effectiveDistance = distanceKm || DEFAULT_DISTANCE_KM;
-    const trackingFee = includeTracking ? TRACKING_FEE : 0;
-    
-    if (effectiveDistance > ENVELOPE_DISTANCE_THRESHOLD_KM) {
-      // Sliding scale: R220 at 500km, linearly increasing to R500 at 2000km
-      const distanceRatio = Math.min(1, (effectiveDistance - ENVELOPE_DISTANCE_THRESHOLD_KM) / (ENVELOPE_MAX_DISTANCE_KM - ENVELOPE_DISTANCE_THRESHOLD_KM));
-      const distancePrice = ENVELOPE_MIN_LONG_DISTANCE_PRICE + distanceRatio * (ENVELOPE_MAX_LONG_DISTANCE_PRICE - ENVELOPE_MIN_LONG_DISTANCE_PRICE);
-      result.finalPrice = Math.round(distancePrice * 100) / 100 + trackingFee;
-    } else {
-      // Short distance envelope: apply 15% discount with standard minimum
-      result.finalPrice = Math.max(MINIMUM_PRICE, Math.round(result.finalPrice * ENVELOPE_DISCOUNT * 100) / 100);
-    }
+
+  const multiplier = BAND_MULTIPLIERS[bandId] ?? 1.0;
+  const trackingFee = includeTracking ? TRACKING_FEE : 0;
+  const effectiveDistance = distanceKm || DEFAULT_DISTANCE_KM;
+
+  // --- Step 1: Compute the envelope base price for this route ---
+  let envelopePrice: number;
+
+  if (effectiveDistance > ENVELOPE_DISTANCE_THRESHOLD_KM) {
+    // Sliding scale: R220 at 500km, linearly increasing to R500 at 2000km
+    const distanceRatio = Math.min(1, (effectiveDistance - ENVELOPE_DISTANCE_THRESHOLD_KM) / (ENVELOPE_MAX_DISTANCE_KM - ENVELOPE_DISTANCE_THRESHOLD_KM));
+    envelopePrice = ENVELOPE_MIN_LONG_DISTANCE_PRICE + distanceRatio * (ENVELOPE_MAX_LONG_DISTANCE_PRICE - ENVELOPE_MIN_LONG_DISTANCE_PRICE);
+  } else {
+    // Short/medium distance: use envelope minimum
+    envelopePrice = ENVELOPE_MINIMUM_PRICE;
   }
+
+  envelopePrice = Math.round(envelopePrice * 100) / 100;
+
+  // --- Step 2: Apply band multiplier ---
+  const finalPrice = Math.round(envelopePrice * multiplier * 100) / 100 + trackingFee;
+
+  // --- Step 3: Build result using the underlying calculation for metadata ---
+  const result = calculateDeliveryPrice(originCity, destinationCity, band.midpoint, distanceKm, includeTracking);
+  result.finalPrice = finalPrice;
+
   return result;
 };
 
