@@ -1,69 +1,112 @@
 
 
-# Fix Pricing: Envelope Minimum R175 + Light at 2x Envelope
+# Enhanced Admin Booking Management
 
-## The Problem
+## Current Gaps
 
-The current R135 minimum price floor combined with the 0.65 distance adjustment flattens all prices for shorter/medium routes. Envelope and Light end up at nearly the same price because both get pushed down to the floor. There is no incentive for travelers to carry heavier parcels.
+1. **Bookings aren't saved to the database** -- the booking form currently does `console.log()` instead of inserting into the `parcels` table.
+2. **The parcels table is missing key columns** -- no fields for recipient name/phone, pickup address, delivery address, weight band ID, tracking option, or sender contact details.
+3. **The admin Parcels tab is bare** -- no detail view, no income summary, no filtering by status/route, no booking detail sheet.
 
-## The Fix
+## What Changes
 
-Two changes to the pricing engine:
+### 1. Extend the `parcels` table (database migration)
 
-### 1. Raise envelope minimum to R175
+Add these columns to capture the full booking:
 
-The `MINIMUM_PRICE` stays at R135 as a system-wide floor, but a new `ENVELOPE_MINIMUM_PRICE = 175` constant is introduced specifically for the envelope band. The envelope sliding scale for routes over 500km stays as-is (R220 to R500).
+| Column | Type | Purpose |
+|--------|------|---------|
+| `recipient_name` | text | Who receives the parcel |
+| `recipient_phone` | text | Recipient contact number |
+| `pickup_address` | text | Street-level pickup address |
+| `delivery_address` | text | Street-level delivery address |
+| `weight_band` | text | Band ID (envelope, light, medium, heavy, extra-heavy) |
+| `include_tracking` | boolean | Whether tracking was purchased |
+| `sender_name` | text | Sender's name at time of booking |
+| `sender_email` | text | Sender's email at time of booking |
+| `sender_phone` | text | Sender's phone at time of booking |
 
-### 2. Compute all non-envelope bands as multiples of the envelope price
+The existing `pickup_location` and `dropoff_location` columns will store the city names (origin/destination), while the new `pickup_address` and `delivery_address` store the specific addresses.
 
-Instead of relying on the natural calculation (which gets flattened), each band's price is derived from the envelope price for the same route:
+### 2. Save bookings to the database (SmallParcelBooking.tsx)
 
-| Band | Multiplier | Rationale |
-|------|-----------|-----------|
-| Envelope | 1x | Base price |
-| Light | 2.0x | 100% increase as requested |
-| Medium | 2.5x | Progressive increase |
-| Heavy | 3.0x | Progressive increase |
-| Extra Heavy | 3.5x | Progressive increase |
+Replace the simulated `console.log` with an actual Supabase insert:
 
-### Example pricing across all routes
+- Fetch the user's profile ID using `get_profile_id`
+- Insert a row into `parcels` with all form data, price, weight band, tracking, and sender details
+- Upload ID document to storage if the user is not a verified sender
+- Show success/error feedback
 
-**Short/Medium routes (under 500km) -- Envelope = R175 minimum:**
+### 3. Redesign the admin Parcels tab and Overview
 
-| Route | ~Distance | Envelope | Light | Medium | Heavy | Extra Heavy |
-|-------|-----------|----------|-------|--------|-------|-------------|
-| JHB - Pretoria | 60 km | R175 | R350 | R438 | R525 | R613 |
-| Bloemfontein - Maseru | 170 km | R175 | R350 | R438 | R525 | R613 |
-| JHB - Maseru | 400 km | R175 | R350 | R438 | R525 | R613 |
-| JHB - Bloemfontein | 400 km | R175 | R350 | R438 | R525 | R613 |
+**Overview tab enhancements:**
+- Add total income card (sum of all parcel prices)
+- Add income by status breakdown (pending vs delivered revenue)
+- Add parcels by weight band breakdown
+- Add top routes summary
 
-**Long routes (over 500km) -- Envelope sliding scale kicks in:**
+**Parcels tab enhancements:**
+- Add status filter dropdown (All / Pending / Collected / In Transit / Delivered)
+- Add search by sender name, recipient name, or location
+- Show more columns: sender name, sender phone, recipient name, recipient phone, weight band label, tracking status, price
+- Add a "View Details" button on each row that opens a side sheet with full booking details
+- Keep the existing status update dropdown and verified weight functionality
 
-| Route | ~Distance | Envelope | Light | Medium | Heavy | Extra Heavy |
-|-------|-----------|----------|-------|--------|-------|-------------|
-| Durban - Maseru | 500 km | R220 | R440 | R550 | R660 | R770 |
-| JHB - Durban | 570 km | R233 | R466 | R583 | R699 | R816 |
-| JHB - Bulawayo | 900 km | R295 | R590 | R738 | R885 | R1,033 |
-| JHB - Harare | 1,100 km | R332 | R664 | R830 | R996 | R1,162 |
-| Pretoria - Harare | 1,200 km | R351 | R702 | R878 | R1,053 | R1,229 |
-| Pretoria - Durban | 600 km | R239 | R478 | R598 | R717 | R836 |
+**Parcel Detail Sheet (new component within AdminDashboard):**
+- Sender section: name, email, phone
+- Route section: origin city, pickup address, destination city, delivery address
+- Parcel section: weight band, declared weight, verified weight, tracking, description
+- Financials: price, tracking fee
+- Status timeline: current status with change dropdown
+- Created date
 
-Key outcomes:
-- Envelope is always the cheapest option
-- Light is always exactly 2x envelope (100% more)
-- Each heavier band costs progressively more
-- Distance clearly affects price for routes over 500km
-- Shorter routes all share the R175 envelope floor (so Light = R350 minimum)
+## Files to Modify
 
-## File to Modify
+| File | Change |
+|------|--------|
+| Database migration | Add 9 new columns to `parcels` table |
+| `src/pages/SmallParcelBooking.tsx` | Replace simulated submit with real Supabase insert; upload ID doc to storage |
+| `src/pages/AdminDashboard.tsx` | Add income/route/band stats to Overview; add filters + search + detail sheet to Parcels tab; update Parcel type to include new fields |
+| `src/integrations/supabase/types.ts` | Will auto-update after migration |
 
-**`src/config/pricingCalculator.ts`** -- all changes are in this single file:
+## Technical Details
 
-- Add `ENVELOPE_MINIMUM_PRICE = 175` constant
-- Add `BAND_MULTIPLIERS` object mapping band IDs to multipliers
-- Rewrite `calculateBandPrice()` to:
-  1. First compute the envelope price for the given route (using existing envelope logic with new R175 minimum)
-  2. If band is "envelope", return that price
-  3. For any other band, multiply the envelope price by the band's multiplier
-- The existing `calculateDeliveryPrice()` and `calculateWeightPercentage()` functions remain unchanged (they still work for any direct weight-based calculations)
+**Booking insert (SmallParcelBooking.tsx):**
+```
+const { data: profileId } = await supabase.rpc('get_profile_id', { _auth_uid: user.id });
+
+await supabase.from('parcels').insert({
+  sender_id: profileId,
+  pickup_location: formData.originCity,
+  dropoff_location: formData.destinationCity,
+  pickup_address: formData.pickupAddress,
+  delivery_address: formData.deliveryAddress,
+  recipient_name: formData.recipientName,
+  recipient_phone: formData.recipientPhone,
+  weight_band: formData.weightBand,
+  weight_kg: selectedBand.midpoint,
+  price: displayPrice,
+  include_tracking: formData.includeTracking,
+  description: formData.description,
+  sender_name: formData.contactName,
+  sender_email: formData.email,
+  sender_phone: formData.phone,
+  status: 'pending',
+});
+```
+
+**Admin Overview income calculation:**
+```
+const totalIncome = parcels.reduce((sum, p) => sum + (p.price || 0), 0);
+const deliveredIncome = parcels
+  .filter(p => p.status === 'delivered')
+  .reduce((sum, p) => sum + (p.price || 0), 0);
+```
+
+**Admin Parcels tab filtering:**
+- Status filter: dropdown with "All" + each status
+- Search: text input filtering across sender_name, recipient_name, pickup_location, dropoff_location
+- Both applied together with `useMemo`
+
+**Parcel Detail Sheet:** Reuses the existing `Sheet` component pattern from `TravelerSheet`, showing all booking fields in organized sections (Sender, Route, Parcel, Status).
 
