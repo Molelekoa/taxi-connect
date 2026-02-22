@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, PackageIcon, Mail, Lock, User, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // If redirected from ProtectedRoute, capture return path and state
+  const returnTo = (location.state as any)?.returnTo || "/";
+  const returnState = (location.state as any)?.returnState || null;
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,7 +34,7 @@ const Auth = () => {
         password: loginForm.password,
       });
       if (error) throw error;
-      navigate("/");
+      navigate(returnTo, { state: returnState });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
