@@ -9,6 +9,7 @@ import SavingsCounter from "@/components/SavingsCounter";
 import CommunityStrip from "@/components/CommunityStrip";
 import { DropOffIcon, CommunityDeliverIcon, CollectIcon } from "@/components/HowItWorksIcons";
 import { Package, MapPin, Banknote, Clock, Shield, Users } from "lucide-react";
+import parcoloLogo from "@/assets/parcolo-logo.png";
 
 const parcelSizes = [
   {
@@ -71,6 +72,15 @@ const Index = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Copy */}
             <div className="text-center lg:text-left">
+              <motion.img
+                src={parcoloLogo}
+                alt="Parcolo"
+                className="h-24 md:h-28 w-auto mb-6"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
+
               <motion.div
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-card border border-border shadow-soft mb-8"
                 initial={{ opacity: 0, y: 20 }}
