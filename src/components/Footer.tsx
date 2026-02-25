@@ -11,10 +11,15 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
           {/* Logo & Description */}
           <div className="md:col-span-2">
             <Link to="/" className="inline-flex items-center gap-2.5 mb-4 group">
-              <img src={parcoloLogo} alt="Parcolo" className="h-10 w-auto" />
-              <span className="font-display font-bold text-2xl tracking-tight text-primary">
-                PARCOLO
-              </span>
+              <img src={parcoloLogo} alt="Parcolo" className="h-12 w-auto" />
+              <div className="flex flex-col leading-none">
+                <span className="font-brand font-bold text-2xl tracking-tight text-accent">
+                  PARCOLO
+                </span>
+                <span className="text-[9px] font-semibold tracking-widest text-success uppercase">
+                  We Deliver Together
+                </span>
+              </div>
             </Link>
             <p className="text-muted-foreground max-w-sm leading-relaxed">
               The affordable, smart logistics bridge for Southern Africa. Efficient, reliable parcel delivery across the region.
