@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, LogOut, User, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import parcoloLogo from "@/assets/parcolo-logo.png";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
@@ -91,8 +91,7 @@ const Navbar = () => {
       {/* === Main Navbar Content === */}
       <div className="container-narrow flex items-center justify-between h-16 relative z-10">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <img src={parcoloLogo} alt="Parcolo" className="h-10 w-auto" />
+        <Link to="/" className="flex items-center group">
           <div className="flex flex-col leading-none">
             <span className="font-brand font-bold text-xl tracking-tight text-foreground">
               PARCOLO
