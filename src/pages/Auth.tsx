@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
+const getAppUrl = () => import.meta.env.VITE_APP_URL || window.location.origin;
+
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,7 +61,7 @@ const Auth = () => {
         email: signupForm.email,
         password: signupForm.password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: getAppUrl(),
           data: { full_name: signupForm.fullName },
         },
       });
@@ -83,7 +85,7 @@ const Auth = () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(loginForm.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${getAppUrl()}/reset-password`,
       });
       if (error) throw error;
       toast({
