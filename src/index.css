@@ -6,66 +6,63 @@
 
 @layer base {
   :root {
-    /* ===== HIGH-CONTRAST CRISP PALETTE ===== */
+    /* ===== PARCOLO PALETTE — Teal + Coral ===== */
     
-    /* Pure white background - maximum clarity */
     --background: 0 0% 100%;
-    --foreground: 220 14% 10%;
+    --foreground: 210 18% 12%;
 
-    /* White cards with clear borders */
     --card: 0 0% 100%;
-    --card-foreground: 220 14% 10%;
+    --card-foreground: 210 18% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 14% 10%;
+    --popover-foreground: 210 18% 12%;
 
-    /* Primary: Confident Blue - deeper, more authoritative */
-    --primary: 217 91% 60%;
+    /* Primary: Teal from logo */
+    --primary: 175 85% 35%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Clean light gray for surfaces */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 30%;
+    /* Secondary: Light warm gray */
+    --secondary: 30 14% 96%;
+    --secondary-foreground: 210 9% 30%;
 
-    /* Muted: Medium-dark for secondary text */
-    --muted: 220 13% 91%;
-    --muted-foreground: 220 9% 35%;
+    /* Muted */
+    --muted: 30 10% 91%;
+    --muted-foreground: 210 9% 38%;
 
-    /* Accent: Vibrant Action Coral */
-    --accent: 25 95% 53%;
+    /* Accent: Coral-orange from logo blob */
+    --accent: 12 90% 58%;
     --accent-foreground: 0 0% 100%;
 
-    /* Success: Vibrant green */
+    /* Success */
     --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
-    /* Warning: Clear amber */
+    /* Warning */
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    /* Destructive: Distinct red */
+    /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders - clear light gray */
-    --border: 220 13% 90%;
-    --input: 220 13% 90%;
-    --ring: 217 91% 60%;
+    /* Borders */
+    --border: 210 13% 90%;
+    --input: 210 13% 90%;
+    --ring: 175 85% 35%;
 
-    /* Generous rounded corners */
     --radius: 0.75rem;
 
-    /* Gradients - crisp, confident */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(221 83% 53%) 100%);
-    --gradient-coral: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(21 90% 48%) 100%);
-    --gradient-light: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 98%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 99%) 100%);
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(175 85% 35%) 0%, hsl(178 75% 28%) 100%);
+    --gradient-coral: linear-gradient(135deg, hsl(12 90% 58%) 0%, hsl(8 85% 52%) 100%);
+    --gradient-light: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(30 14% 98%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(30 14% 99%) 100%);
     
-    /* Clean shadows */
-    --shadow-soft: 0 1px 3px hsl(220 14% 10% / 0.06), 0 1px 2px hsl(220 14% 10% / 0.04);
-    --shadow-card: 0 4px 6px hsl(220 14% 10% / 0.05), 0 2px 4px hsl(220 14% 10% / 0.04);
-    --shadow-elevated: 0 10px 15px hsl(220 14% 10% / 0.08), 0 4px 6px hsl(220 14% 10% / 0.05);
-    --shadow-coral-glow: 0 4px 14px hsl(25 95% 53% / 0.35);
+    /* Shadows */
+    --shadow-soft: 0 1px 3px hsl(210 18% 12% / 0.06), 0 1px 2px hsl(210 18% 12% / 0.04);
+    --shadow-card: 0 4px 6px hsl(210 18% 12% / 0.05), 0 2px 4px hsl(210 18% 12% / 0.04);
+    --shadow-elevated: 0 10px 15px hsl(210 18% 12% / 0.08), 0 4px 6px hsl(210 18% 12% / 0.05);
+    --shadow-coral-glow: 0 4px 14px hsl(12 90% 58% / 0.35);
   }
 
   /* Dark mode */
@@ -79,21 +76,21 @@
     --popover: 220 14% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 217 91% 60%;
+    --primary: 175 85% 35%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 18%;
-    --secondary-foreground: 220 9% 75%;
+    --secondary: 210 14% 18%;
+    --secondary-foreground: 210 9% 75%;
 
-    --muted: 220 14% 22%;
-    --muted-foreground: 220 9% 55%;
+    --muted: 210 14% 22%;
+    --muted-foreground: 210 9% 55%;
 
-    --accent: 25 95% 53%;
+    --accent: 12 90% 58%;
     --accent-foreground: 0 0% 100%;
 
-    --border: 220 14% 22%;
-    --input: 220 14% 18%;
-    --ring: 217 91% 60%;
+    --border: 210 14% 22%;
+    --input: 210 14% 18%;
+    --ring: 175 85% 35%;
 
     --shadow-soft: 0 2px 8px hsl(0 0% 0% / 0.3);
     --shadow-card: 0 4px 16px hsl(0 0% 0% / 0.35);

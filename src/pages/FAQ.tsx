@@ -16,8 +16,8 @@ const FAQ = () => {
       title: "About Our Community",
       faqs: [
         {
-          question: "What is Dyno Dash?",
-          answer: "Dyno Dash is a community-driven parcel delivery network based in Johannesburg, South Africa. We connect people who need parcels delivered with Traveler Partners who are already traveling to those destinations. It's a win-win: senders get affordable delivery, and travelers offset their petrol and toll costs."
+          question: "What is Parcolo?",
+          answer: "Parcolo is a community-driven parcel delivery network based in Johannesburg, South Africa. We connect people who need parcels delivered with Traveler Partners who are already traveling to those destinations. It's a win-win: senders get affordable delivery, and travelers offset their petrol and toll costs."
         },
         {
           question: "How is this different from traditional couriers?",
@@ -159,7 +159,7 @@ const FAQ = () => {
   return (
     <>
       <Helmet>
-        <title>Frequently Asked Questions | Dyno Dash</title>
+        <title>Frequently Asked Questions | Parcolo</title>
         <meta name="description" content="Find answers about our community-driven parcel delivery network, sending parcels, becoming a Traveler Partner, and cross-border deliveries to Lesotho, Zimbabwe, and SADC." />
       </Helmet>
       

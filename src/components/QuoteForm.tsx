@@ -74,7 +74,7 @@ const QuoteForm = ({ showTitle = true, preSelectedService = "" }: QuoteFormProps
           Thank You!
         </h3>
         <p className="text-muted-foreground max-w-md mx-auto">
-          A Dyno Dash specialist will contact you shortly. We typically respond within 1 business hour.
+          A Parcolo specialist will contact you shortly. We typically respond within 1 business hour.
         </p>
       </div>
     );

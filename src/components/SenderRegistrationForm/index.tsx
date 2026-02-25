@@ -103,7 +103,7 @@ const SenderRegistrationForm = () => {
       setIsSuccess(true);
       toast({
         title: "Registration Submitted!",
-        description: "Welcome to the Parcel Buddy community.",
+        description: "Welcome to the Parcolo community.",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

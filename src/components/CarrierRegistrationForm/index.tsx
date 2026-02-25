@@ -22,7 +22,7 @@ import {
   step6Schema,
 } from "./types";
 
-const STORAGE_KEY = "parcelbuddy-driver-registration";
+const STORAGE_KEY = "parcolo-driver-registration";
 const TOTAL_STEPS = 6;
 
 const CarrierRegistrationForm = () => {
