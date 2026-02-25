@@ -10,25 +10,25 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Default: Confident Blue - high contrast
-        default: "bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 active:scale-[0.98]",
+        default: "bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-elevated active:scale-[0.98] transition-all duration-200",
         
-        // Coral CTA - vibrant, action-oriented with white text
-        coral: "bg-accent text-accent-foreground rounded-xl font-bold hover:bg-accent/90 active:scale-[0.98] shadow-coral-glow",
+        // Coral CTA - vibrant, lift on hover
+        coral: "bg-accent text-accent-foreground rounded-2xl font-bold hover:bg-accent/90 active:scale-[0.98] shadow-coral-glow hover:shadow-coral-hover hover:-translate-y-0.5 transition-all duration-200",
         
         // Hero button - prominent blue
-        hero: "bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 active:scale-[0.98] shadow-soft",
+        hero: "bg-primary text-primary-foreground rounded-2xl font-bold hover:bg-primary/90 hover:-translate-y-0.5 active:scale-[0.98] shadow-soft hover:shadow-elevated transition-all duration-200",
         
         // Destructive - distinct red
-        destructive: "bg-destructive text-destructive-foreground rounded-xl hover:bg-destructive/90",
+        destructive: "bg-destructive text-destructive-foreground rounded-2xl hover:bg-destructive/90",
         
         // Outline - clear border with blue text
-        outline: "border border-border bg-transparent text-primary font-semibold rounded-xl hover:bg-secondary hover:border-primary/50",
+        outline: "border border-border bg-transparent text-primary font-semibold rounded-2xl hover:bg-secondary hover:border-accent/40 transition-all duration-200",
         
         // Secondary - subtle gray background
-        secondary: "bg-secondary text-secondary-foreground rounded-xl hover:bg-muted",
+        secondary: "bg-secondary text-secondary-foreground rounded-2xl hover:bg-muted",
         
         // Ghost - minimal hover effect
-        ghost: "rounded-xl text-foreground hover:bg-secondary",
+        ghost: "rounded-2xl text-foreground hover:bg-secondary",
         
         // Link style - blue text
         link: "text-primary underline-offset-4 hover:underline font-semibold",
@@ -37,7 +37,7 @@ const buttonVariants = cva(
         nav: "bg-transparent text-muted-foreground hover:text-foreground transition-colors rounded-lg",
         
         // Success - vibrant green
-        success: "bg-success text-success-foreground rounded-xl hover:bg-success/90",
+        success: "bg-success text-success-foreground rounded-2xl hover:bg-success/90 hover:-translate-y-0.5 transition-all duration-200",
       },
       size: {
         default: "h-11 px-5 py-2.5",

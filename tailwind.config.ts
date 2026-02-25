@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Poppins', 'system-ui', 'sans-serif'],
+        display: ['Nunito', 'system-ui', 'sans-serif'],
         brand: ['Fredoka', 'system-ui', 'sans-serif'],
       },
       colors: {
@@ -48,6 +48,10 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        mint: {
+          DEFAULT: "hsl(var(--mint))",
+          foreground: "hsl(var(--mint-foreground))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -56,7 +60,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Semantic aliases for easier use
         coral: "hsl(var(--accent))",
         sky: "hsl(var(--primary))",
       },
@@ -73,6 +76,7 @@ export default {
         card: "var(--shadow-card)",
         elevated: "var(--shadow-elevated)",
         "coral-glow": "var(--shadow-coral-glow)",
+        "coral-hover": "var(--shadow-coral-hover)",
       },
       keyframes: {
         "accordion-down": {
