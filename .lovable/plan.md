@@ -1,51 +1,33 @@
 
 
-# Replace Logo and Update Theme
+# Declutter Navbar and Feature Logo Prominently
 
-## Overview
-Replace the current logo with the new uploaded image, switch the "PARCOLO" brand text to the Fredoka font, and adjust the color theme to match the new logo while maintaining a trustworthy, professional feel.
+## Problem
+The navbar feels cluttered with the logo image, brand text, animated backgrounds, and navigation all competing for attention in a small space.
 
-## Color Palette (from the new logo)
-The new logo features a mint/aqua background with coral-orange text and colorful accents. The theme will be updated to:
-
-- **Primary**: Deep teal-green (from the bicycle/package elements) -- kept similar but slightly adjusted
-- **Accent**: Warm orange (from the "PARCOLO" text in the logo, ~`28 90% 55%`)
-- **Background accents**: Soft mint (`160 80% 85%`) used subtly in sections
-- **Supporting dots**: Green, purple accents for visual interest
+## Solution
+Remove the logo image from the navbar and place it prominently in the hero section of the homepage. The navbar keeps only the text-based brand identity ("PARCOLO / We Deliver Together") for a cleaner, more professional header.
 
 ## Changes
 
-### 1. Copy new logo to project
-- Copy `user-uploads://Untitled_5.png` to `src/assets/parcolo-logo.png` (replacing existing)
+### 1. Navbar (`src/components/Navbar.tsx`)
+- Remove the `<img>` tag for `parcolo-logo.png` from the logo area
+- Keep the stacked text: bold "PARCOLO" (font-brand) and "We Deliver Together" tagline
+- Keep all animated background elements (blobs, dotted path, stars, etc.) -- they add personality without competing once the image is gone
+- Reduce visual weight so the navbar feels clean and navigational
 
-### 2. Add Fredoka font (index.css)
-- Add Fredoka to the Google Fonts import
-- Create a new `font-brand` family for the PARCOLO wordmark specifically
+### 2. Hero Section (`src/pages/Index.tsx`)
+- Add the logo image prominently above the hero headline
+- Display it at a larger size (e.g., `h-24` or `h-28`) so it becomes a focal point when users first land on the page
+- Position it within the left column of the hero grid, above the "Community-powered delivery" pill badge
 
-### 3. Update Navbar.tsx
-- Replace `font-display` on "PARCOLO" text with `font-brand` (Fredoka)
-- Adjust text color to match the orange from the logo
-- Add tagline "WE DELIVER TOGETHER" in small green text below the brand name (matching logo)
+### 3. Footer (`src/components/Footer.tsx`)
+- Keep the logo in the footer as-is (it's appropriate there for brand reinforcement)
 
-### 4. Update Footer.tsx
-- Same font and color change for the "PARCOLO" brand text
-- Add tagline
+## Technical Details
 
-### 5. Update index.css theme
-- Adjust `--accent` to match the orange in the logo text more closely (~`28 90% 55%`)
-- Add a subtle mint tint to `--secondary` for section backgrounds
-- Update coral glow shadow to match new orange
-- Update gradient definitions
-
-### 6. Update tailwind.config.ts
-- Add `font-brand: ['Fredoka', 'system-ui', 'sans-serif']` to fontFamily
-
-## Files Modified
 | File | Change |
 |------|--------|
-| `src/assets/parcolo-logo.png` | Replaced with new logo |
-| `src/index.css` | Add Fredoka font import, adjust accent/secondary colors |
-| `tailwind.config.ts` | Add `font-brand` family |
-| `src/components/Navbar.tsx` | Use Fredoka + orange for brand text |
-| `src/components/Footer.tsx` | Use Fredoka + orange for brand text |
+| `src/components/Navbar.tsx` | Remove `<img>` tag on line 95; keep text-only brand mark |
+| `src/pages/Index.tsx` | Add `<img src={parcoloLogo}>` in the hero section above the headline, sized prominently |
 
