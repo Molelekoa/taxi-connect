@@ -24,10 +24,15 @@ const Navbar = () => {
       <div className="container-narrow flex items-center justify-between h-16">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
-          <img src={parcoloLogo} alt="Parcolo" className="h-9 w-auto" />
-          <span className="font-display font-bold text-xl tracking-tight text-primary">
-            PARCOLO
-          </span>
+          <img src={parcoloLogo} alt="Parcolo" className="h-10 w-auto" />
+          <div className="flex flex-col leading-none">
+            <span className="font-brand font-bold text-xl tracking-tight text-accent">
+              PARCOLO
+            </span>
+            <span className="text-[9px] font-semibold tracking-widest text-success uppercase">
+              We Deliver Together
+            </span>
+          </div>
         </Link>
 
         {/* Desktop Navigation */}
