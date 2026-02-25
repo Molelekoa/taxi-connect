@@ -6,8 +6,8 @@ const PrivacyPolicy = () => {
   return (
     <>
       <Helmet>
-        <title>Privacy Policy | Parcel Buddy</title>
-        <meta name="description" content="Parcel Buddy Privacy Policy - Learn how we collect, use, and protect your personal information." />
+        <title>Privacy Policy | Parcolo</title>
+        <meta name="description" content="Parcolo Privacy Policy - Learn how we collect, use, and protect your personal information." />
       </Helmet>
       
       <div className="min-h-screen flex flex-col">
@@ -22,7 +22,7 @@ const PrivacyPolicy = () => {
               <section className="mb-10">
                 <h2 className="font-display text-2xl font-bold mb-4">1. Introduction</h2>
                 <p className="text-muted-foreground mb-4">
-                  Parcel Buddy ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our community-driven delivery services and website.
+                  Parcolo ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our community-driven delivery services and website.
                 </p>
                 <p className="text-muted-foreground">
                   By using our services, you consent to the data practices described in this policy. If you do not agree with the terms of this Privacy Policy, please do not access our website or use our services.
@@ -137,7 +137,7 @@ const PrivacyPolicy = () => {
                   If you have any questions about this Privacy Policy or our data practices, please contact us:
                 </p>
                 <ul className="text-muted-foreground space-y-2">
-                  <li><strong>Email:</strong> hello@parcelbuddy.co.za</li>
+                  <li><strong>Email:</strong> hello@parcolo.co.za</li>
                   <li><strong>Phone:</strong> (011) 568 5343</li>
                   <li><strong>Address:</strong> Johannesburg, South Africa</li>
                 </ul>

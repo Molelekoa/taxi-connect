@@ -15,7 +15,7 @@ import {
   step3Schema,
 } from "./types";
 
-const STORAGE_KEY = "dynodash_quote_form";
+const STORAGE_KEY = "parcolo_quote_form";
 
 const stepTitles = ["Contact", "Locations", "Load", "Special", "Review"];
 
@@ -177,7 +177,7 @@ const MultiStepQuoteForm = () => {
           Quote Request Submitted!
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto mb-8">
-          Thank you for choosing Dyno Dash. A logistics specialist will contact you within 1 business hour with your customized quote.
+          Thank you for choosing Parcolo. A logistics specialist will contact you within 1 business hour with your customized quote.
         </p>
         <Button
           variant="outline"

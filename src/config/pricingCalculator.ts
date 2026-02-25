@@ -1,5 +1,5 @@
 // ==========================================
-// PARCEL BUDDY PRICING ENGINE
+// PARCOLO PRICING ENGINE
 // INTERNAL USE ONLY - DO NOT EXPOSE TO UI
 // ==========================================
 

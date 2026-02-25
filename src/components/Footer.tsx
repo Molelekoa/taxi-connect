@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import { Link } from "react-router-dom";
-import { Package, Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
+import parcoloLogo from "@/assets/parcolo-logo.png";
 
 const Footer = forwardRef<HTMLElement>((_, ref) => {
   return (
@@ -10,12 +11,9 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
           {/* Logo & Description */}
           <div className="md:col-span-2">
             <Link to="/" className="inline-flex items-center gap-2.5 mb-4 group">
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-soft group-hover:shadow-card transition-shadow">
-                <Package className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="font-display font-bold text-2xl tracking-tight">
-                <span className="text-foreground">Parcel</span>
-                <span className="text-primary">Buddy</span>
+              <img src={parcoloLogo} alt="Parcolo" className="h-10 w-auto" />
+              <span className="font-display font-bold text-2xl tracking-tight text-primary">
+                PARCOLO
               </span>
             </Link>
             <p className="text-muted-foreground max-w-sm leading-relaxed">
@@ -76,8 +74,8 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                 </div>
                 <div>
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-0.5">Email</span>
-                  <a href="mailto:hello@parcelbuddy.co.za" className="text-foreground hover:text-primary transition-colors font-medium">
-                    hello@parcelbuddy.co.za
+                  <a href="mailto:hello@parcolo.co.za" className="text-foreground hover:text-primary transition-colors font-medium">
+                    hello@parcolo.co.za
                   </a>
                 </div>
               </li>
@@ -108,7 +106,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Parcel Buddy. All rights reserved.
+            © {new Date().getFullYear()} Parcolo. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>

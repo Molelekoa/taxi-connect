@@ -185,7 +185,7 @@ const Index = () => {
             transition={{ duration: 0.6 }}
           >
             <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground mb-4">
-              Why <span className="text-gradient">Parcel Buddy</span>?
+              Why <span className="text-gradient">Parcolo</span>?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Our optimized logistics network delivers faster and more affordably than traditional couriers.

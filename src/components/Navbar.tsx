@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, LogOut, User, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PackageIcon } from "@/components/icons/AppIcons";
+import parcoloLogo from "@/assets/parcolo-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
@@ -23,13 +23,10 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card backdrop-blur-sm border-b border-border">
       <div className="container-narrow flex items-center justify-between h-16">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:bg-primary/90 transition-colors">
-            <PackageIcon size={20} className="text-primary-foreground" active />
-          </div>
-          <span className="font-display font-bold text-xl tracking-tight">
-            <span className="text-foreground">Parcel</span>
-            <span className="text-primary">Buddy</span>
+        <Link to="/" className="flex items-center gap-2 group">
+          <img src={parcoloLogo} alt="Parcolo" className="h-9 w-auto" />
+          <span className="font-display font-bold text-xl tracking-tight text-primary">
+            PARCOLO
           </span>
         </Link>
 

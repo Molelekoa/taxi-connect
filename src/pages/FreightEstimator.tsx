@@ -157,7 +157,7 @@ const ParcelEstimator = () => {
           <div className="bg-card border border-border rounded-xl overflow-hidden shadow-xl">
             <div className="bg-primary text-primary-foreground p-6 md:p-8">
               <h1 className="font-display font-bold text-2xl md:text-3xl mb-2">
-                Parcel Buddy Pricing
+                Parcolo Pricing
               </h1>
               <p className="text-primary-foreground/80">
                 Get instant pricing for parcels 1–20 kg. Our optimized routes mean lower costs for you.
