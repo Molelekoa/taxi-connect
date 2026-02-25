@@ -72,14 +72,22 @@ const Index = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Copy */}
             <div className="text-center lg:text-left">
-              <motion.img
-                src={parcoloLogo}
-                alt="Parcolo"
-                className="h-24 md:h-28 w-auto mb-6"
+              <motion.div
+                className="inline-block mb-8"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-              />
+              >
+                <img
+                  src={parcoloLogo}
+                  alt="Parcolo"
+                  className="h-24 md:h-28 w-auto rounded-3xl shadow-elevated"
+                  style={{
+                    background: 'linear-gradient(135deg, hsl(160 60% 90% / 0.6), hsl(175 40% 92% / 0.4))',
+                    padding: '0.75rem',
+                  }}
+                />
+              </motion.div>
 
               <motion.div
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-card border border-border shadow-soft mb-8"

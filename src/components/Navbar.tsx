@@ -108,10 +108,10 @@ const Navbar = () => {
             <Link
               key={link.path}
               to={link.path}
-              className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+              className={`px-4 py-2 text-sm font-medium transition-all duration-200 relative rounded-lg ${
                 isActive(link.path)
-                  ? "text-primary font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-primary font-semibold bg-primary/8"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               }`}
             >
               {link.label}
@@ -133,19 +133,19 @@ const Navbar = () => {
             </Link>
           )}
           <Link to="/carrier-signup">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="transition-all duration-200 hover:bg-secondary hover:shadow-soft">
               Join the Community
             </Button>
           </Link>
           <Link to="/freight-estimator">
-            <Button variant="coral" size="default">
+            <Button variant="coral" size="default" className="transition-all duration-200 hover:shadow-coral-hover hover:scale-[1.03]">
               Get Quote
             </Button>
           </Link>
           {user ? (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-sm text-foreground">
-                <User className="w-4 h-4 text-muted-foreground" />
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-sm text-muted-foreground">
+                <User className="w-4 h-4 text-primary/60" />
                 <span className="max-w-[120px] truncate">{user.email}</span>
               </div>
               <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground">
