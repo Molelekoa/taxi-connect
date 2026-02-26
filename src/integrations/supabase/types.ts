@@ -59,41 +59,68 @@ export type Database = {
       parcels: {
         Row: {
           created_at: string
+          delivery_address: string | null
           description: string | null
           dropoff_location: string | null
           id: string
+          include_tracking: boolean | null
+          pickup_address: string | null
           pickup_location: string | null
           price: number | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          sender_email: string | null
           sender_id: string | null
+          sender_name: string | null
+          sender_phone: string | null
           status: string | null
           traveler_id: string | null
           updated_at: string
+          weight_band: string | null
           weight_kg: number | null
         }
         Insert: {
           created_at?: string
+          delivery_address?: string | null
           description?: string | null
           dropoff_location?: string | null
           id?: string
+          include_tracking?: boolean | null
+          pickup_address?: string | null
           pickup_location?: string | null
           price?: number | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          sender_email?: string | null
           sender_id?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
           status?: string | null
           traveler_id?: string | null
           updated_at?: string
+          weight_band?: string | null
           weight_kg?: number | null
         }
         Update: {
           created_at?: string
+          delivery_address?: string | null
           description?: string | null
           dropoff_location?: string | null
           id?: string
+          include_tracking?: boolean | null
+          pickup_address?: string | null
           pickup_location?: string | null
           price?: number | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          sender_email?: string | null
           sender_id?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
           status?: string | null
           traveler_id?: string | null
           updated_at?: string
+          weight_band?: string | null
           weight_kg?: number | null
         }
         Relationships: [
