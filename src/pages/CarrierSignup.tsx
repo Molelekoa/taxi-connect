@@ -1,10 +1,11 @@
+import { useState, useRef, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CarrierRegistrationForm from "@/components/CarrierRegistrationForm";
 import SenderRegistrationForm from "@/components/SenderRegistrationForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Fuel, Coins, Calendar, Heart, Truck, Package } from "lucide-react";
-
 const communityBenefits = [
   {
     icon: Fuel,
@@ -29,6 +30,15 @@ const communityBenefits = [
 ];
 
 const CarrierSignup = () => {
+  const [showRegistration, setShowRegistration] = useState(false);
+  const registrationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showRegistration && registrationRef.current) {
+      registrationRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [showRegistration]);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -80,45 +90,62 @@ const CarrierSignup = () => {
               </p>
               <p className="text-sm text-primary font-medium text-center mt-3">— Community Partner</p>
             </div>
+
+            {/* CTA Button */}
+            {!showRegistration && (
+              <div className="mt-8 text-center">
+                <Button
+                  variant="coral"
+                  size="xl"
+                  onClick={() => setShowRegistration(true)}
+                >
+                  Join the Community
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Tab-Based Role Selection */}
-          <Tabs defaultValue="traveler" className="space-y-8">
-            <TabsList className="w-full h-auto p-1 grid grid-cols-2 bg-muted rounded-xl">
-              <TabsTrigger
-                value="traveler"
-                className="flex items-center gap-2 py-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Truck className="w-4 h-4" />
-                I'm a Traveler
-              </TabsTrigger>
-              <TabsTrigger
-                value="sender"
-                className="flex items-center gap-2 py-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Package className="w-4 h-4" />
-                I'm a Sender
-              </TabsTrigger>
-            </TabsList>
+          {showRegistration && (
+            <div ref={registrationRef}>
+              <Tabs defaultValue="traveler" className="space-y-8">
+                <TabsList className="w-full h-auto p-1 grid grid-cols-2 bg-muted rounded-xl">
+                  <TabsTrigger
+                    value="traveler"
+                    className="flex items-center gap-2 py-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                  >
+                    <Truck className="w-4 h-4" />
+                    I'm a Traveler
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="sender"
+                    className="flex items-center gap-2 py-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                  >
+                    <Package className="w-4 h-4" />
+                    I'm a Sender
+                  </TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="traveler" className="space-y-4">
-              <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  <strong className="text-foreground">Travelers</strong> — I travel between cities and can deliver parcels along my route
-                </p>
-              </div>
-              <CarrierRegistrationForm />
-            </TabsContent>
+                <TabsContent value="traveler" className="space-y-4">
+                  <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      <strong className="text-foreground">Travelers</strong> — I travel between cities and can deliver parcels along my route
+                    </p>
+                  </div>
+                  <CarrierRegistrationForm />
+                </TabsContent>
 
-            <TabsContent value="sender" className="space-y-4">
-              <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  <strong className="text-foreground">Senders</strong> — I need to send a parcel to someone in another city
-                </p>
-              </div>
-              <SenderRegistrationForm />
-            </TabsContent>
-          </Tabs>
+                <TabsContent value="sender" className="space-y-4">
+                  <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      <strong className="text-foreground">Senders</strong> — I need to send a parcel to someone in another city
+                    </p>
+                  </div>
+                  <SenderRegistrationForm />
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
         </div>
       </main>
 
