@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X, ShieldCheck, ExternalLink } from "lucide-react";
+import LocationInput from "@/components/LocationInput";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 import WeightBandSelector from "@/components/WeightBandSelector";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,13 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   calculateBandPrice,
@@ -145,6 +139,8 @@ const SmallParcelBooking = () => {
   const prefilled = location.state as { 
     origin?: string; 
     destination?: string; 
+    pickupAddress?: string;
+    deliveryAddress?: string;
     weight?: number;
     weightBand?: string;
     price?: number;
@@ -160,10 +156,10 @@ const SmallParcelBooking = () => {
     email: "",
     phone: "",
     originCity: prefilled?.origin || "",
-    pickupAddress: "",
+    pickupAddress: prefilled?.pickupAddress || "",
     pickupDate: "",
     destinationCity: prefilled?.destination || "",
-    deliveryAddress: "",
+    deliveryAddress: prefilled?.deliveryAddress || "",
     recipientName: "",
     recipientPhone: "",
     weightBand: prefilled?.weightBand || "",
@@ -703,21 +699,13 @@ const SmallParcelBooking = () => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Origin City *</Label>
-                    <Select
-                      value={formData.originCity}
-                      onValueChange={(value) => handleInputChange('originCity', value)}
-                    >
-                      <SelectTrigger className={errors.originCity ? 'border-destructive' : ''}>
-                        <SelectValue placeholder="Select origin city" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ORIGIN_CITIES.map((city) => (
-                          <SelectItem key={city.value} value={city.value}>
-                            {city.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <LocationInput
+                      value={formData.originCity || ""}
+                      onChange={(value) => handleInputChange('originCity', value)}
+                      suggestions={ORIGIN_CITIES}
+                      placeholder="Type city or full address"
+                      error={!!errors.originCity}
+                    />
                     {errors.originCity && <p className="text-destructive text-xs">{errors.originCity}</p>}
                   </div>
                   <div className="space-y-2">
@@ -752,21 +740,13 @@ const SmallParcelBooking = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Destination City *</Label>
-                    <Select
-                      value={formData.destinationCity}
-                      onValueChange={(value) => handleInputChange('destinationCity', value)}
-                    >
-                      <SelectTrigger className={errors.destinationCity ? 'border-destructive' : ''}>
-                        <SelectValue placeholder="Select destination" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DESTINATION_CITIES.map((city) => (
-                          <SelectItem key={city.value} value={city.value}>
-                            {city.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <LocationInput
+                      value={formData.destinationCity || ""}
+                      onChange={(value) => handleInputChange('destinationCity', value)}
+                      suggestions={DESTINATION_CITIES}
+                      placeholder="Type city or full address"
+                      error={!!errors.destinationCity}
+                    />
                     {errors.destinationCity && <p className="text-destructive text-xs">{errors.destinationCity}</p>}
                   </div>
                   <div className="space-y-2">

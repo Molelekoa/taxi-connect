@@ -1,0 +1,100 @@
+import { useState, useRef, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { MapPin } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface LocationInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  suggestions: { value: string; label: string }[];
+  placeholder?: string;
+  id?: string;
+  className?: string;
+  error?: boolean;
+}
+
+const LocationInput = ({
+  value,
+  onChange,
+  suggestions,
+  placeholder = "Type a city or address",
+  id,
+  className,
+  error,
+}: LocationInputProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Filter suggestions based on input
+  const filtered = value.length > 0
+    ? suggestions.filter((s) =>
+        s.label.toLowerCase().includes(value.toLowerCase()) ||
+        s.value.toLowerCase().includes(value.toLowerCase())
+      )
+    : suggestions;
+
+  const showDropdown = isOpen && inputFocused && filtered.length > 0;
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <div className="relative">
+        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <Input
+          id={id}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => {
+            setInputFocused(true);
+            setIsOpen(true);
+          }}
+          onBlur={() => {
+            // Delay to allow click on suggestion
+            setTimeout(() => setInputFocused(false), 150);
+          }}
+          placeholder={placeholder}
+          className={cn("pl-9", error && "border-destructive", className)}
+          autoComplete="off"
+        />
+      </div>
+
+      {showDropdown && (
+        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map((suggestion) => (
+            <button
+              key={suggestion.value}
+              type="button"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors first:rounded-t-lg last:rounded-b-lg"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(suggestion.value);
+                setIsOpen(false);
+              }}
+            >
+              <span className="flex items-center gap-2">
+                <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                {suggestion.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LocationInput;

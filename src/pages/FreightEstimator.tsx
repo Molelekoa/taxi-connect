@@ -5,16 +5,10 @@ import { Loader2, Info, Package, Radio, AlertTriangle } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import WeightBandSelector from "@/components/WeightBandSelector";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import LocationInput from "@/components/LocationInput";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 import RouteMap from "@/components/RouteMap";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -174,54 +168,24 @@ const ParcelEstimator = () => {
 
                 <div className="grid gap-5">
                   <div className="space-y-2">
-                    <Label htmlFor="pickup">Origin City *</Label>
-                    <Select
-                      value={formData.pickupLocation}
-                      onValueChange={(value) => handleInputChange("pickupLocation", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select origin city" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {POPULAR_CITIES.map((city) => (
-                          <SelectItem key={city.value} value={city.value}>
-                            {city.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">Or type a custom location:</p>
-                    <Input
+                    <Label htmlFor="pickup">Origin *</Label>
+                    <LocationInput
                       id="pickup"
-                      placeholder="e.g., Randburg, Midrand"
                       value={formData.pickupLocation}
-                      onChange={(e) => handleInputChange("pickupLocation", e.target.value)}
+                      onChange={(value) => handleInputChange("pickupLocation", value)}
+                      suggestions={POPULAR_CITIES}
+                      placeholder="Type city or full address, e.g. 12 Main St, Randburg"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="delivery">Destination City *</Label>
-                    <Select
-                      value={formData.deliveryLocation}
-                      onValueChange={(value) => handleInputChange("deliveryLocation", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select destination city" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {POPULAR_CITIES.map((city) => (
-                          <SelectItem key={city.value} value={city.value}>
-                            {city.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">Or type a custom location:</p>
-                    <Input
+                    <Label htmlFor="delivery">Destination *</Label>
+                    <LocationInput
                       id="delivery"
-                      placeholder="e.g., Maseru, Harare"
                       value={formData.deliveryLocation}
-                      onChange={(e) => handleInputChange("deliveryLocation", e.target.value)}
+                      onChange={(value) => handleInputChange("deliveryLocation", value)}
+                      suggestions={POPULAR_CITIES}
+                      placeholder="Type city or full address, e.g. 5 King St, Maseru"
                     />
                   </div>
 
@@ -395,6 +359,8 @@ const ParcelEstimator = () => {
                         state: { 
                           origin: formData.pickupLocation,
                           destination: formData.deliveryLocation, 
+                          pickupAddress: formData.pickupLocation,
+                          deliveryAddress: formData.deliveryLocation,
                           weightBand: formData.weightBand,
                           weight: getWeightBand(formData.weightBand)?.midpoint,
                           price: priceBreakdown.finalPrice,
