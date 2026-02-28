@@ -1,49 +1,52 @@
 
 
-# Homepage CTA Improvements and Cross-Border Tabs
+# Rework Homepage Copy for Clarity and Incentives
 
 ## Overview
-Simplify the homepage to give users two clear paths -- sending a parcel or joining as a traveler -- and rework the cross-border section with tabbed navigation for each destination.
+Sharpen the homepage copy to clearly communicate what's in it for both senders and travelers, keeping text short and punchy for short attention spans.
 
-## Changes
+## Changes (File: `src/pages/Index.tsx`)
 
-### 1. Hero Section -- Two Clear CTAs (File: `src/pages/Index.tsx`)
+### 1. Hero Sub-copy (lines 117-123)
+Replace the current paragraph with a shorter, punchier two-line message:
 
-Replace the current "Send a Parcel" and "Check Pricing" buttons with:
-- **"I want to send a parcel"** -- Coral button, links to `/freight-estimator`
-- **"I'm traveling soon"** -- Teal/primary outline button, links to `/carrier-signup`
+**Current:** "Send parcels across South Africa, Lesotho and Zimbabwe with verified travelers already on your route. No warehouses, no middlemen."
 
-Remove the "Check Pricing" button to reduce clutter. The sub-text "Create a free account to book -- pricing is always free to check" stays to reassure users.
+**New:** "Send parcels across South Africa, Lesotho and Zimbabwe -- up to 60% cheaper than couriers. Verified travelers deliver on routes they're already taking."
 
-### 2. Traveler CTA Strip (File: `src/pages/Index.tsx`)
+This keeps the geographic scope, adds the price incentive upfront, and explains the model in one breath.
 
-Add a new lightweight section between the "How It Works" and "Cross-Border" sections with:
-- Heading: **"Earn on Your Trips"**
-- Short copy: "Already traveling between cities? Carry parcels on your route and earn extra income."
-- CTA button: **"Sign Up as a Traveler"** (primary variant), linking to `/carrier-signup`
+### 2. "Why Parcolo?" Value Props (lines 232-280)
+Rework the three cards to speak directly to sender benefits with sharper copy:
 
-This is a simple, focused strip -- not a full benefits section (that lives on the carrier-signup page).
+- **Save Up to 60%** (was "Affordable"): "No warehouses or fleet costs -- just smart route-sharing that passes savings to you."
+- **Door-to-Door Coverage** (was "Wide Coverage"): "From Joburg to Harare, Maseru to Cape Town -- 3 countries, hundreds of routes."
+- **Fast and Tracked** (was "Fast and Reliable"): "Daily departures. SMS updates. ID-verified collection on arrival."
 
-### 3. Cross-Border Section Rework with Tabs (File: `src/pages/Index.tsx`)
+### 3. Traveler CTA Strip (lines 428-458)
+Rework the "Earn on Your Trips" section with concrete incentives:
 
-Replace the current static cross-border card with a tabbed interface using the existing Radix `Tabs` component:
-- Three tabs: **"Send to Zimbabwe"**, **"Send to Lesotho"**, **"Send from South Africa"**
-- Each tab shows: a short description, starting price, and a CTA button linking to `/freight-estimator`
-- Tab content data:
-  - **Zimbabwe**: From R525, popular routes like JHB to Harare/Bulawayo
-  - **Lesotho**: From R150, routes like Bloemfontein to Maseru
-  - **South Africa**: Domestic routes, from R80
-- Keep the gradient background card styling but remove the large flag emojis
+- **Heading:** "Earn While You Travel"
+- **Copy:** "Already driving between cities? Carry parcels and earn R50-R200+ per trip to offset your petrol and tolls. No commitment -- deliver when it suits you."
 
-### 4. Community Strip CTA (File: `src/components/CommunityStrip.tsx`)
+This adds a tangible earning range and the "no commitment" reassurance.
 
-Add a "Join the Community" button (coral variant) below the scrolling avatars, linking to `/carrier-signup`.
+### 4. "How It Works" Step Descriptions (lines 361-408)
+Tighten each step description:
+
+- **Book and Pay:** "Choose your route, pay securely online -- a traveler heading your way picks up the parcel."
+- **Traveler Delivers:** "A verified community member carries your parcel on a trip they're already making."
+- **Recipient Collects:** "SMS notification on arrival. Show ID, collect your parcel -- done."
+
+### 5. Cross-Border Tab Descriptions (lines 489-532)
+Add brief value hooks to each tab:
+
+- **Zimbabwe:** Add "Delivered by travelers on daily JHB-Harare routes."
+- **Lesotho:** Add "Affordable cross-border delivery on established routes."
+- **South Africa:** Add "City-to-city delivery without the courier markup."
 
 ## Technical Details
-
-- Import `Tabs, TabsList, TabsTrigger, TabsContent` from `@/components/ui/tabs` in Index.tsx
-- Import `Plane` icon from lucide-react for the traveler strip
-- Add `useState` for active cross-border tab (or let Radix handle it with `defaultValue`)
-- All links use existing routes -- no new pages needed
-- No new dependencies required
+- All changes are copy-only edits within `src/pages/Index.tsx`
+- No structural, layout, or component changes
+- No new imports or dependencies needed
 
