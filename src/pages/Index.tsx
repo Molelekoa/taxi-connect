@@ -119,7 +119,7 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.15 }}
               >
-                Send parcels across South Africa, Lesotho & Zimbabwe with verified travelers already on your route. No warehouses, no middlemen.
+                Send parcels across South Africa, Lesotho & Zimbabwe — up to 60% cheaper than couriers. Verified travelers deliver on routes they're already taking.
               </motion.p>
               
               <motion.p
@@ -232,22 +232,22 @@ const Index = () => {
             {[
               {
                 icon: Banknote,
-                title: "Affordable",
-                description: "Smart pricing through route optimization.",
+                title: "Save Up to 60%",
+                description: "No warehouses or fleet costs — just smart route-sharing that passes savings to you.",
                 extra: <SavingsCounter />,
                 color: "accent",
               },
               {
                 icon: MapPin,
-                title: "Wide Coverage",
-                description: "Access even remote areas through our extensive logistics network across 3 countries.",
+                title: "Door-to-Door Coverage",
+                description: "From Joburg to Harare, Maseru to Cape Town — 3 countries, hundreds of routes.",
                 extra: null,
                 color: "primary",
               },
               {
                 icon: Clock,
-                title: "Fast & Reliable",
-                description: "Daily departures on popular routes with scheduled, reliable service.",
+                title: "Fast & Tracked",
+                description: "Daily departures. SMS updates. ID-verified collection on arrival.",
                 extra: null,
                 color: "success",
               },
@@ -362,19 +362,19 @@ const Index = () => {
               {
                 step: "01",
                 title: "Book & Pay",
-                description: "Book online in 2 minutes. Pay securely via card or EFT — then a traveler on your route picks up your parcel.",
+                description: "Choose your route, pay securely online — a traveler heading your way picks up the parcel.",
                 IconComponent: DropOffIcon,
               },
               {
                 step: "02",
                 title: "Traveler Delivers",
-                description: "A verified community member already traveling your route carries your parcel — no warehouses, no middlemen.",
+                description: "A verified community member carries your parcel on a trip they're already making.",
                 IconComponent: CommunityDeliverIcon,
               },
               {
                 step: "03",
                 title: "Recipient Collects",
-                description: "The recipient is notified, meets the traveler at an agreed point, and collects with ID verification.",
+                description: "SMS notification on arrival. Show ID, collect your parcel — done.",
                 IconComponent: null,
               },
             ].map((item, index) => (
@@ -441,11 +441,11 @@ const Index = () => {
                 <Plane className="w-5 h-5 text-primary" />
                 <span className="text-sm font-semibold text-primary uppercase tracking-wider">For Travelers</span>
               </div>
-              <h2 className="font-display font-extrabold text-2xl md:text-3xl text-foreground mb-2">
-                Earn on Your <span className="text-gradient">Trips</span>
+               <h2 className="font-display font-extrabold text-2xl md:text-3xl text-foreground mb-2">
+                Earn While You <span className="text-gradient">Travel</span>
               </h2>
               <p className="text-muted-foreground max-w-md">
-                Already traveling between cities? Carry parcels on your route and earn extra income.
+                Already driving between cities? Carry parcels and earn R50–R200+ per trip to offset your petrol and tolls. No commitment — deliver when it suits you.
               </p>
             </div>
             <Link to="/carrier-signup">
@@ -488,7 +488,7 @@ const Index = () => {
 
                 <TabsContent value="zimbabwe" className="space-y-4">
                   <p className="text-muted-foreground">
-                    Popular routes: Johannesburg → Harare, Johannesburg → Bulawayo, Pretoria → Harare.
+                    Delivered by travelers on daily JHB–Harare routes. Popular: Johannesburg → Harare, Johannesburg → Bulawayo, Pretoria → Harare.
                   </p>
                   <div className="inline-block px-4 py-2 rounded-2xl bg-card border border-border">
                     <span className="text-muted-foreground text-sm">From</span>
@@ -503,7 +503,7 @@ const Index = () => {
 
                 <TabsContent value="lesotho" className="space-y-4">
                   <p className="text-muted-foreground">
-                    Popular routes: Bloemfontein → Maseru, Johannesburg → Maseru, Durban → Maseru.
+                    Affordable cross-border delivery on established routes. Popular: Bloemfontein → Maseru, Johannesburg → Maseru, Durban → Maseru.
                   </p>
                   <div className="inline-block px-4 py-2 rounded-2xl bg-card border border-border">
                     <span className="text-muted-foreground text-sm">From</span>
@@ -518,7 +518,7 @@ const Index = () => {
 
                 <TabsContent value="south-africa" className="space-y-4">
                   <p className="text-muted-foreground">
-                    Domestic routes: Johannesburg → Cape Town, Durban → Pretoria, Bloemfontein → Port Elizabeth, and more.
+                    City-to-city delivery without the courier markup. Johannesburg → Cape Town, Durban → Pretoria, Bloemfontein → Port Elizabeth, and more.
                   </p>
                   <div className="inline-block px-4 py-2 rounded-2xl bg-card border border-border">
                     <span className="text-muted-foreground text-sm">From</span>
