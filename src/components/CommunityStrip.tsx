@@ -1,4 +1,6 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const avatars = [
   { color: "hsl(175, 85%, 35%)", emoji: "👩🏾" },
@@ -44,6 +46,12 @@ const CommunityStrip = () => {
             </div>
           ))}
         </motion.div>
+      </div>
+
+      <div className="text-center mt-8">
+        <Link to="/carrier-signup">
+          <Button variant="coral" size="lg">Join the Community</Button>
+        </Link>
       </div>
     </section>
   );

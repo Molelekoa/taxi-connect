@@ -8,7 +8,8 @@ import ParcelPassAnimation from "@/components/ParcelPassAnimation";
 import SavingsCounter from "@/components/SavingsCounter";
 import CommunityStrip from "@/components/CommunityStrip";
 import { DropOffIcon, CommunityDeliverIcon, CollectIcon } from "@/components/HowItWorksIcons";
-import { Package, MapPin, Banknote, Clock, Shield, Users } from "lucide-react";
+import { Package, MapPin, Banknote, Clock, Shield, Users, Plane } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import parcoloLogo from "@/assets/parcolo-logo.png";
 
 const parcelSizes = [
@@ -138,12 +139,12 @@ const Index = () => {
               >
                 <Link to="/freight-estimator">
                   <Button variant="coral" size="xl" className="w-full sm:w-auto">
-                    Send a Parcel
+                    I want to send a parcel
                   </Button>
                 </Link>
-                <Link to="/freight-estimator">
-                  <Button variant="outline" size="xl" className="w-full sm:w-auto">
-                    Check Pricing
+                <Link to="/carrier-signup">
+                  <Button variant="outline" size="xl" className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10">
+                    I'm traveling soon
                   </Button>
                 </Link>
               </motion.div>
@@ -424,7 +425,39 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Cross-Border Routes */}
+      {/* Earn on Your Trips — Traveler CTA Strip */}
+      <section className="py-16 bg-primary/5">
+        <div className="container-narrow">
+          <motion.div
+            className="flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 mb-3">
+                <Plane className="w-5 h-5 text-primary" />
+                <span className="text-sm font-semibold text-primary uppercase tracking-wider">For Travelers</span>
+              </div>
+              <h2 className="font-display font-extrabold text-2xl md:text-3xl text-foreground mb-2">
+                Earn on Your <span className="text-gradient">Trips</span>
+              </h2>
+              <p className="text-muted-foreground max-w-md">
+                Already traveling between cities? Carry parcels on your route and earn extra income.
+              </p>
+            </div>
+            <Link to="/carrier-signup">
+              <Button variant="default" size="lg">
+                Sign Up as a Traveler
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Cross-Border Routes — Tabbed */}
       <section className="section-padding">
         <div className="container-narrow">
           <motion.div
@@ -436,46 +469,68 @@ const Index = () => {
             variants={fadeInUp}
             transition={{ duration: 0.6 }}
           >
-            {/* Decorative glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-accent/15 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
-              <div className="flex-1 text-center md:text-left">
-                <div className="inline-block px-3 py-1 rounded-full bg-accent/20 text-accent text-sm font-semibold mb-4">
-                  CROSS-BORDER
-                </div>
-                <h2 className="font-display font-extrabold text-2xl md:text-3xl text-foreground mb-3">
-                  South Africa • Lesotho • <span className="text-gradient-coral">Zimbabwe</span>
-                </h2>
-                <p className="text-muted-foreground mb-6 max-w-md">
-                  Send parcels across borders with our established cross-border network. Transparent pricing, reliable delivery.
-                </p>
-                
-                <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-6">
-                  <div className="px-4 py-2 rounded-2xl bg-card border border-border">
-                    <span className="text-muted-foreground text-sm">Lesotho from</span>
-                    <span className="ml-2 font-display font-bold text-accent text-lg">R150</span>
-                  </div>
-                  <div className="px-4 py-2 rounded-2xl bg-card border border-border">
-                    <span className="text-muted-foreground text-sm">Zimbabwe from</span>
+
+            <div className="relative z-10">
+              <div className="inline-block px-3 py-1 rounded-full bg-accent/20 text-accent text-sm font-semibold mb-4">
+                CROSS-BORDER
+              </div>
+              <h2 className="font-display font-extrabold text-2xl md:text-3xl text-foreground mb-6">
+                Send Across <span className="text-gradient-coral">Borders</span>
+              </h2>
+
+              <Tabs defaultValue="zimbabwe" className="w-full">
+                <TabsList className="mb-6 bg-card/80 border border-border">
+                  <TabsTrigger value="zimbabwe">Send to Zimbabwe</TabsTrigger>
+                  <TabsTrigger value="lesotho">Send to Lesotho</TabsTrigger>
+                  <TabsTrigger value="south-africa">Send from South Africa</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="zimbabwe" className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Popular routes: Johannesburg → Harare, Johannesburg → Bulawayo, Pretoria → Harare.
+                  </p>
+                  <div className="inline-block px-4 py-2 rounded-2xl bg-card border border-border">
+                    <span className="text-muted-foreground text-sm">From</span>
                     <span className="ml-2 font-display font-bold text-accent text-lg">R525</span>
                   </div>
-                </div>
+                  <div>
+                    <Link to="/freight-estimator">
+                      <Button variant="coral" size="lg">Get a Quote</Button>
+                    </Link>
+                  </div>
+                </TabsContent>
 
-                <Link to="/freight-estimator">
-                  <Button variant="coral" size="lg">
-                    Send Cross-Border
-                  </Button>
-                </Link>
-              </div>
+                <TabsContent value="lesotho" className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Popular routes: Bloemfontein → Maseru, Johannesburg → Maseru, Durban → Maseru.
+                  </p>
+                  <div className="inline-block px-4 py-2 rounded-2xl bg-card border border-border">
+                    <span className="text-muted-foreground text-sm">From</span>
+                    <span className="ml-2 font-display font-bold text-accent text-lg">R150</span>
+                  </div>
+                  <div>
+                    <Link to="/freight-estimator">
+                      <Button variant="coral" size="lg">Get a Quote</Button>
+                    </Link>
+                  </div>
+                </TabsContent>
 
-              <div className="hidden md:block">
-                <div className="font-display font-extrabold text-7xl lg:text-8xl text-primary/15 leading-none">
-                  🇿🇦→🇱🇸
-                  <br />
-                  🇿🇦→🇿🇼
-                </div>
-              </div>
+                <TabsContent value="south-africa" className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Domestic routes: Johannesburg → Cape Town, Durban → Pretoria, Bloemfontein → Port Elizabeth, and more.
+                  </p>
+                  <div className="inline-block px-4 py-2 rounded-2xl bg-card border border-border">
+                    <span className="text-muted-foreground text-sm">From</span>
+                    <span className="ml-2 font-display font-bold text-accent text-lg">R80</span>
+                  </div>
+                  <div>
+                    <Link to="/freight-estimator">
+                      <Button variant="coral" size="lg">Get a Quote</Button>
+                    </Link>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           </motion.div>
         </div>
