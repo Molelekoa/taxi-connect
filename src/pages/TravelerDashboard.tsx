@@ -283,7 +283,7 @@ const TravelerDashboard = () => {
                                 </span>
                               )}
                               {parcel.dimensions && <span>{parcel.dimensions}</span>}
-                              {parcel.price && <span className="font-medium text-foreground">R{parcel.price}</span>}
+                              {parcel.price && <span className="font-medium text-foreground">You earn: R{Math.round(Number(parcel.price) * 0.65)}</span>}
                             </div>
                             {parcel.description && (
                               <p className="text-xs text-muted-foreground mt-2">{parcel.description}</p>
