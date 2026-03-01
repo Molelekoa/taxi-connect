@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Info, Package, Radio, AlertTriangle } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -59,9 +59,12 @@ const POPULAR_CITIES = [
 
 const ParcelEstimator = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = location.state as { pickupLocation?: string; deliveryLocation?: string } | null;
+
   const [formData, setFormData] = useState({
-    pickupLocation: "",
-    deliveryLocation: "",
+    pickupLocation: routeState?.pickupLocation || "",
+    deliveryLocation: routeState?.deliveryLocation || "",
     weightBand: "",
     includeTracking: false,
   });
