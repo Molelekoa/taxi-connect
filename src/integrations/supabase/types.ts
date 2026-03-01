@@ -56,15 +56,106 @@ export type Database = {
           },
         ]
       }
+      matches: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          id: string
+          parcel_id: string
+          status: string
+          trip_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          parcel_id: string
+          status?: string
+          trip_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          parcel_id?: string
+          status?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read: boolean
+          related_match_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          related_match_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          related_match_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_related_match_id_fkey"
+            columns: ["related_match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parcels: {
         Row: {
           created_at: string
           delivery_address: string | null
           description: string | null
+          dimensions: string | null
           dropoff_location: string | null
           id: string
           include_tracking: boolean | null
+          photo_url: string | null
           pickup_address: string | null
+          pickup_earliest: string | null
+          pickup_latest: string | null
           pickup_location: string | null
           price: number | null
           recipient_name: string | null
@@ -83,10 +174,14 @@ export type Database = {
           created_at?: string
           delivery_address?: string | null
           description?: string | null
+          dimensions?: string | null
           dropoff_location?: string | null
           id?: string
           include_tracking?: boolean | null
+          photo_url?: string | null
           pickup_address?: string | null
+          pickup_earliest?: string | null
+          pickup_latest?: string | null
           pickup_location?: string | null
           price?: number | null
           recipient_name?: string | null
@@ -105,10 +200,14 @@ export type Database = {
           created_at?: string
           delivery_address?: string | null
           description?: string | null
+          dimensions?: string | null
           dropoff_location?: string | null
           id?: string
           include_tracking?: boolean | null
+          photo_url?: string | null
           pickup_address?: string | null
+          pickup_earliest?: string | null
+          pickup_latest?: string | null
           pickup_location?: string | null
           price?: number | null
           recipient_name?: string | null
@@ -323,6 +422,50 @@ export type Database = {
             columns: ["traveler_profile_id"]
             isOneToOne: false
             referencedRelation: "traveler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          available_weight_kg: number
+          created_at: string
+          destination_city: string
+          id: string
+          notes: string | null
+          origin_city: string
+          status: string
+          travel_date: string
+          traveler_id: string
+        }
+        Insert: {
+          available_weight_kg: number
+          created_at?: string
+          destination_city: string
+          id?: string
+          notes?: string | null
+          origin_city: string
+          status?: string
+          travel_date: string
+          traveler_id: string
+        }
+        Update: {
+          available_weight_kg?: number
+          created_at?: string
+          destination_city?: string
+          id?: string
+          notes?: string | null
+          origin_city?: string
+          status?: string
+          travel_date?: string
+          traveler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_traveler_id_fkey"
+            columns: ["traveler_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

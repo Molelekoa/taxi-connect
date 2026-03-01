@@ -20,6 +20,8 @@ import FAQ from "./pages/FAQ";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import TravelerDashboard from "./pages/TravelerDashboard";
+import SenderDashboard from "./pages/SenderDashboard";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,16 @@ const App = () => (
             <Route path="/carrier-signup" element={
               <ProtectedRoute>
                 <CarrierSignup />
+              </ProtectedRoute>
+            } />
+            <Route path="/traveler-dashboard" element={
+              <ProtectedRoute>
+                <TravelerDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/sender-dashboard" element={
+              <ProtectedRoute>
+                <SenderDashboard />
               </ProtectedRoute>
             } />
             <Route path="/how-it-works" element={<HowItWorks />} />
