@@ -1,90 +1,215 @@
 
 
-# Uber-Style Homepage Redesign
+# Parcel-Traveler Matching System
 
 ## Overview
-Transform the homepage from a content-heavy marketing page into a clean, app-like experience where the quote/booking flow is front-and-center. Think Uber: open the app, see the map, book immediately. All supporting content moves behind a pulsing hamburger menu.
+Build a complete matching engine that connects senders posting parcels with travelers who have active trips on matching routes. This includes new database tables, edge functions for automated matching, database triggers, UI dashboards for both travelers and senders, and an in-app notification system.
 
-## Changes
+## Phase 1: Database Schema
 
-### 1. Simplified Navbar with Pulsing Hamburger (File: `src/components/Navbar.tsx`)
+### New Table: `trips`
+Stores traveler trip availability. References `profiles.id` (not `auth.users`).
 
-Strip the navbar down to just:
-- PARCOLO wordmark (left)
-- Pulsing hamburger icon (right) -- always visible, desktop and mobile
-- Remove all visible nav links, "Join the Community", "Get Quote", and user buttons from the top bar
-- Remove all the animated background SVGs (blobs, dotted paths, parcel icons, stars, hearts)
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid PK | default `gen_random_uuid()` |
+| traveler_id | uuid FK -> profiles.id | NOT NULL |
+| origin_city | text | NOT NULL |
+| destination_city | text | NOT NULL |
+| travel_date | date | NOT NULL |
+| available_weight_kg | numeric | NOT NULL |
+| notes | text | nullable |
+| status | text | default 'active' |
+| created_at | timestamptz | default `now()` |
 
-The hamburger gets a subtle pulse animation (CSS ring pulse, like a notification dot) to draw attention. On click, it opens a full-screen or side-panel menu containing:
-- "Send a Parcel" (links to `/freight-estimator`)
-- "I'm Traveling Soon" (links to `/carrier-signup`)
-- "How It Works" (links to `/how-it-works`)
-- "FAQ" (links to `/faq`)
-- Log In / Sign Out
-- Admin (if admin)
+RLS policies:
+- SELECT: owner (`owns_profile(traveler_id)`) or admin
+- INSERT: owner (`owns_profile(traveler_id)`)
+- UPDATE: owner or admin
+- DELETE: owner or admin
 
-### 2. App-Like Homepage (File: `src/pages/Index.tsx`)
+### Alter Table: `parcels`
+Add columns to support the matching pickup window (the existing parcels table lacks date range fields):
+- `origin_city` text (alias for pickup_location -- we'll use the existing `pickup_location` and `dropoff_location` columns instead of creating duplicates)
+- `pickup_earliest` date, nullable
+- `pickup_latest` date, nullable
+- `dimensions` text, nullable
+- `photo_url` text, nullable
 
-Radically simplify the homepage to three visual layers:
+We will NOT add `origin_city`/`destination_city` since `pickup_location` and `dropoff_location` already serve this purpose.
 
-**Layer 1 -- Hero (above the fold, full viewport height)**
-- Clean headline: "Where are you sending?"
-- Two large input fields (Origin and Destination) pulled from the FreightEstimator -- reuse `LocationInput`
-- A prominent "Get Quote" coral button
-- Below inputs: two secondary CTAs as text links -- "I'm a traveler -- earn on your trips" linking to `/carrier-signup`
-- Background: the route map component (`RouteMap`) fills the hero area behind the form, giving it the Uber map feel
+### New Table: `matches`
 
-**Layer 2 -- Quick info strip (compact, no scroll needed)**
-- Three inline stats: "60% cheaper" | "3 countries" | "Daily departures"
-- Single row, no cards, no animations
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid PK | default `gen_random_uuid()` |
+| parcel_id | uuid FK -> parcels.id | NOT NULL |
+| trip_id | uuid FK -> trips.id | NOT NULL |
+| status | text | default 'pending' |
+| accepted_at | timestamptz | nullable |
+| created_at | timestamptz | default `now()` |
 
-**Layer 3 -- Scrollable content below (for those who want more)**
-- Cross-border tabs (Zimbabwe, Lesotho, South Africa) -- kept but simplified
-- "How It Works" -- condensed to a single horizontal row
-- Community strip
-- Footer
+RLS policies:
+- SELECT: parcel sender or trip traveler or admin
+- INSERT: service role only (edge functions insert via service role)
+- UPDATE: trip traveler (to accept/reject) or admin
 
-All the current sections (Value Props cards, Parcel Size Selector, Savings Counter animation, Traveler CTA strip, Stats section) are removed from the homepage. Their content lives on dedicated pages accessible via the hamburger menu.
+### New Table: `notifications`
 
-### 3. Route Map in Hero Background (File: `src/pages/Index.tsx`)
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid PK | default `gen_random_uuid()` |
+| user_id | uuid FK -> profiles.id | NOT NULL |
+| type | text | e.g. 'new_match', 'match_accepted' |
+| content | text | NOT NULL |
+| read | boolean | default false |
+| related_match_id | uuid FK -> matches.id | nullable, for linking |
+| created_at | timestamptz | default `now()` |
 
-Display a default RouteMap (showing South Africa centered) as the hero background. When the user types origin/destination, the map updates live -- just like Uber shows a map before you type your destination.
+RLS policies:
+- SELECT: owner (`owns_profile(user_id)`)
+- UPDATE: owner (to mark as read)
+- INSERT: service role only
 
-This reuses the existing `RouteMap` and `useMapboxDistance` hook, plus `LocationInput`.
+### Helper function: `get_profile_id_for_auth`
+Already exists as `get_profile_id`. We'll reuse it.
 
-### 4. Navigation Flow
+## Phase 2: Edge Functions
 
-When a user fills in origin + destination on the homepage and clicks "Get Quote", they navigate to `/freight-estimator` with the locations pre-filled via route state, where they complete the weight selection and see pricing -- keeping the estimator page as the full booking flow.
+### Edge Function: `find-matching-trips`
+- Triggered after a parcel is inserted (via DB trigger using `pg_net`)
+- Receives `{ parcelId }` in the request body
+- Uses service role key to query trips matching:
+  - Same `origin_city` = parcel's `pickup_location` (case-insensitive)
+  - Same `destination_city` = parcel's `dropoff_location`
+  - `travel_date` between parcel's `pickup_earliest` and `pickup_latest`
+  - `available_weight_kg` >= parcel's `weight_kg`
+  - Trip `status` = 'active'
+- For each match: inserts into `matches` and `notifications` (for the traveler)
+- Config: `verify_jwt = false`, validates via service role internally
+
+### Edge Function: `find-matching-parcels`
+- Triggered after a trip is inserted
+- Receives `{ tripId }`
+- Queries parcels matching:
+  - Same route (pickup_location/dropoff_location match trip origin/destination)
+  - `pickup_earliest` <= trip `travel_date` <= `pickup_latest`
+  - `weight_kg` <= trip `available_weight_kg`
+  - Parcel `status` = 'pending' (available)
+- For each match: inserts into `matches` and `notifications` (for the sender)
+
+### Edge Function: `accept-match`
+- Called from the UI when a traveler accepts a match
+- Receives `{ matchId }` + auth token
+- Validates the traveler owns the trip associated with the match
+- Updates match status to 'accepted', sets `accepted_at`
+- Creates notification for the sender with traveler contact info
+- Updates parcel status to 'matched'
+
+## Phase 3: Database Triggers
+
+Using `pg_net` extension (already available in Supabase) to call edge functions:
+
+### Trigger: `after_parcel_insert`
+```sql
+CREATE OR REPLACE FUNCTION public.notify_new_parcel()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  PERFORM net.http_post(
+    url := 'https://jlhyoqfsyadxvuhfesmc.supabase.co/functions/v1/find-matching-trips',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key', true)
+    ),
+    body := jsonb_build_object('parcelId', NEW.id)
+  );
+  RETURN NEW;
+END;
+$$;
+```
+
+### Trigger: `after_trip_insert`
+Same pattern, calls `find-matching-parcels` with `tripId`.
+
+**Note:** The triggers will use the Supabase service role key stored as a database setting. We'll use `SUPABASE_SERVICE_ROLE_KEY` secret which is already configured.
+
+## Phase 4: UI Pages
+
+### 4a. Traveler Dashboard (`src/pages/TravelerDashboard.tsx`)
+- Protected route at `/traveler-dashboard`
+- **My Trips tab**: List traveler's active trips with ability to add new trips (origin, destination, date, available weight)
+- **Available Parcels tab**: Shows parcels matched to the traveler's trips (via the `matches` table). Each card shows weight, route, pickup window, and an "Accept" button
+- **Accepted Parcels tab**: History of accepted deliveries with sender contact info
+
+### 4b. Sender Dashboard (`src/pages/SenderDashboard.tsx`)
+- Protected route at `/sender-dashboard`
+- Lists sender's posted parcels with status badges
+- For matched/accepted parcels, shows traveler name and contact details
+- Pickup date fields added to the booking flow
+
+### 4c. Post a Trip Component (`src/components/PostTrip.tsx`)
+- Form for travelers to post a new trip: origin city, destination city, travel date, available weight, notes
+- Integrated into the Traveler Dashboard
+
+## Phase 5: Notifications
+
+### 5a. Notification Bell Component (`src/components/NotificationBell.tsx`)
+- Bell icon in the Navbar showing unread count badge
+- Dropdown/popover listing recent notifications
+- Click marks as read
+- Each notification links to relevant match/parcel
+
+### 5b. Real-time Updates
+- Use Supabase Realtime to subscribe to `notifications` table changes for the logged-in user
+- Bell count updates live without page refresh
+
+## Phase 6: Integration Updates
+
+### Navbar Updates (`src/components/Navbar.tsx`)
+- Add NotificationBell next to the hamburger menu (visible only when logged in)
+- Add "My Trips" and "My Parcels" links in the hamburger menu
+
+### Booking Flow Updates (`src/pages/SmallParcelBooking.tsx`)
+- Add `pickup_earliest` and `pickup_latest` date fields to the booking form
+- These are stored on the parcel and used by the matching engine
+
+### Route Registration (`src/App.tsx`)
+- Add `/traveler-dashboard` (protected)
+- Add `/sender-dashboard` (protected)
 
 ## Technical Details
 
-### File: `src/components/Navbar.tsx`
-- Remove all desktop nav links, CTA buttons, and animated SVG background elements
-- Keep only logo + hamburger button (always visible)
-- Add pulse animation CSS keyframe for the hamburger button
-- Use the existing `Sheet` component (side panel) for the menu drawer
-- Import `Sheet, SheetContent, SheetTrigger` from `@/components/ui/sheet`
-- Menu items: Send a Parcel, I'm Traveling, How It Works, FAQ, Log In/Out, Admin
+### File Changes Summary
 
-### File: `src/pages/Index.tsx`
-- Remove: ParcelPassAnimation, SavingsCounter, HowItWorksIcons imports and sections
-- Remove: Value Props section, Parcel Size Selector section, Traveler CTA strip, Stats section
-- Add: `LocationInput` import, `useNavigate` for passing state to freight-estimator
-- Add: `RouteMap` as background element in hero
-- Add: Two `LocationInput` fields with local state for origin/destination
-- Add: "Get Quote" button that navigates to `/freight-estimator` with `{ state: { pickupLocation, deliveryLocation } }`
-- Keep: Cross-border tabs (simplified), Community strip, Footer
-- Keep: `useEffect` scroll-to-top
+**New files:**
+- `src/pages/TravelerDashboard.tsx` -- Traveler's trip management and parcel acceptance
+- `src/pages/SenderDashboard.tsx` -- Sender's parcel tracking with match details
+- `src/components/PostTrip.tsx` -- Trip posting form
+- `src/components/NotificationBell.tsx` -- Bell icon with dropdown
+- `supabase/functions/find-matching-trips/index.ts` -- Matching engine (parcel -> trips)
+- `supabase/functions/find-matching-parcels/index.ts` -- Matching engine (trip -> parcels)
+- `supabase/functions/accept-match/index.ts` -- Match acceptance logic
 
-### File: `src/pages/FreightEstimator.tsx`
-- Add: Read `location.state` to pre-fill `pickupLocation` and `deliveryLocation` from homepage navigation
-- Use `useLocation` from react-router-dom
+**Modified files:**
+- `src/App.tsx` -- Add new routes
+- `src/components/Navbar.tsx` -- Add NotificationBell, dashboard links
+- `src/pages/SmallParcelBooking.tsx` -- Add pickup date range fields
+- `supabase/config.toml` -- Register new edge functions
 
-### New CSS (in Navbar or index.css)
-```css
-@keyframes hamburger-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
-  50% { box-shadow: 0 0 0 8px hsl(var(--primary) / 0); }
-}
-```
+**Database migration:**
+- Add `pickup_earliest`, `pickup_latest`, `dimensions`, `photo_url` columns to `parcels`
+- Create `trips` table with RLS
+- Create `matches` table with RLS
+- Create `notifications` table with RLS
+- Create trigger functions and triggers using `pg_net`
+- Enable `pg_net` extension if not already enabled
+
+### Matching Logic (City Matching)
+Cities will be matched case-insensitively using `LOWER()`. This handles "Johannesburg" vs "johannesburg". For more advanced fuzzy matching (e.g., "JHB" = "Johannesburg"), we can add aliases in a future iteration.
+
+### Security
+- Edge functions use service role for DB operations (inserting matches/notifications)
+- `accept-match` validates the caller owns the trip via `getClaims()` + `get_profile_id`
+- RLS ensures users only see their own data
+- Match acceptance checks trip ownership before updating
 
