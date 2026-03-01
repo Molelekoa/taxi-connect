@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.register-traveler]
 verify_jwt = false
+
+[functions.find-matching-trips]
+verify_jwt = false
+
+[functions.find-matching-parcels]
+verify_jwt = false
+
+[functions.accept-match]
+verify_jwt = false

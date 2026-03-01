@@ -1,10 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Menu, LogOut, User, ShieldCheck, Package, Car, HelpCircle, Info } from "lucide-react";
+import { Menu, LogOut, User, ShieldCheck, Package, Car, HelpCircle, Info, Truck, BoxIcon } from "lucide-react";
 import parcoloLogo from "@/assets/parcolo-logo.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import NotificationBell from "@/components/NotificationBell";
 
 const Navbar = () => {
   const location = useLocation();
@@ -29,98 +30,125 @@ const Navbar = () => {
           </div>
         </Link>
 
-        {/* Pulsing Hamburger Menu */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <button
-              className="p-2.5 rounded-full text-foreground bg-primary/10 transition-colors hover:bg-primary/20"
-              style={{ animation: 'hamburger-pulse 2s ease-in-out infinite' }}
-              aria-label="Open menu"
-            >
-              <Menu className="w-5 h-5 text-primary" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[300px] sm:w-[340px] p-0">
-            <SheetHeader className="p-6 pb-4 border-b border-border">
-              <SheetTitle className="text-left font-brand font-bold text-lg">Menu</SheetTitle>
-            </SheetHeader>
+        <div className="flex items-center gap-1">
+          {/* Notification Bell */}
+          <NotificationBell />
 
-            <div className="p-4 space-y-1">
-              {/* Primary action */}
-              <Link to="/freight-estimator">
-                <Button variant="coral" className="w-full justify-start gap-3 h-12 text-base mb-3">
-                  <Package className="w-5 h-5" />
-                  Send a Parcel
-                </Button>
-              </Link>
+          {/* Pulsing Hamburger Menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                className="p-2.5 rounded-full text-foreground bg-primary/10 transition-colors hover:bg-primary/20"
+                style={{ animation: 'hamburger-pulse 2s ease-in-out infinite' }}
+                aria-label="Open menu"
+              >
+                <Menu className="w-5 h-5 text-primary" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[340px] p-0">
+              <SheetHeader className="p-6 pb-4 border-b border-border">
+                <SheetTitle className="text-left font-brand font-bold text-lg">Menu</SheetTitle>
+              </SheetHeader>
 
-              <Link to="/carrier-signup">
-                <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                  isActive('/carrier-signup') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
-                }`}>
-                  <Car className="w-5 h-5 text-muted-foreground" />
-                  I'm Traveling Soon
-                </button>
-              </Link>
+              <div className="p-4 space-y-1">
+                {/* Primary action */}
+                <Link to="/freight-estimator">
+                  <Button variant="coral" className="w-full justify-start gap-3 h-12 text-base mb-3">
+                    <Package className="w-5 h-5" />
+                    Send a Parcel
+                  </Button>
+                </Link>
 
-              <Link to="/how-it-works">
-                <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                  isActive('/how-it-works') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
-                }`}>
-                  <Info className="w-5 h-5 text-muted-foreground" />
-                  How It Works
-                </button>
-              </Link>
-
-              <Link to="/faq">
-                <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                  isActive('/faq') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
-                }`}>
-                  <HelpCircle className="w-5 h-5 text-muted-foreground" />
-                  FAQ
-                </button>
-              </Link>
-
-              {isAdmin && (
-                <Link to="/admin">
+                <Link to="/carrier-signup">
                   <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                    isActive('/admin') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
+                    isActive('/carrier-signup') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
                   }`}>
-                    <ShieldCheck className="w-5 h-5 text-muted-foreground" />
-                    Admin Dashboard
+                    <Car className="w-5 h-5 text-muted-foreground" />
+                    I'm Traveling Soon
                   </button>
                 </Link>
-              )}
 
-              {/* Divider */}
-              <div className="border-t border-border my-3" />
+                {user && (
+                  <>
+                    <Link to="/traveler-dashboard">
+                      <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                        isActive('/traveler-dashboard') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
+                      }`}>
+                        <Truck className="w-5 h-5 text-muted-foreground" />
+                        My Trips
+                      </button>
+                    </Link>
 
-              {/* Auth */}
-              {user ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground">
-                    <User className="w-4 h-4" />
-                    <span className="truncate">{user.email}</span>
+                    <Link to="/sender-dashboard">
+                      <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                        isActive('/sender-dashboard') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
+                      }`}>
+                        <BoxIcon className="w-5 h-5 text-muted-foreground" />
+                        My Parcels
+                      </button>
+                    </Link>
+                  </>
+                )}
+
+                <Link to="/how-it-works">
+                  <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    isActive('/how-it-works') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
+                  }`}>
+                    <Info className="w-5 h-5 text-muted-foreground" />
+                    How It Works
+                  </button>
+                </Link>
+
+                <Link to="/faq">
+                  <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    isActive('/faq') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
+                  }`}>
+                    <HelpCircle className="w-5 h-5 text-muted-foreground" />
+                    FAQ
+                  </button>
+                </Link>
+
+                {isAdmin && (
+                  <Link to="/admin">
+                    <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                      isActive('/admin') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
+                    }`}>
+                      <ShieldCheck className="w-5 h-5 text-muted-foreground" />
+                      Admin Dashboard
+                    </button>
+                  </Link>
+                )}
+
+                {/* Divider */}
+                <div className="border-t border-border my-3" />
+
+                {/* Auth */}
+                {user ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground">
+                      <User className="w-4 h-4" />
+                      <span className="truncate">{user.email}</span>
+                    </div>
+                    <button
+                      onClick={signOut}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                    >
+                      <LogOut className="w-5 h-5 text-muted-foreground" />
+                      Sign Out
+                    </button>
                   </div>
-                  <button
-                    onClick={signOut}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-secondary transition-colors"
-                  >
-                    <LogOut className="w-5 h-5 text-muted-foreground" />
-                    Sign Out
-                  </button>
-                </div>
-              ) : (
-                <Link to="/auth">
-                  <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-secondary transition-colors">
-                    <User className="w-5 h-5 text-muted-foreground" />
-                    Log In
-                  </button>
-                </Link>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+                ) : (
+                  <Link to="/auth">
+                    <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-secondary transition-colors">
+                      <User className="w-5 h-5 text-muted-foreground" />
+                      Log In
+                    </button>
+                  </Link>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
       <style>{`

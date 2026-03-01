@@ -61,6 +61,8 @@ const parcelBookingSchema = z.object({
   originCity: z.string().min(2, "Origin city is required"),
   pickupAddress: z.string().min(5, "Pickup address is required"),
   pickupDate: z.string().optional(),
+  pickupEarliest: z.string().optional(),
+  pickupLatest: z.string().optional(),
   destinationCity: z.string().min(2, "Destination city is required"),
   deliveryAddress: z.string().min(3, "Delivery address is required"),
   recipientName: z.string().min(2, "Recipient name is required"),
@@ -82,6 +84,8 @@ const verifiedSenderSchema = z.object({
   originCity: z.string().min(2, "Origin city is required"),
   pickupAddress: z.string().min(5, "Pickup address is required"),
   pickupDate: z.string().optional(),
+  pickupEarliest: z.string().optional(),
+  pickupLatest: z.string().optional(),
   destinationCity: z.string().min(2, "Destination city is required"),
   deliveryAddress: z.string().min(3, "Delivery address is required"),
   recipientName: z.string().min(2, "Recipient name is required"),
@@ -158,6 +162,8 @@ const SmallParcelBooking = () => {
     originCity: prefilled?.origin || "",
     pickupAddress: prefilled?.pickupAddress || "",
     pickupDate: "",
+    pickupEarliest: "",
+    pickupLatest: "",
     destinationCity: prefilled?.destination || "",
     deliveryAddress: prefilled?.deliveryAddress || "",
     recipientName: "",
@@ -383,6 +389,8 @@ const SmallParcelBooking = () => {
         sender_email: isVerifiedSender ? (profileData?.email || '') : (formData.email || ''),
         sender_phone: isVerifiedSender ? (profileData?.phone || '') : (formData.phone || ''),
         status: 'pending',
+        pickup_earliest: formData.pickupEarliest || null,
+        pickup_latest: formData.pickupLatest || null,
       } as any);
 
       if (insertError) {
@@ -728,6 +736,28 @@ const SmallParcelBooking = () => {
                       onChange={(e) => handleInputChange('pickupDate', e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
                     />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="pickupEarliest">Earliest Pickup</Label>
+                      <Input
+                        id="pickupEarliest"
+                        type="date"
+                        value={formData.pickupEarliest}
+                        onChange={(e) => handleInputChange('pickupEarliest', e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pickupLatest">Latest Pickup</Label>
+                      <Input
+                        id="pickupLatest"
+                        type="date"
+                        value={formData.pickupLatest}
+                        onChange={(e) => handleInputChange('pickupLatest', e.target.value)}
+                        min={formData.pickupEarliest || new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
                   </div>
                 </div>
               </section>
