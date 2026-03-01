@@ -179,6 +179,7 @@ const SmallParcelBooking = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [showPayNowPrompt, setShowPayNowPrompt] = useState(false);
 
   // Scroll to top when switching between form and review
   useEffect(() => {
@@ -400,6 +401,7 @@ const SmallParcelBooking = () => {
 
       setShowReview(false);
       setIsSuccess(true);
+      setShowPayNowPrompt(true);
       toast({
         title: "Booking Submitted!",
         description: "We'll contact you soon to confirm pickup details.",
@@ -448,6 +450,48 @@ const SmallParcelBooking = () => {
               <p className="text-muted-foreground mb-8">
                 We'll contact you soon to confirm pickup details.
               </p>
+
+              {/* Pay Now Discount Prompt */}
+              {showPayNowPrompt && displayPrice && (
+                <motion.div
+                  className="bg-primary/5 border-2 border-primary/30 rounded-xl p-6 mb-8 text-left"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold text-foreground">Pay now & save 10%!</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Secure your booking by paying now and receive a 10% discount on your delivery.
+                  </p>
+                  <div className="flex items-center justify-between bg-background rounded-lg p-4 mb-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Original price</p>
+                      <p className="text-sm text-muted-foreground line-through">R{Math.round(displayPrice)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-primary font-medium">Pay now price (10% off)</p>
+                      <p className="text-xl font-bold text-primary">R{Math.round(displayPrice * 0.9)}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button variant="hero" className="flex-1" onClick={() => {
+                      toast({ title: "Payment feature coming soon", description: "Online payments will be available shortly." });
+                      setShowPayNowPrompt(false);
+                    }}>
+                      Pay Now — R{Math.round(displayPrice * 0.9)}
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowPayNowPrompt(false)}>
+                      Pay Later
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                    You save R{Math.round(displayPrice * 0.1)} by paying now
+                  </p>
+                </motion.div>
+              )}
 
               <div className="bg-secondary/50 rounded-lg p-6 mb-8 text-left">
                 <h3 className="font-semibold text-foreground mb-4">What happens next?</h3>
