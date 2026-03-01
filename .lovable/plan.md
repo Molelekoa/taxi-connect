@@ -1,52 +1,90 @@
 
 
-# Rework Homepage Copy for Clarity and Incentives
+# Uber-Style Homepage Redesign
 
 ## Overview
-Sharpen the homepage copy to clearly communicate what's in it for both senders and travelers, keeping text short and punchy for short attention spans.
+Transform the homepage from a content-heavy marketing page into a clean, app-like experience where the quote/booking flow is front-and-center. Think Uber: open the app, see the map, book immediately. All supporting content moves behind a pulsing hamburger menu.
 
-## Changes (File: `src/pages/Index.tsx`)
+## Changes
 
-### 1. Hero Sub-copy (lines 117-123)
-Replace the current paragraph with a shorter, punchier two-line message:
+### 1. Simplified Navbar with Pulsing Hamburger (File: `src/components/Navbar.tsx`)
 
-**Current:** "Send parcels across South Africa, Lesotho and Zimbabwe with verified travelers already on your route. No warehouses, no middlemen."
+Strip the navbar down to just:
+- PARCOLO wordmark (left)
+- Pulsing hamburger icon (right) -- always visible, desktop and mobile
+- Remove all visible nav links, "Join the Community", "Get Quote", and user buttons from the top bar
+- Remove all the animated background SVGs (blobs, dotted paths, parcel icons, stars, hearts)
 
-**New:** "Send parcels across South Africa, Lesotho and Zimbabwe -- up to 60% cheaper than couriers. Verified travelers deliver on routes they're already taking."
+The hamburger gets a subtle pulse animation (CSS ring pulse, like a notification dot) to draw attention. On click, it opens a full-screen or side-panel menu containing:
+- "Send a Parcel" (links to `/freight-estimator`)
+- "I'm Traveling Soon" (links to `/carrier-signup`)
+- "How It Works" (links to `/how-it-works`)
+- "FAQ" (links to `/faq`)
+- Log In / Sign Out
+- Admin (if admin)
 
-This keeps the geographic scope, adds the price incentive upfront, and explains the model in one breath.
+### 2. App-Like Homepage (File: `src/pages/Index.tsx`)
 
-### 2. "Why Parcolo?" Value Props (lines 232-280)
-Rework the three cards to speak directly to sender benefits with sharper copy:
+Radically simplify the homepage to three visual layers:
 
-- **Save Up to 60%** (was "Affordable"): "No warehouses or fleet costs -- just smart route-sharing that passes savings to you."
-- **Door-to-Door Coverage** (was "Wide Coverage"): "From Joburg to Harare, Maseru to Cape Town -- 3 countries, hundreds of routes."
-- **Fast and Tracked** (was "Fast and Reliable"): "Daily departures. SMS updates. ID-verified collection on arrival."
+**Layer 1 -- Hero (above the fold, full viewport height)**
+- Clean headline: "Where are you sending?"
+- Two large input fields (Origin and Destination) pulled from the FreightEstimator -- reuse `LocationInput`
+- A prominent "Get Quote" coral button
+- Below inputs: two secondary CTAs as text links -- "I'm a traveler -- earn on your trips" linking to `/carrier-signup`
+- Background: the route map component (`RouteMap`) fills the hero area behind the form, giving it the Uber map feel
 
-### 3. Traveler CTA Strip (lines 428-458)
-Rework the "Earn on Your Trips" section with concrete incentives:
+**Layer 2 -- Quick info strip (compact, no scroll needed)**
+- Three inline stats: "60% cheaper" | "3 countries" | "Daily departures"
+- Single row, no cards, no animations
 
-- **Heading:** "Earn While You Travel"
-- **Copy:** "Already driving between cities? Carry parcels and earn R50-R200+ per trip to offset your petrol and tolls. No commitment -- deliver when it suits you."
+**Layer 3 -- Scrollable content below (for those who want more)**
+- Cross-border tabs (Zimbabwe, Lesotho, South Africa) -- kept but simplified
+- "How It Works" -- condensed to a single horizontal row
+- Community strip
+- Footer
 
-This adds a tangible earning range and the "no commitment" reassurance.
+All the current sections (Value Props cards, Parcel Size Selector, Savings Counter animation, Traveler CTA strip, Stats section) are removed from the homepage. Their content lives on dedicated pages accessible via the hamburger menu.
 
-### 4. "How It Works" Step Descriptions (lines 361-408)
-Tighten each step description:
+### 3. Route Map in Hero Background (File: `src/pages/Index.tsx`)
 
-- **Book and Pay:** "Choose your route, pay securely online -- a traveler heading your way picks up the parcel."
-- **Traveler Delivers:** "A verified community member carries your parcel on a trip they're already making."
-- **Recipient Collects:** "SMS notification on arrival. Show ID, collect your parcel -- done."
+Display a default RouteMap (showing South Africa centered) as the hero background. When the user types origin/destination, the map updates live -- just like Uber shows a map before you type your destination.
 
-### 5. Cross-Border Tab Descriptions (lines 489-532)
-Add brief value hooks to each tab:
+This reuses the existing `RouteMap` and `useMapboxDistance` hook, plus `LocationInput`.
 
-- **Zimbabwe:** Add "Delivered by travelers on daily JHB-Harare routes."
-- **Lesotho:** Add "Affordable cross-border delivery on established routes."
-- **South Africa:** Add "City-to-city delivery without the courier markup."
+### 4. Navigation Flow
+
+When a user fills in origin + destination on the homepage and clicks "Get Quote", they navigate to `/freight-estimator` with the locations pre-filled via route state, where they complete the weight selection and see pricing -- keeping the estimator page as the full booking flow.
 
 ## Technical Details
-- All changes are copy-only edits within `src/pages/Index.tsx`
-- No structural, layout, or component changes
-- No new imports or dependencies needed
+
+### File: `src/components/Navbar.tsx`
+- Remove all desktop nav links, CTA buttons, and animated SVG background elements
+- Keep only logo + hamburger button (always visible)
+- Add pulse animation CSS keyframe for the hamburger button
+- Use the existing `Sheet` component (side panel) for the menu drawer
+- Import `Sheet, SheetContent, SheetTrigger` from `@/components/ui/sheet`
+- Menu items: Send a Parcel, I'm Traveling, How It Works, FAQ, Log In/Out, Admin
+
+### File: `src/pages/Index.tsx`
+- Remove: ParcelPassAnimation, SavingsCounter, HowItWorksIcons imports and sections
+- Remove: Value Props section, Parcel Size Selector section, Traveler CTA strip, Stats section
+- Add: `LocationInput` import, `useNavigate` for passing state to freight-estimator
+- Add: `RouteMap` as background element in hero
+- Add: Two `LocationInput` fields with local state for origin/destination
+- Add: "Get Quote" button that navigates to `/freight-estimator` with `{ state: { pickupLocation, deliveryLocation } }`
+- Keep: Cross-border tabs (simplified), Community strip, Footer
+- Keep: `useEffect` scroll-to-top
+
+### File: `src/pages/FreightEstimator.tsx`
+- Add: Read `location.state` to pre-fill `pickupLocation` and `deliveryLocation` from homepage navigation
+- Use `useLocation` from react-router-dom
+
+### New CSS (in Navbar or index.css)
+```css
+@keyframes hamburger-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
+  50% { box-shadow: 0 0 0 8px hsl(var(--primary) / 0); }
+}
+```
 
