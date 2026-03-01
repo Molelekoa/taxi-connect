@@ -306,6 +306,7 @@ export type Database = {
           profile_id: string
           referral_source: string | null
           schedule_type: string | null
+          status: string
           storage_type: string | null
           travel_frequency: string | null
           vehicle_colour: string | null
@@ -337,6 +338,7 @@ export type Database = {
           profile_id: string
           referral_source?: string | null
           schedule_type?: string | null
+          status?: string
           storage_type?: string | null
           travel_frequency?: string | null
           vehicle_colour?: string | null
@@ -368,6 +370,7 @@ export type Database = {
           profile_id?: string
           referral_source?: string | null
           schedule_type?: string | null
+          status?: string
           storage_type?: string | null
           travel_frequency?: string | null
           vehicle_colour?: string | null

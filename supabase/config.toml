@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.accept-match]
 verify_jwt = false
+
+[functions.claim-parcel]
+verify_jwt = false
