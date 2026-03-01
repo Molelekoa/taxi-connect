@@ -22,7 +22,7 @@ import {
 } from "@/config/pricingCalculator";
 import {
   Users, Package, Truck, LayoutDashboard, Copy, Check, Phone, Mail, Eye,
-  DollarSign, MapPin, Scale, Search, TrendingUp,
+  DollarSign, MapPin, Scale, Search, TrendingUp, ShieldCheck, ShieldX, Clock,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -70,6 +70,7 @@ type TravelerRoute = {
 type TravelerProfile = {
   id: string;
   profile_id: string;
+  status: string;
   vehicle_type: string | null;
   license_type: string | null;
   cargo_types: string[] | null;
@@ -310,6 +311,15 @@ const AdminDashboard = () => {
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-parcels"] }); toast({ title: "Status updated" }); },
     onError: () => toast({ title: "Failed to update status", variant: "destructive" }),
+  });
+
+  const updateTravelerStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("traveler_profiles").update({ status } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-traveler-profiles"] }); toast({ title: "Traveler status updated" }); },
+    onError: () => toast({ title: "Failed to update traveler status", variant: "destructive" }),
   });
 
   // Helpers
@@ -642,13 +652,13 @@ const AdminDashboard = () => {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Name</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Vehicle</TableHead>
                             <TableHead>Primary Route</TableHead>
                             <TableHead>License</TableHead>
-                            <TableHead>Cargo Types</TableHead>
                             <TableHead>Capacity</TableHead>
                             <TableHead>Frequency</TableHead>
-                            <TableHead>Emergency Contact</TableHead>
+                            <TableHead>Actions</TableHead>
                             <TableHead></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -658,19 +668,42 @@ const AdminDashboard = () => {
                           ) : travelerProfiles.map((tp) => {
                             const profile = profileById(tp.profile_id);
                             const primaryRoute = tp.traveler_routes.find((r) => r.is_primary) ?? tp.traveler_routes[0];
+                            const tStatus = (tp as any).status || "pending";
                             return (
                               <TableRow key={tp.id}>
                                 <TableCell className="font-medium text-sm">{profile?.full_name ?? "—"}</TableCell>
+                                <TableCell>
+                                  <TravelerStatusBadge status={tStatus} />
+                                </TableCell>
                                 <TableCell className="text-xs">{tp.vehicle_type ?? "—"}</TableCell>
                                 <TableCell className="text-xs">{primaryRoute ? `${primaryRoute.route_from} → ${primaryRoute.route_to}` : "—"}</TableCell>
                                 <TableCell className="text-xs">{tp.license_type ?? "—"}</TableCell>
-                                <TableCell className="text-xs max-w-[120px]"><span className="truncate block" title={tp.cargo_types?.join(", ")}>{tp.cargo_types?.join(", ") ?? "—"}</span></TableCell>
                                 <TableCell className="text-xs">{tp.min_load_capacity} – {tp.max_load_capacity} kg</TableCell>
                                 <TableCell className="text-xs">{tp.travel_frequency ?? "—"}</TableCell>
                                 <TableCell>
-                                  <div className="text-xs space-y-0.5">
-                                    <div className="font-medium">{tp.emergency_contact_name ?? "—"}</div>
-                                    <CopyButton text={tp.emergency_contact_phone ?? null} />
+                                  <div className="flex items-center gap-1">
+                                    {tStatus !== "approved" && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        onClick={() => updateTravelerStatus.mutate({ id: tp.id, status: "approved" })}
+                                        title="Approve"
+                                      >
+                                        <ShieldCheck className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                    {tStatus !== "rejected" && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => updateTravelerStatus.mutate({ id: tp.id, status: "rejected" })}
+                                        title="Reject"
+                                      >
+                                        <ShieldX className="w-4 h-4" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </TableCell>
                                 <TableCell>
@@ -736,6 +769,21 @@ const RoleBadge = ({ role, hasTravelerProfile }: { role: string | null; hasTrave
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg[effectiveRole] ?? cfg.unregistered}`}>
       {effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1)}
+    </span>
+  );
+};
+
+// ── Traveler status badge ──────────────────────────────────────────────────────
+
+const TravelerStatusBadge = ({ status }: { status: string }) => {
+  const cfg: Record<string, string> = {
+    pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    approved: "bg-green-100 text-green-800 border-green-200",
+    rejected: "bg-red-100 text-red-800 border-red-200",
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg[status] ?? cfg.pending}`}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
 };
