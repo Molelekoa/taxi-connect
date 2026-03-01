@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Menu, LogOut, User, ShieldCheck, Package, Car, HelpCircle, Info } from "lucide-react";
+import parcoloLogo from "@/assets/parcolo-logo.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,7 +17,8 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card">
       <div className="container-narrow flex items-center justify-between h-14">
         {/* Logo */}
-        <Link to="/" className="flex items-center">
+        <Link to="/" className="flex items-center gap-2">
+          <img src={parcoloLogo} alt="Parcolo" className="h-8 w-auto" />
           <div className="flex flex-col leading-none">
             <span className="font-brand font-bold text-xl tracking-tight text-foreground">
               PARCOLO

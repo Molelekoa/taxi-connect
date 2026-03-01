@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, PackageIcon, Mail, Lock, User, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from "lucide-react";
+import parcoloLogo from "@/assets/parcolo-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,13 +110,15 @@ const Auth = () => {
       >
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 justify-center mb-8 group">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center group-hover:bg-primary/90 transition-colors">
-            <PackageIcon className="w-5 h-5 text-primary-foreground" />
+          <img src={parcoloLogo} alt="Parcolo" className="h-10 w-auto" />
+          <div className="flex flex-col leading-none">
+            <span className="font-brand font-bold text-2xl tracking-tight text-foreground">
+              PARCOLO
+            </span>
+            <span className="text-[9px] font-semibold tracking-widest text-success uppercase">
+              We Deliver Together
+            </span>
           </div>
-          <span className="font-display font-bold text-2xl tracking-tight">
-            <span className="text-foreground">Parcel</span>
-            <span className="text-primary">Buddy</span>
-          </span>
         </Link>
 
         <div className="card-elevated p-6 md:p-8">
