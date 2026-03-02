@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PostTrip from "@/components/PostTrip";
+import { WEIGHT_BANDS } from "@/config/pricingCalculator";
 
 const CANCEL_REASONS = [
   "Trip cancelled",
@@ -23,6 +24,12 @@ const CANCEL_REASONS = [
 ];
 
 const PAYOUT_RATE = 0.65;
+
+const getBandLabel = (bandId: string | null | undefined) => {
+  if (!bandId) return null;
+  const band = WEIGHT_BANDS.find(b => b.id === bandId);
+  return band ? `${band.label} (${band.range[0]}-${band.range[1]}kg)` : null;
+};
 
 const TravelerDashboard = () => {
   const { user } = useAuth();
@@ -342,7 +349,7 @@ const TravelerDashboard = () => {
                               {parcel.pickup_location} → {parcel.dropoff_location}
                             </div>
                             <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1"><Scale className="w-3 h-3" />{parcel.weight_kg || "?"}kg</span>
+                              <span className="flex items-center gap-1"><Scale className="w-3 h-3" />{getBandLabel(parcel.weight_band) || `${parcel.weight_kg || "?"}kg`}</span>
                               {parcel.pickup_earliest && (
                                 <span className="flex items-center gap-1">
                                   <CalendarDays className="w-3 h-3" />
@@ -395,7 +402,7 @@ const TravelerDashboard = () => {
                             {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
                           </div>
                           <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1"><Scale className="w-3 h-3" />{match.parcels?.weight_kg || "?"}kg</span>
+                            <span className="flex items-center gap-1"><Scale className="w-3 h-3" />{getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</span>
                             {match.parcels?.pickup_earliest && (
                               <span className="flex items-center gap-1">
                                 <CalendarDays className="w-3 h-3" />
@@ -444,7 +451,7 @@ const TravelerDashboard = () => {
                         <Badge className="bg-success/10 text-success">accepted</Badge>
                       </div>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>Weight: {match.parcels?.weight_kg || "?"}kg</p>
+                        <p>Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
                         {match.parcels?.sender_name && <p>Sender: {match.parcels.sender_name}</p>}
                         {match.parcels?.sender_phone && <p>Phone: {match.parcels.sender_phone}</p>}
                         {match.accepted_at && <p>Accepted: {new Date(match.accepted_at).toLocaleDateString()}</p>}
