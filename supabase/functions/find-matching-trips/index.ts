@@ -118,11 +118,11 @@ Deno.serve(async (req) => {
 
       if (mErr) continue;
 
-      // Notify traveler
+      // Notify traveler about route match
       await supabase.from("notifications").insert({
         user_id: trip.traveler_id,
         type: "new_match",
-        content: `New parcel available: ${parcel.weight_kg || "?"}kg from ${parcel.pickup_location} to ${parcel.dropoff_location}`,
+        content: `New parcel matches your ${trip.origin_city} → ${trip.destination_city} route: ${parcel.weight_kg || "?"}kg, pickup ${parcel.pickup_earliest || "TBD"} – ${parcel.pickup_latest || "TBD"}`,
         related_match_id: match.id,
       });
 

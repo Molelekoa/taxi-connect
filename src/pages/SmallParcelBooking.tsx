@@ -563,6 +563,14 @@ const SmallParcelBooking = () => {
       <main className="pt-24 pb-16">
         <div className="container-narrow max-w-4xl mx-auto">
           {/* Header */}
+           {/* Back Button */}
+          <div className="mb-6">
+            <Button variant="ghost" size="sm" onClick={() => window.history.back()} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+          </div>
+
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
               <Package className="w-4 h-4" />
@@ -1160,10 +1168,19 @@ const SmallParcelBooking = () => {
               <div className="container-narrow max-w-3xl mx-auto py-8 px-4">
                 <div className="bg-card border border-border rounded-xl overflow-hidden">
                   <div className="bg-foreground text-background p-6">
-                    <h2 className="font-display font-bold text-xl flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5" />
-                      Review Your Booking
-                    </h2>
+                    <div className="flex items-center gap-3 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowReview(false)}
+                        className="text-background/70 hover:text-background transition-colors"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                      </button>
+                      <h2 className="font-display font-bold text-xl flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5" />
+                        Review Your Booking
+                      </h2>
+                    </div>
                     <p className="text-background/70 text-sm mt-1">
                       Please verify all details are correct before confirming.
                     </p>
