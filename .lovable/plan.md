@@ -1,87 +1,118 @@
 
 
-# Connect Senders and Travelers: End-to-End Matching
+# Performance Indexes, Security Audit Logging, and Observability -- Free Plan
 
-## Problem Summary
-Currently, the sender and traveler sides of the platform are disconnected:
-1. Database triggers that power automatic matching were never created (confirmed: zero triggers exist)
-2. There's no admin approval step for travelers before they can operate
-3. Travelers can't see available parcels on their routes
-4. When a traveler claims a parcel, the sender doesn't get notified reliably
+## Overview
+This plan implements database indexes for query performance, an audit logging system, and an observability strategy -- all within Supabase's free tier constraints. Since `pg_cron` requires the Pro plan, retry logic will be handled application-side rather than via scheduled database jobs.
 
-## Plan
+## Current State
+- **Triggers**: `after_parcel_insert` and `after_trip_insert` are active (confirmed working)
+- **Extensions**: `pg_net` is available; `pg_cron` is NOT (requires Pro)
+- **Indexes**: Only primary keys and unique constraints exist -- no performance indexes
+- **Linter**: Only issue is "Leaked Password Protection Disabled" (a Supabase Auth dashboard setting, not code)
 
-### 1. Add Admin Approval for Travelers
-Add a `status` column to the `traveler_profiles` table (values: `pending`, `approved`, `rejected`, default `pending`). Only approved travelers can post trips and see parcels.
+## What Will Change
 
-**Admin Dashboard changes:**
-- Add Approve/Reject buttons in the Travelers tab next to each traveler
-- Show traveler status badges (Pending, Approved, Rejected)
+### 1. Database Performance Indexes (Migration)
 
-### 2. Re-create Database Triggers
-The `after_parcel_insert` and `after_trip_insert` triggers were never successfully applied. Create a new migration to add them, connecting parcel inserts to `find-matching-trips` and trip inserts to `find-matching-parcels`.
+Add composite indexes targeting the most frequent query patterns:
 
-### 3. Add a "Browse Available Parcels" View for Travelers
-Instead of relying solely on automated matching (which depends on triggers), give approved travelers a direct way to browse pending parcels that match their registered routes. This provides a fallback and a more intuitive experience.
+```text
+parcels table:
+  - (status, pickup_location, dropoff_location) -- matching engine + browse parcels
+  - (sender_id, status)                         -- sender dashboard queries
+  - (traveler_id)                               -- traveler assigned parcels
 
-**Traveler Dashboard changes:**
-- New "Browse Parcels" tab showing all pending parcels matching the traveler's registered routes (from `traveler_routes` table)
-- Each parcel card shows route, weight, pickup window, and a "Claim" button
-- Claiming creates a match record and notifies the sender
+trips table:
+  - (status, origin_city, destination_city, travel_date) -- matching engine
+  - (traveler_id, status)                                -- traveler dashboard
 
-### 4. Build a "Claim Parcel" Edge Function
-A new `claim-parcel` edge function that:
-- Validates the traveler is approved
-- Checks the parcel is still pending/available
-- Creates a match record (or uses existing one)
-- Updates parcel status to "matched"
-- Notifies the sender
+matches table:
+  - (parcel_id, trip_id)     -- duplicate match prevention
+  - (trip_id, status)        -- traveler match queries
+  - (parcel_id, status)      -- sender match queries
 
-### 5. Fix Sender Notifications
-Ensure the sender dashboard and notification bell correctly show when a traveler claims their parcel, including the traveler's name and contact info.
+notifications table:
+  - (user_id, read, created_at DESC) -- notification bell queries
+
+traveler_routes table:
+  - (traveler_profile_id)    -- route lookups for browse parcels
+```
+
+### 2. Audit Logging (Migration)
+
+Create an `audit_log` table to track sensitive operations. Since we can't use `pg_cron`, we'll use a lightweight trigger-based approach:
+
+```text
+audit_log table:
+  - id (uuid)
+  - action (text): 'traveler_approved', 'traveler_rejected', 'parcel_claimed', 'match_accepted', 'status_changed'
+  - table_name (text)
+  - record_id (uuid)
+  - old_values (jsonb)
+  - new_values (jsonb)
+  - performed_by (uuid) -- auth.uid()
+  - created_at (timestamptz)
+```
+
+Triggers will automatically log:
+- Traveler profile status changes (approval/rejection)
+- Parcel status changes (pending to matched, etc.)
+- Match status changes (pending to accepted)
+
+RLS: Only admins can read audit logs. No client inserts/updates/deletes (triggers handle insertion).
+
+### 3. Edge Function Retry Logic
+
+Since `pg_cron` is unavailable on the free plan, add client-side retry logic:
+- Update `SmallParcelBooking.tsx`: After successful parcel creation, call `find-matching-trips` directly as a fallback if the trigger doesn't fire
+- Update `TravelerDashboard.tsx` (trip posting): After posting a trip, call `find-matching-parcels` directly
+- This provides a belt-and-suspenders approach alongside the database triggers
+
+### 4. Observability Strategy (No-Cost)
+
+Since external monitoring tools (Sentry, Datadog) would add cost, the plan uses what's already available:
+
+**Built into Supabase free tier:**
+- Edge Function logs (already available in dashboard)
+- Database logs via `supabase--analytics-query`
+- Auth logs
+
+**Application-level (new):**
+- Add a simple `app_metrics` table to track key business events:
+  - Parcels created per day
+  - Matches made per day
+  - Claims completed per day
+- A lightweight database function `log_metric(metric_name, value)` that inserts into this table
+- Admin Dashboard gets a new "Metrics" tab showing these counts
+
+**No additional cost required.**
 
 ---
 
 ## Technical Details
 
-### Database Migration
-```sql
--- Add status to traveler_profiles
-ALTER TABLE public.traveler_profiles
-  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending';
+### Files Modified
+- `src/pages/SmallParcelBooking.tsx` -- Add fallback matching call after parcel creation
+- `src/pages/TravelerDashboard.tsx` -- Add fallback matching call after trip creation
+- `src/pages/AdminDashboard.tsx` -- Add "Audit Log" and "Metrics" tabs
 
--- Re-create triggers
-CREATE TRIGGER after_parcel_insert
-  AFTER INSERT ON public.parcels
-  FOR EACH ROW EXECUTE FUNCTION public.notify_new_parcel();
+### Database Migration (single migration)
+1. Create all performance indexes
+2. Create `audit_log` table with RLS (admin-only SELECT)
+3. Create audit trigger functions for `traveler_profiles`, `parcels`, and `matches`
+4. Create `app_metrics` table for observability
+5. Create `log_metric()` function
 
-CREATE TRIGGER after_trip_insert
-  AFTER INSERT ON public.trips
-  FOR EACH ROW EXECUTE FUNCTION public.notify_new_trip();
-```
+### Security Notes
+- Audit log table uses `SECURITY DEFINER` trigger functions so logging works regardless of the calling user's permissions
+- No client-side INSERT policy on `audit_log` -- only triggers can write
+- Leaked Password Protection should be enabled manually in Supabase Auth settings (dashboard only, not code)
 
-### File Changes
-
-**New files:**
-- `supabase/functions/claim-parcel/index.ts` -- Traveler claims a parcel directly
-
-**Modified files:**
-- `src/pages/AdminDashboard.tsx` -- Add approve/reject buttons for travelers, status badges
-- `src/pages/TravelerDashboard.tsx` -- Add "Browse Parcels" tab showing route-matched parcels with claim buttons, gate access behind approved status
-- `src/pages/SenderDashboard.tsx` -- Improve match display to show traveler details after claim
-- `supabase/config.toml` -- Register `claim-parcel` edge function
-
-### Matching Logic for Browse
-When a traveler opens "Browse Parcels", the app queries parcels where:
-- `status = 'pending'`
-- `pickup_location` matches any of the traveler's registered `route_from` cities
-- `dropoff_location` matches the corresponding `route_to` cities
-- `weight_kg` is within the traveler's capacity
-
-This uses the existing `traveler_routes` table data, so no new trips need to be posted for basic matching.
-
-### Security
-- The `claim-parcel` function validates JWT, checks traveler approval status, and confirms parcel availability before creating a match
-- RLS policies already protect data visibility; no changes needed
-- Admin approval uses the existing admin role check via `has_role()`
+### Free Plan Constraints Respected
+- No `pg_cron` usage (Pro only)
+- No external monitoring services
+- All indexes are B-tree (default, no extensions needed)
+- Audit log and metrics tables add minimal storage overhead
+- Edge function invocations stay well within free tier limits for under 50,000 users
 
