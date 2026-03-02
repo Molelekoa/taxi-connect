@@ -40,11 +40,17 @@ const parcelBookingSchema = z.object({
   email: z.string().email("Valid email required"),
   phone: z.string().min(10, "Valid phone number required"),
   originCity: z.string().min(2, "Origin city is required"),
-  pickupAddress: z.string().min(5, "Pickup address is required"),
+  pickupHouseNumber: z.string().min(1, "House/Apt number is required"),
+  pickupStreet: z.string().min(3, "Street name is required (min 3 characters)"),
+  pickupSuburb: z.string().min(2, "Suburb is required"),
+  pickupAdditionalInfo: z.string().optional(),
   pickupEarliest: z.string().min(1, "Earliest pickup date is required"),
   pickupLatest: z.string().min(1, "Latest pickup date is required"),
   destinationCity: z.string().min(2, "Destination city is required"),
-  deliveryAddress: z.string().min(5, "Delivery address is required (min 5 characters)"),
+  deliveryHouseNumber: z.string().min(1, "House/Apt number is required"),
+  deliveryStreet: z.string().min(3, "Street name is required (min 3 characters)"),
+  deliverySuburb: z.string().min(2, "Suburb is required"),
+  deliveryAdditionalInfo: z.string().optional(),
   recipientName: z.string().min(2, "Recipient name is required"),
   recipientPhone: z.string().min(10, "Recipient phone required"),
   weightBand: z.string().min(1, "Please select a weight band"),
@@ -65,11 +71,17 @@ const verifiedSenderSchema = z.object({
   email: z.string().optional(),
   phone: z.string().optional(),
   originCity: z.string().min(2, "Origin city is required"),
-  pickupAddress: z.string().min(5, "Pickup address is required"),
+  pickupHouseNumber: z.string().min(1, "House/Apt number is required"),
+  pickupStreet: z.string().min(3, "Street name is required (min 3 characters)"),
+  pickupSuburb: z.string().min(2, "Suburb is required"),
+  pickupAdditionalInfo: z.string().optional(),
   pickupEarliest: z.string().min(1, "Earliest pickup date is required"),
   pickupLatest: z.string().min(1, "Latest pickup date is required"),
   destinationCity: z.string().min(2, "Destination city is required"),
-  deliveryAddress: z.string().min(5, "Delivery address is required (min 5 characters)"),
+  deliveryHouseNumber: z.string().min(1, "House/Apt number is required"),
+  deliveryStreet: z.string().min(3, "Street name is required (min 3 characters)"),
+  deliverySuburb: z.string().min(2, "Suburb is required"),
+  deliveryAdditionalInfo: z.string().optional(),
   recipientName: z.string().min(2, "Recipient name is required"),
   recipientPhone: z.string().min(10, "Recipient phone required"),
   weightBand: z.string().min(1, "Please select a weight band"),
@@ -128,8 +140,6 @@ const SmallParcelBooking = () => {
   const prefilled = location.state as { 
     origin?: string; 
     destination?: string; 
-    pickupAddress?: string;
-    deliveryAddress?: string;
     weight?: number;
     weightBand?: string;
     price?: number;
@@ -145,11 +155,17 @@ const SmallParcelBooking = () => {
     email: "",
     phone: "",
     originCity: prefilled?.origin || "",
-    pickupAddress: prefilled?.pickupAddress || "",
+    pickupHouseNumber: "",
+    pickupStreet: "",
+    pickupSuburb: "",
+    pickupAdditionalInfo: "",
     pickupEarliest: "",
     pickupLatest: "",
     destinationCity: prefilled?.destination || "",
-    deliveryAddress: prefilled?.deliveryAddress || "",
+    deliveryHouseNumber: "",
+    deliveryStreet: "",
+    deliverySuburb: "",
+    deliveryAdditionalInfo: "",
     recipientName: "",
     recipientPhone: "",
     weightBand: prefilled?.weightBand || "",
@@ -366,8 +382,8 @@ const SmallParcelBooking = () => {
         sender_id: profileId,
         pickup_location: formData.originCity,
         dropoff_location: formData.destinationCity,
-        pickup_address: formData.pickupAddress,
-        delivery_address: formData.deliveryAddress,
+        pickup_address: `${formData.pickupHouseNumber} ${formData.pickupStreet}, ${formData.pickupSuburb}${formData.pickupAdditionalInfo ? ' (' + formData.pickupAdditionalInfo + ')' : ''}`,
+        delivery_address: `${formData.deliveryHouseNumber} ${formData.deliveryStreet}, ${formData.deliverySuburb}${formData.deliveryAdditionalInfo ? ' (' + formData.deliveryAdditionalInfo + ')' : ''}`,
         recipient_name: formData.recipientName,
         recipient_phone: formData.recipientPhone,
         weight_band: formData.weightBand,
@@ -769,15 +785,46 @@ const SmallParcelBooking = () => {
                     {errors.originCity && <p className="text-destructive text-xs">{errors.originCity}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="pickupAddress">Pickup Address *</Label>
+                    <Label htmlFor="pickupHouseNumber">House / Apartment Number *</Label>
                     <Input
-                      id="pickupAddress"
-                      value={formData.pickupAddress}
-                      onChange={(e) => handleInputChange('pickupAddress', e.target.value)}
-                      placeholder="e.g., 12 Main Road, Sandton"
-                      className={errors.pickupAddress ? 'border-destructive' : ''}
+                      id="pickupHouseNumber"
+                      value={formData.pickupHouseNumber}
+                      onChange={(e) => handleInputChange('pickupHouseNumber', e.target.value)}
+                      placeholder="e.g., 12 or Apt 4B"
+                      className={errors.pickupHouseNumber ? 'border-destructive' : ''}
                     />
-                    {errors.pickupAddress && <p className="text-destructive text-xs">{errors.pickupAddress}</p>}
+                    {errors.pickupHouseNumber && <p className="text-destructive text-xs">{errors.pickupHouseNumber}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pickupStreet">Street Name *</Label>
+                    <Input
+                      id="pickupStreet"
+                      value={formData.pickupStreet}
+                      onChange={(e) => handleInputChange('pickupStreet', e.target.value)}
+                      placeholder="e.g., Main Road"
+                      className={errors.pickupStreet ? 'border-destructive' : ''}
+                    />
+                    {errors.pickupStreet && <p className="text-destructive text-xs">{errors.pickupStreet}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pickupSuburb">Suburb *</Label>
+                    <Input
+                      id="pickupSuburb"
+                      value={formData.pickupSuburb}
+                      onChange={(e) => handleInputChange('pickupSuburb', e.target.value)}
+                      placeholder="e.g., Sandton"
+                      className={errors.pickupSuburb ? 'border-destructive' : ''}
+                    />
+                    {errors.pickupSuburb && <p className="text-destructive text-xs">{errors.pickupSuburb}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pickupAdditionalInfo">Additional Info (optional)</Label>
+                    <Input
+                      id="pickupAdditionalInfo"
+                      value={formData.pickupAdditionalInfo}
+                      onChange={(e) => handleInputChange('pickupAdditionalInfo', e.target.value)}
+                      placeholder="e.g., Sunset Complex, Gate 3"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
@@ -863,15 +910,46 @@ const SmallParcelBooking = () => {
                     {errors.destinationCity && <p className="text-destructive text-xs">{errors.destinationCity}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="deliveryAddress">Delivery Address / Area *</Label>
+                    <Label htmlFor="deliveryHouseNumber">House / Apartment Number *</Label>
                     <Input
-                      id="deliveryAddress"
-                      value={formData.deliveryAddress}
-                      onChange={(e) => handleInputChange('deliveryAddress', e.target.value)}
-                      placeholder="e.g., 45 Church Street, Hatfield"
-                      className={errors.deliveryAddress ? 'border-destructive' : ''}
+                      id="deliveryHouseNumber"
+                      value={formData.deliveryHouseNumber}
+                      onChange={(e) => handleInputChange('deliveryHouseNumber', e.target.value)}
+                      placeholder="e.g., 45 or Unit 7"
+                      className={errors.deliveryHouseNumber ? 'border-destructive' : ''}
                     />
-                    {errors.deliveryAddress && <p className="text-destructive text-xs">{errors.deliveryAddress}</p>}
+                    {errors.deliveryHouseNumber && <p className="text-destructive text-xs">{errors.deliveryHouseNumber}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="deliveryStreet">Street Name *</Label>
+                    <Input
+                      id="deliveryStreet"
+                      value={formData.deliveryStreet}
+                      onChange={(e) => handleInputChange('deliveryStreet', e.target.value)}
+                      placeholder="e.g., Church Street"
+                      className={errors.deliveryStreet ? 'border-destructive' : ''}
+                    />
+                    {errors.deliveryStreet && <p className="text-destructive text-xs">{errors.deliveryStreet}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="deliverySuburb">Suburb *</Label>
+                    <Input
+                      id="deliverySuburb"
+                      value={formData.deliverySuburb}
+                      onChange={(e) => handleInputChange('deliverySuburb', e.target.value)}
+                      placeholder="e.g., Hatfield"
+                      className={errors.deliverySuburb ? 'border-destructive' : ''}
+                    />
+                    {errors.deliverySuburb && <p className="text-destructive text-xs">{errors.deliverySuburb}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="deliveryAdditionalInfo">Additional Info (optional)</Label>
+                    <Input
+                      id="deliveryAdditionalInfo"
+                      value={formData.deliveryAdditionalInfo}
+                      onChange={(e) => handleInputChange('deliveryAdditionalInfo', e.target.value)}
+                      placeholder="e.g., Palm Court Complex, Buzzer 12"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="recipientName">Recipient Name *</Label>
@@ -1145,7 +1223,7 @@ const SmallParcelBooking = () => {
                         </h3>
                         <div className="space-y-1 text-sm">
                           <p><span className="text-muted-foreground">City:</span> {formData.originCity}</p>
-                          <p><span className="text-muted-foreground">Address:</span> {formData.pickupAddress}</p>
+                          <p><span className="text-muted-foreground">Address:</span> {formData.pickupHouseNumber} {formData.pickupStreet}, {formData.pickupSuburb}{formData.pickupAdditionalInfo ? ` (${formData.pickupAdditionalInfo})` : ''}</p>
                           {formData.pickupEarliest && (
                             <p><span className="text-muted-foreground">Earliest:</span> {formData.pickupEarliest}</p>
                           )}
@@ -1163,7 +1241,7 @@ const SmallParcelBooking = () => {
                         </h3>
                         <div className="space-y-1 text-sm">
                           <p><span className="text-muted-foreground">City:</span> {formData.destinationCity}</p>
-                          <p><span className="text-muted-foreground">Address:</span> {formData.deliveryAddress}</p>
+                          <p><span className="text-muted-foreground">Address:</span> {formData.deliveryHouseNumber} {formData.deliveryStreet}, {formData.deliverySuburb}{formData.deliveryAdditionalInfo ? ` (${formData.deliveryAdditionalInfo})` : ''}</p>
                           <p><span className="text-muted-foreground">Recipient:</span> {formData.recipientName}</p>
                           <p><span className="text-muted-foreground">Phone:</span> {formData.recipientPhone}</p>
                         </div>
