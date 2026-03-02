@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MapPin, Package, Phone, Users, Route, Calendar, Clock, Truck, Plus, X } from "lucide-react";
+import { CARRIER_CITY_OPTIONS } from "@/config/cities";
 
 interface Step4Props {
   formData: CarrierFormData;
@@ -20,21 +21,7 @@ interface Step4Props {
 }
 
 const Step4Operations = ({ formData, updateFormData, errors }: Step4Props) => {
-  const cities = [
-    { value: "johannesburg", label: "Johannesburg" },
-    { value: "pretoria", label: "Pretoria" },
-    { value: "durban", label: "Durban" },
-    { value: "cape-town", label: "Cape Town" },
-    { value: "bloemfontein", label: "Bloemfontein" },
-    { value: "port-elizabeth", label: "Port Elizabeth" },
-    { value: "east-london", label: "East London" },
-    { value: "polokwane", label: "Polokwane" },
-    { value: "nelspruit", label: "Nelspruit" },
-    { value: "kimberley", label: "Kimberley" },
-    { value: "maseru", label: "Maseru (Lesotho)" },
-    { value: "harare", label: "Harare (Zimbabwe)" },
-    { value: "bulawayo", label: "Bulawayo (Zimbabwe)" },
-  ];
+  const cities = CARRIER_CITY_OPTIONS;
 
   const cargoTypes = [
     { id: "documents", label: "Documents & Paperwork" },

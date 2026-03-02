@@ -1,8 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
+import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X, ShieldCheck, ExternalLink } from "lucide-react";
+import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X, ShieldCheck, ExternalLink, CalendarIcon } from "lucide-react";
 import LocationInput from "@/components/LocationInput";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
 import WeightBandSelector from "@/components/WeightBandSelector";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,30 +33,7 @@ const ALLOWED_FILE_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 // Available cities for origin and destination
-const ORIGIN_CITIES = [
-  // South Africa
-  { value: "Johannesburg", label: "Johannesburg (SA)" },
-  { value: "Pretoria", label: "Pretoria (SA)" },
-  { value: "Durban", label: "Durban (SA)" },
-  { value: "Bloemfontein", label: "Bloemfontein (SA)" },
-  { value: "Cape Town", label: "Cape Town (SA)" },
-  // Lesotho
-  { value: "Maseru", label: "Maseru (Lesotho)" },
-  // Zimbabwe
-  { value: "Harare", label: "Harare (Zimbabwe)" },
-  { value: "Bulawayo", label: "Bulawayo (Zimbabwe)" },
-];
-
-const DESTINATION_CITIES = [
-  { value: "Johannesburg", label: "Johannesburg (SA)" },
-  { value: "Pretoria", label: "Pretoria (SA)" },
-  { value: "Durban", label: "Durban (SA)" },
-  { value: "Cape Town", label: "Cape Town (SA)" },
-  { value: "Bloemfontein", label: "Bloemfontein (SA)" },
-  { value: "Maseru", label: "Maseru (Lesotho)" },
-  { value: "Harare", label: "Harare (Zimbabwe)" },
-  { value: "Bulawayo", label: "Bulawayo (Zimbabwe)" },
-];
+import { CITY_OPTIONS } from "@/config/cities";
 
 const parcelBookingSchema = z.object({
   contactName: z.string().min(2, "Name is required"),
@@ -60,9 +41,8 @@ const parcelBookingSchema = z.object({
   phone: z.string().min(10, "Valid phone number required"),
   originCity: z.string().min(2, "Origin city is required"),
   pickupAddress: z.string().min(5, "Pickup address is required"),
-  pickupDate: z.string().optional(),
-  pickupEarliest: z.string().optional(),
-  pickupLatest: z.string().optional(),
+  pickupEarliest: z.string().min(1, "Earliest pickup date is required"),
+  pickupLatest: z.string().min(1, "Latest pickup date is required"),
   destinationCity: z.string().min(2, "Destination city is required"),
   deliveryAddress: z.string().min(3, "Delivery address is required"),
   recipientName: z.string().min(2, "Recipient name is required"),
@@ -83,9 +63,8 @@ const verifiedSenderSchema = z.object({
   phone: z.string().optional(),
   originCity: z.string().min(2, "Origin city is required"),
   pickupAddress: z.string().min(5, "Pickup address is required"),
-  pickupDate: z.string().optional(),
-  pickupEarliest: z.string().optional(),
-  pickupLatest: z.string().optional(),
+  pickupEarliest: z.string().min(1, "Earliest pickup date is required"),
+  pickupLatest: z.string().min(1, "Latest pickup date is required"),
   destinationCity: z.string().min(2, "Destination city is required"),
   deliveryAddress: z.string().min(3, "Delivery address is required"),
   recipientName: z.string().min(2, "Recipient name is required"),
@@ -161,7 +140,6 @@ const SmallParcelBooking = () => {
     phone: "",
     originCity: prefilled?.origin || "",
     pickupAddress: prefilled?.pickupAddress || "",
-    pickupDate: "",
     pickupEarliest: "",
     pickupLatest: "",
     destinationCity: prefilled?.destination || "",
@@ -777,7 +755,7 @@ const SmallParcelBooking = () => {
                     <LocationInput
                       value={formData.originCity || ""}
                       onChange={(value) => handleInputChange('originCity', value)}
-                      suggestions={ORIGIN_CITIES}
+                      suggestions={CITY_OPTIONS}
                       placeholder="Type city or full address"
                       error={!!errors.originCity}
                     />
@@ -794,36 +772,67 @@ const SmallParcelBooking = () => {
                     />
                     {errors.pickupAddress && <p className="text-destructive text-xs">{errors.pickupAddress}</p>}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pickupDate">Preferred Pickup Date (optional)</Label>
-                    <Input
-                      id="pickupDate"
-                      type="date"
-                      value={formData.pickupDate}
-                      onChange={(e) => handleInputChange('pickupDate', e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label htmlFor="pickupEarliest">Earliest Pickup</Label>
-                      <Input
-                        id="pickupEarliest"
-                        type="date"
-                        value={formData.pickupEarliest}
-                        onChange={(e) => handleInputChange('pickupEarliest', e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                      />
+                      <Label>Earliest Pickup Date *</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !formData.pickupEarliest && "text-muted-foreground",
+                              errors.pickupEarliest && "border-destructive"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.pickupEarliest ? format(new Date(formData.pickupEarliest + "T00:00:00"), "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={formData.pickupEarliest ? new Date(formData.pickupEarliest + "T00:00:00") : undefined}
+                            onSelect={(date) => handleInputChange('pickupEarliest', date ? format(date, "yyyy-MM-dd") : "")}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {errors.pickupEarliest && <p className="text-destructive text-xs">{errors.pickupEarliest}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="pickupLatest">Latest Pickup</Label>
-                      <Input
-                        id="pickupLatest"
-                        type="date"
-                        value={formData.pickupLatest}
-                        onChange={(e) => handleInputChange('pickupLatest', e.target.value)}
-                        min={formData.pickupEarliest || new Date().toISOString().split('T')[0]}
-                      />
+                      <Label>Latest Pickup Date *</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !formData.pickupLatest && "text-muted-foreground",
+                              errors.pickupLatest && "border-destructive"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.pickupLatest ? format(new Date(formData.pickupLatest + "T00:00:00"), "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={formData.pickupLatest ? new Date(formData.pickupLatest + "T00:00:00") : undefined}
+                            onSelect={(date) => handleInputChange('pickupLatest', date ? format(date, "yyyy-MM-dd") : "")}
+                            disabled={(date) => {
+                              const earliest = formData.pickupEarliest ? new Date(formData.pickupEarliest + "T00:00:00") : new Date();
+                              return date < earliest;
+                            }}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {errors.pickupLatest && <p className="text-destructive text-xs">{errors.pickupLatest}</p>}
                     </div>
                   </div>
                 </div>
@@ -840,7 +849,7 @@ const SmallParcelBooking = () => {
                     <LocationInput
                       value={formData.destinationCity || ""}
                       onChange={(value) => handleInputChange('destinationCity', value)}
-                      suggestions={DESTINATION_CITIES}
+                      suggestions={CITY_OPTIONS}
                       placeholder="Type city or full address"
                       error={!!errors.destinationCity}
                     />
@@ -1094,8 +1103,11 @@ const SmallParcelBooking = () => {
                         <div className="space-y-1 text-sm">
                           <p><span className="text-muted-foreground">City:</span> {formData.originCity}</p>
                           <p><span className="text-muted-foreground">Address:</span> {formData.pickupAddress}</p>
-                          {formData.pickupDate && (
-                            <p><span className="text-muted-foreground">Date:</span> {formData.pickupDate}</p>
+                          {formData.pickupEarliest && (
+                            <p><span className="text-muted-foreground">Earliest:</span> {formData.pickupEarliest}</p>
+                          )}
+                          {formData.pickupLatest && (
+                            <p><span className="text-muted-foreground">Latest:</span> {formData.pickupLatest}</p>
                           )}
                         </div>
                       </div>

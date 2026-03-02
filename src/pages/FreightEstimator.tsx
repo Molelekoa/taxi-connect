@@ -46,16 +46,8 @@ const COUNTRY_CODE_TO_SADC: Record<string, string> = {
 };
 
 // Common city options for quick selection
-const POPULAR_CITIES = [
-  { value: "Johannesburg", label: "Johannesburg" },
-  { value: "Pretoria", label: "Pretoria" },
-  { value: "Durban", label: "Durban" },
-  { value: "Bloemfontein", label: "Bloemfontein" },
-  { value: "Cape Town", label: "Cape Town" },
-  { value: "Maseru", label: "Maseru (Lesotho)" },
-  { value: "Harare", label: "Harare (Zimbabwe)" },
-  { value: "Bulawayo", label: "Bulawayo (Zimbabwe)" },
-];
+import { CITY_OPTIONS } from "@/config/cities";
+const POPULAR_CITIES = CITY_OPTIONS;
 
 const ParcelEstimator = () => {
   const navigate = useNavigate();
