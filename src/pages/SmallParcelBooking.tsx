@@ -356,15 +356,19 @@ const SmallParcelBooking = () => {
         return;
       }
 
-      // Upload ID document if not verified sender
+      // Upload ID document via edge function (server-side validation) if not verified sender
       if (!isVerifiedSender && idDocumentFile) {
-        const fileExt = idDocumentFile.name.split('.').pop();
-        const filePath = `${profileId}/id-document.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('documents')
-          .upload(filePath, idDocumentFile, { upsert: true });
-        if (uploadError) {
-          toast({ title: "Failed to upload ID document", description: uploadError.message, variant: "destructive" });
+        const uploadForm = new FormData();
+        uploadForm.append("file", idDocumentFile);
+        uploadForm.append("profileId", profileId);
+        uploadForm.append("purpose", "id-document");
+
+        const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
+          body: uploadForm,
+        });
+
+        if (uploadError || !uploadResult?.success) {
+          toast({ title: "Failed to upload ID document", description: uploadError?.message || "Upload failed", variant: "destructive" });
           return;
         }
       }
