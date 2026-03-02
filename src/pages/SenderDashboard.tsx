@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft } from "lucide-react";
+import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ const SenderDashboard = () => {
   const [retrying, setRetrying] = useState<string | null>(null);
   const [reassigning, setReassigning] = useState<string | null>(null);
   const [earlierNotifications, setEarlierNotifications] = useState<Record<string, any>>({});
+  const [confirmingArrival, setConfirmingArrival] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -30,14 +31,12 @@ const SenderDashboard = () => {
     const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
     if (!pid) { setLoading(false); return; }
 
-    // Fetch parcels
     const { data: parcelsData } = await supabase
       .from("parcels")
       .select("*")
       .order("created_at", { ascending: false }) as { data: any[] | null };
     setParcels(parcelsData || []);
 
-    // Fetch matches for sender's parcels
     const { data: matchesData } = await supabase
       .from("matches")
       .select("*, trips(*, profiles:traveler_id(full_name, phone))")
@@ -50,7 +49,6 @@ const SenderDashboard = () => {
     }
     setMatchesByParcel(grouped);
 
-    // Fetch earlier_traveler_available notifications
     const { data: notifs } = await supabase
       .from("notifications")
       .select("*, matches:related_match_id(id, trip_id, parcel_id, trips(travel_date, profiles:traveler_id(full_name)))")
@@ -97,10 +95,7 @@ const SenderDashboard = () => {
         body: { parcelId, newMatchId },
       });
       if (error) throw error;
-
-      // Mark notification as read
       await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
-
       toast({ title: "Parcel reassigned", description: "Your parcel has been reassigned to the earlier traveler." });
       await fetchData();
     } catch (err: any) {
@@ -121,9 +116,27 @@ const SenderDashboard = () => {
     });
   };
 
+  const handleConfirmArrival = async (parcelId: string) => {
+    setConfirmingArrival(parcelId);
+    try {
+      const { error } = await supabase
+        .from("parcels")
+        .update({ sender_confirmed_at: new Date().toISOString() } as any)
+        .eq("id", parcelId);
+      if (error) throw error;
+      toast({ title: "Arrival confirmed", description: "Thank you! Awaiting admin approval to finalise delivery." });
+      await fetchData();
+    } catch (err: any) {
+      toast({ title: "Failed to confirm", description: err.message, variant: "destructive" });
+    } finally {
+      setConfirmingArrival(null);
+    }
+  };
+
   const statusConfig: Record<string, { className: string; icon: any }> = {
     pending: { className: "bg-warning/10 text-warning", icon: Clock },
     matched: { className: "bg-primary/10 text-primary", icon: CheckCircle },
+    pending_confirmation: { className: "bg-accent/10 text-accent", icon: ShieldCheck },
     delivered: { className: "bg-success/10 text-success", icon: CheckCircle },
   };
 
@@ -154,6 +167,7 @@ const SenderDashboard = () => {
                   const StatusIcon = config.icon;
                   const matches = matchesByParcel[parcel.id] || [];
                   const earlierNotif = earlierNotifications[parcel.id];
+                  const isPendingConfirmation = parcel.status === "pending_confirmation";
 
                   return (
                     <div key={parcel.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
@@ -174,9 +188,37 @@ const SenderDashboard = () => {
                         </div>
                         <Badge className={config.className}>
                           <StatusIcon className="w-3 h-3 mr-1" />
-                          {parcel.status}
+                          {parcel.status === "pending_confirmation" ? "Awaiting Confirmation" : parcel.status}
                         </Badge>
                       </div>
+
+                      {/* Pending confirmation banner */}
+                      {isPendingConfirmation && !parcel.sender_confirmed_at && (
+                        <div className="bg-accent/5 border border-accent/20 rounded-lg p-3 space-y-2">
+                          <p className="text-xs font-semibold text-accent flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" /> Your traveler reports this parcel has been delivered
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Please confirm the parcel has arrived at its intended destination.
+                          </p>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleConfirmArrival(parcel.id)}
+                            disabled={confirmingArrival === parcel.id}
+                          >
+                            {confirmingArrival === parcel.id ? "Confirming..." : "Confirm Arrival"}
+                          </Button>
+                        </div>
+                      )}
+
+                      {isPendingConfirmation && parcel.sender_confirmed_at && (
+                        <div className="bg-success/5 border border-success/20 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-success flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" /> You confirmed arrival — awaiting admin approval
+                          </p>
+                        </div>
+                      )}
 
                       {/* Retry Matching for pending parcels */}
                       {parcel.status === "pending" && (

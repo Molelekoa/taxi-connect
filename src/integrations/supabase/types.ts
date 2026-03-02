@@ -199,6 +199,7 @@ export type Database = {
       }
       parcels: {
         Row: {
+          cancel_reason: string | null
           created_at: string
           delivery_address: string | null
           description: string | null
@@ -214,6 +215,7 @@ export type Database = {
           price: number | null
           recipient_name: string | null
           recipient_phone: string | null
+          sender_confirmed_at: string | null
           sender_email: string | null
           sender_id: string | null
           sender_name: string | null
@@ -225,6 +227,7 @@ export type Database = {
           weight_kg: number | null
         }
         Insert: {
+          cancel_reason?: string | null
           created_at?: string
           delivery_address?: string | null
           description?: string | null
@@ -240,6 +243,7 @@ export type Database = {
           price?: number | null
           recipient_name?: string | null
           recipient_phone?: string | null
+          sender_confirmed_at?: string | null
           sender_email?: string | null
           sender_id?: string | null
           sender_name?: string | null
@@ -251,6 +255,7 @@ export type Database = {
           weight_kg?: number | null
         }
         Update: {
+          cancel_reason?: string | null
           created_at?: string
           delivery_address?: string | null
           description?: string | null
@@ -266,6 +271,7 @@ export type Database = {
           price?: number | null
           recipient_name?: string | null
           recipient_phone?: string | null
+          sender_confirmed_at?: string | null
           sender_email?: string | null
           sender_id?: string | null
           sender_name?: string | null

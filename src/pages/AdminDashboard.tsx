@@ -58,6 +58,8 @@ type Parcel = {
   sender_name: string | null;
   sender_email: string | null;
   sender_phone: string | null;
+  photo_url: string | null;
+  sender_confirmed_at: string | null;
 };
 
 type TravelerRoute = {
@@ -86,13 +88,14 @@ type TravelerProfile = {
 
 // ── Status badge ───────────────────────────────────────────────────────────────
 
-const STATUSES = ["pending", "collected", "in-transit", "delivered"] as const;
+const STATUSES = ["pending", "collected", "in-transit", "pending_confirmation", "delivered"] as const;
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pending:      { label: "Pending",    className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-  collected:    { label: "Collected",  className: "bg-blue-100 text-blue-800 border-blue-200" },
-  "in-transit": { label: "In Transit", className: "bg-orange-100 text-orange-800 border-orange-200" },
-  delivered:    { label: "Delivered",  className: "bg-green-100 text-green-800 border-green-200" },
+  pending:                { label: "Pending",              className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  collected:              { label: "Collected",            className: "bg-blue-100 text-blue-800 border-blue-200" },
+  "in-transit":           { label: "In Transit",           className: "bg-orange-100 text-orange-800 border-orange-200" },
+  pending_confirmation:   { label: "Pending Confirmation", className: "bg-purple-100 text-purple-800 border-purple-200" },
+  delivered:              { label: "Delivered",            className: "bg-green-100 text-green-800 border-green-200" },
 };
 
 const StatusBadge = ({ status }: { status: string | null }) => {
@@ -400,6 +403,14 @@ const AdminDashboard = () => {
                 <TabsTrigger value="users" className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Users ({profiles.length})</TabsTrigger>
                 <TabsTrigger value="parcels" className="flex items-center gap-1.5"><Package className="w-4 h-4" /> Parcels ({parcels.length})</TabsTrigger>
                <TabsTrigger value="travelers" className="flex items-center gap-1.5"><Truck className="w-4 h-4" /> Travelers ({travelerProfiles.length})</TabsTrigger>
+                <TabsTrigger value="deliveries" className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> Deliveries
+                  {parcels.filter(p => p.status === "pending_confirmation").length > 0 && (
+                    <span className="ml-1 bg-primary text-primary-foreground text-[10px] rounded-full px-1.5 py-0.5 font-bold">
+                      {parcels.filter(p => p.status === "pending_confirmation").length}
+                    </span>
+                  )}
+                </TabsTrigger>
                 <TabsTrigger value="audit" className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4" /> Audit Log</TabsTrigger>
                 <TabsTrigger value="metrics" className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4" /> Metrics</TabsTrigger>
               </TabsList>
@@ -723,6 +734,14 @@ const AdminDashboard = () => {
                 </Card>
               </TabsContent>
 
+              {/* ── TAB: DELIVERY APPROVALS ──────────────────────────────────── */}
+              <TabsContent value="deliveries">
+                <DeliveryApprovalsTab
+                  parcels={parcels.filter(p => p.status === "pending_confirmation")}
+                  onApprove={(id) => updateStatus.mutate({ id, status: "delivered" })}
+                />
+              </TabsContent>
+
               {/* ── TAB 5: AUDIT LOG ────────────────────────────────────────── */}
               <TabsContent value="audit">
                 <AuditLogTab />
@@ -797,6 +816,71 @@ const TravelerStatusBadge = ({ status }: { status: string }) => {
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg[status] ?? cfg.pending}`}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
+  );
+};
+
+// ── Delivery Approvals Tab ─────────────────────────────────────────────────────
+
+const DeliveryApprovalsTab = ({ parcels, onApprove }: { parcels: Parcel[]; onApprove: (id: string) => void }) => {
+  if (parcels.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <ShieldCheck className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">No deliveries awaiting approval.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {parcels.map(parcel => (
+        <Card key={parcel.id}>
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 font-medium text-foreground text-sm">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  {parcel.pickup_location} → {parcel.dropoff_location}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                  <p>Sender: {parcel.sender_name ?? "—"} · {parcel.sender_phone ?? ""}</p>
+                  <p>Recipient: {parcel.recipient_name ?? "—"} · {parcel.recipient_phone ?? ""}</p>
+                  <p>Weight: {parcel.weight_kg != null ? `${parcel.weight_kg}kg` : "—"} · Price: {parcel.price != null ? `R${parcel.price}` : "—"}</p>
+                  {(parcel as any).sender_confirmed_at && (
+                    <p className="text-success font-medium">✓ Sender confirmed arrival</p>
+                  )}
+                  {!(parcel as any).sender_confirmed_at && (
+                    <p className="text-warning font-medium">⏳ Sender has not confirmed yet</p>
+                  )}
+                </div>
+              </div>
+              <StatusBadge status={parcel.status} />
+            </div>
+            {(parcel as any).photo_url && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Delivery proof photo:</p>
+                <img
+                  src={(parcel as any).photo_url}
+                  alt="Delivery proof"
+                  className="rounded-lg border border-border max-h-48 object-cover"
+                />
+              </div>
+            )}
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full"
+              onClick={() => onApprove(parcel.id)}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+              Approve Delivery
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 };
 
