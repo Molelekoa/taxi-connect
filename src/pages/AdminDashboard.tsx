@@ -399,7 +399,9 @@ const AdminDashboard = () => {
                 <TabsTrigger value="overview" className="flex items-center gap-1.5"><LayoutDashboard className="w-4 h-4" /> Overview</TabsTrigger>
                 <TabsTrigger value="users" className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Users ({profiles.length})</TabsTrigger>
                 <TabsTrigger value="parcels" className="flex items-center gap-1.5"><Package className="w-4 h-4" /> Parcels ({parcels.length})</TabsTrigger>
-                <TabsTrigger value="travelers" className="flex items-center gap-1.5"><Truck className="w-4 h-4" /> Travelers ({travelerProfiles.length})</TabsTrigger>
+               <TabsTrigger value="travelers" className="flex items-center gap-1.5"><Truck className="w-4 h-4" /> Travelers ({travelerProfiles.length})</TabsTrigger>
+                <TabsTrigger value="audit" className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4" /> Audit Log</TabsTrigger>
+                <TabsTrigger value="metrics" className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4" /> Metrics</TabsTrigger>
               </TabsList>
 
               {/* ── TAB 1: OVERVIEW ─────────────────────────────────────────── */}
@@ -720,6 +722,16 @@ const AdminDashboard = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {/* ── TAB 5: AUDIT LOG ────────────────────────────────────────── */}
+              <TabsContent value="audit">
+                <AuditLogTab />
+              </TabsContent>
+
+              {/* ── TAB 6: METRICS ──────────────────────────────────────────── */}
+              <TabsContent value="metrics">
+                <MetricsTab />
+              </TabsContent>
             </Tabs>
           )}
         </div>
@@ -785,6 +797,180 @@ const TravelerStatusBadge = ({ status }: { status: string }) => {
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg[status] ?? cfg.pending}`}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
+  );
+};
+
+// ── Audit Log Tab ──────────────────────────────────────────────────────────────
+
+type AuditEntry = {
+  id: string;
+  action: string;
+  table_name: string;
+  record_id: string;
+  old_values: Record<string, any> | null;
+  new_values: Record<string, any> | null;
+  performed_by: string | null;
+  created_at: string;
+};
+
+const ACTION_LABELS: Record<string, { label: string; className: string }> = {
+  traveler_approved: { label: "Approved", className: "bg-green-100 text-green-800 border-green-200" },
+  traveler_rejected: { label: "Rejected", className: "bg-red-100 text-red-800 border-red-200" },
+  parcel_matched: { label: "Matched", className: "bg-blue-100 text-blue-800 border-blue-200" },
+  parcel_delivered: { label: "Delivered", className: "bg-green-100 text-green-800 border-green-200" },
+  match_accepted: { label: "Accepted", className: "bg-green-100 text-green-800 border-green-200" },
+  status_changed: { label: "Changed", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+};
+
+const AuditLogTab = () => {
+  const { data: logs = [], isLoading } = useQuery({
+    queryKey: ["admin-audit-log"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as AuditEntry[];
+    },
+  });
+
+  if (isLoading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm font-medium flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Recent Audit Events</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Time</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Table</TableHead>
+                <TableHead>Old</TableHead>
+                <TableHead>New</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No audit events yet.</TableCell></TableRow>
+              ) : logs.map(log => {
+                const cfg = ACTION_LABELS[log.action] ?? ACTION_LABELS.status_changed;
+                return (
+                  <TableRow key={log.id}>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.className}`}>{cfg.label}</span>
+                    </TableCell>
+                    <TableCell className="text-xs">{log.table_name}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{log.old_values ? JSON.stringify(log.old_values) : "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{log.new_values ? JSON.stringify(log.new_values) : "—"}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ── Metrics Tab ────────────────────────────────────────────────────────────────
+
+type MetricRow = { metric_name: string; metric_value: number; created_at: string };
+
+const MetricsTab = () => {
+  const { data: metrics = [], isLoading } = useQuery({
+    queryKey: ["admin-metrics"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_metrics")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data ?? []) as MetricRow[];
+    },
+  });
+
+  // Aggregate by metric name
+  const totals = useMemo(() => {
+    const counts: Record<string, number> = {};
+    metrics.forEach(m => {
+      counts[m.metric_name] = (counts[m.metric_name] || 0) + m.metric_value;
+    });
+    return counts;
+  }, [metrics]);
+
+  // Today's counts
+  const todayCounts = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const counts: Record<string, number> = {};
+    metrics.forEach(m => {
+      if (m.created_at.slice(0, 10) === today) {
+        counts[m.metric_name] = (counts[m.metric_name] || 0) + m.metric_value;
+      }
+    });
+    return counts;
+  }, [metrics]);
+
+  const METRIC_LABELS: Record<string, string> = {
+    parcel_created: "Parcels Created",
+    match_created: "Matches Made",
+    claim_completed: "Claims Completed",
+  };
+
+  if (isLoading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {Object.entries(METRIC_LABELS).map(([key, label]) => (
+          <Card key={key}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <span className="text-3xl font-bold text-foreground">{totals[key] || 0}</span>
+              <p className="text-xs text-muted-foreground mt-1">Today: {todayCounts[key] || 0}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Recent Events</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Event</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {metrics.slice(0, 50).map((m, i) => (
+                  <TableRow key={m.created_at + i}>
+                    <TableCell className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">{METRIC_LABELS[m.metric_name] ?? m.metric_name}</TableCell>
+                  </TableRow>
+                ))}
+                {metrics.length === 0 && (
+                  <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground py-8">No metrics recorded yet.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

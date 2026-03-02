@@ -53,6 +53,25 @@ const PostTrip = ({ onTripPosted }: PostTripProps) => {
       if (error) throw error;
 
       toast({ title: "Trip posted!", description: "We'll notify you of matching parcels." });
+
+      // Belt-and-suspenders: call find-matching-parcels as fallback
+      try {
+        const { data: recentTrip } = await supabase
+          .from("trips")
+          .select("id")
+          .eq("traveler_id", profileId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        if (recentTrip) {
+          await supabase.functions.invoke("find-matching-parcels", {
+            body: { tripId: recentTrip.id },
+          });
+        }
+      } catch {
+        // Silent fallback — trigger should have handled it
+      }
+
       setForm({ origin_city: "", destination_city: "", travel_date: "", available_weight_kg: "", notes: "" });
       onTripPosted();
     } catch (err: any) {
