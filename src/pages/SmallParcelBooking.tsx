@@ -44,7 +44,7 @@ const parcelBookingSchema = z.object({
   pickupEarliest: z.string().min(1, "Earliest pickup date is required"),
   pickupLatest: z.string().min(1, "Latest pickup date is required"),
   destinationCity: z.string().min(2, "Destination city is required"),
-  deliveryAddress: z.string().min(3, "Delivery address is required"),
+  deliveryAddress: z.string().min(5, "Delivery address is required (min 5 characters)"),
   recipientName: z.string().min(2, "Recipient name is required"),
   recipientPhone: z.string().min(10, "Recipient phone required"),
   weightBand: z.string().min(1, "Please select a weight band"),
@@ -69,7 +69,7 @@ const verifiedSenderSchema = z.object({
   pickupEarliest: z.string().min(1, "Earliest pickup date is required"),
   pickupLatest: z.string().min(1, "Latest pickup date is required"),
   destinationCity: z.string().min(2, "Destination city is required"),
-  deliveryAddress: z.string().min(3, "Delivery address is required"),
+  deliveryAddress: z.string().min(5, "Delivery address is required (min 5 characters)"),
   recipientName: z.string().min(2, "Recipient name is required"),
   recipientPhone: z.string().min(10, "Recipient phone required"),
   weightBand: z.string().min(1, "Please select a weight band"),
@@ -774,7 +774,7 @@ const SmallParcelBooking = () => {
                       id="pickupAddress"
                       value={formData.pickupAddress}
                       onChange={(e) => handleInputChange('pickupAddress', e.target.value)}
-                      placeholder="Full street address"
+                      placeholder="e.g., 12 Main Road, Sandton"
                       className={errors.pickupAddress ? 'border-destructive' : ''}
                     />
                     {errors.pickupAddress && <p className="text-destructive text-xs">{errors.pickupAddress}</p>}
@@ -868,7 +868,7 @@ const SmallParcelBooking = () => {
                       id="deliveryAddress"
                       value={formData.deliveryAddress}
                       onChange={(e) => handleInputChange('deliveryAddress', e.target.value)}
-                      placeholder="Full address or area name"
+                      placeholder="e.g., 45 Church Street, Hatfield"
                       className={errors.deliveryAddress ? 'border-destructive' : ''}
                     />
                     {errors.deliveryAddress && <p className="text-destructive text-xs">{errors.deliveryAddress}</p>}

@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.reassign-parcel]
 verify_jwt = false
+
+[functions.cancel-accepted-match]
+verify_jwt = false
+
+[functions.submit-delivery-proof]
+verify_jwt = false

@@ -1,15 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, Truck, Search, ShieldAlert } from "lucide-react";
+import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, Truck, Search, ShieldAlert, XCircle, Camera, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PostTrip from "@/components/PostTrip";
+
+const CANCEL_REASONS = [
+  "Trip cancelled",
+  "No room for parcel",
+  "Could not reach sender",
+];
+
+const PAYOUT_RATE = 0.65;
 
 const TravelerDashboard = () => {
   const { user } = useAuth();
@@ -24,6 +37,17 @@ const TravelerDashboard = () => {
   const [accepting, setAccepting] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
 
+  // Cancel state
+  const [showCancelDialog, setShowCancelDialog] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState<string>("");
+  const [cancelling, setCancelling] = useState<string | null>(null);
+
+  // Delivery proof state
+  const [showDeliveryDialog, setShowDeliveryDialog] = useState<string | null>(null);
+  const [deliveryPhoto, setDeliveryPhoto] = useState<File | null>(null);
+  const [submittingProof, setSubmittingProof] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -36,7 +60,6 @@ const TravelerDashboard = () => {
     if (!pid) { setLoading(false); return; }
     setProfileId(pid);
 
-    // Check traveler approval status
     const { data: tp } = await supabase
       .from("traveler_profiles")
       .select("status")
@@ -44,30 +67,25 @@ const TravelerDashboard = () => {
       .single() as { data: any };
     setTravelerStatus(tp?.status || "pending");
 
-    // Fetch trips
     const { data: tripsData } = await supabase
       .from("trips")
       .select("*")
       .order("travel_date", { ascending: true }) as { data: any[] | null };
     setTrips(tripsData || []);
 
-    // Fetch pending matches for traveler's trips
     const { data: pending } = await supabase
       .from("matches")
       .select("*, parcels(*), trips(*)")
       .eq("status", "pending") as { data: any[] | null };
     setPendingMatches((pending || []).filter((m: any) => m.trips?.traveler_id === pid));
 
-    // Fetch accepted matches
     const { data: accepted } = await supabase
       .from("matches")
       .select("*, parcels(*), trips(*)")
       .eq("status", "accepted") as { data: any[] | null };
     setAcceptedMatches((accepted || []).filter((m: any) => m.trips?.traveler_id === pid));
 
-    // Browse available parcels (only for approved travelers)
     if (tp?.status === "approved") {
-      // Get traveler routes
       const { data: tpFull } = await supabase
         .from("traveler_profiles")
         .select("id")
@@ -81,20 +99,16 @@ const TravelerDashboard = () => {
           .eq("traveler_profile_id", tpFull.id) as { data: any[] | null };
 
         if (routes && routes.length > 0) {
-          // Fetch pending parcels - the RLS policy will filter to pending only
-          // Only select non-PII columns for browsing — full contact details are revealed after match acceptance
           const { data: allPending } = await supabase
             .from("parcels")
             .select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking")
             .eq("status", "pending") as { data: any[] | null };
 
-          // Client-side filter by route match (case-insensitive)
           const matched = (allPending || []).filter((p: any) => {
             const pickup = (p.pickup_location || "").toLowerCase();
             const dropoff = (p.dropoff_location || "").toLowerCase();
             return routes.some((r: any) => {
               const from = (r.route_from || "").toLowerCase();
-              const to = (r.route_to || "").toLowerCase();
               return pickup.includes(from) || from.includes(pickup);
             }) && routes.some((r: any) => {
               const to = (r.route_to || "").toLowerCase();
@@ -116,13 +130,8 @@ const TravelerDashboard = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-
-      const res = await supabase.functions.invoke("accept-match", {
-        body: { matchId },
-      });
-
+      const res = await supabase.functions.invoke("accept-match", { body: { matchId } });
       if (res.error) throw new Error(res.error.message);
-
       toast({ title: "Match accepted!", description: "The sender has been notified." });
       fetchData();
     } catch (err: any) {
@@ -137,13 +146,8 @@ const TravelerDashboard = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-
-      const res = await supabase.functions.invoke("claim-parcel", {
-        body: { parcelId },
-      });
-
+      const res = await supabase.functions.invoke("claim-parcel", { body: { parcelId } });
       if (res.error) throw new Error(res.error.message);
-
       toast({ title: "Parcel claimed!", description: "The sender has been notified." });
       fetchData();
     } catch (err: any) {
@@ -151,6 +155,70 @@ const TravelerDashboard = () => {
     } finally {
       setClaiming(null);
     }
+  };
+
+  const handleCancel = async () => {
+    if (!showCancelDialog || !cancelReason) return;
+    setCancelling(showCancelDialog);
+    try {
+      const res = await supabase.functions.invoke("cancel-accepted-match", {
+        body: { matchId: showCancelDialog, reason: cancelReason },
+      });
+      if (res.error) throw new Error(res.error.message);
+      toast({ title: "Delivery cancelled", description: "The sender has been notified and we're searching for a replacement." });
+      setShowCancelDialog(null);
+      setCancelReason("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Failed to cancel", description: err.message, variant: "destructive" });
+    } finally {
+      setCancelling(null);
+    }
+  };
+
+  const handleSubmitDeliveryProof = async () => {
+    if (!showDeliveryDialog || !deliveryPhoto || !profileId) return;
+    setSubmittingProof(true);
+    try {
+      // Upload photo
+      const uploadForm = new FormData();
+      uploadForm.append("file", deliveryPhoto);
+      uploadForm.append("profileId", profileId);
+      uploadForm.append("purpose", "delivery-proof");
+
+      const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
+        body: uploadForm,
+      });
+
+      if (uploadError || !uploadResult?.success) {
+        throw new Error(uploadError?.message || "Photo upload failed");
+      }
+
+      // Submit proof
+      const res = await supabase.functions.invoke("submit-delivery-proof", {
+        body: { matchId: showDeliveryDialog, photoUrl: uploadResult.url },
+      });
+      if (res.error) throw new Error(res.error.message);
+
+      toast({ title: "Delivery proof submitted!", description: "Awaiting admin confirmation." });
+      setShowDeliveryDialog(null);
+      setDeliveryPhoto(null);
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Failed to submit proof", description: err.message, variant: "destructive" });
+    } finally {
+      setSubmittingProof(false);
+    }
+  };
+
+  const payoutDisplay = (price: number | null | undefined) => {
+    if (!price) return null;
+    const payout = Math.round(Number(price) * PAYOUT_RATE);
+    return (
+      <span className="font-medium text-success">
+        Your payout: R{payout}
+      </span>
+    );
   };
 
   const statusBadge = (status: string) => {
@@ -175,7 +243,6 @@ const TravelerDashboard = () => {
               Traveler Dashboard
             </h1>
 
-            {/* Approval status banner */}
             {travelerStatus === "pending" && (
               <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6 flex items-start gap-3">
                 <Clock className="w-5 h-5 text-warning shrink-0 mt-0.5" />
@@ -225,7 +292,6 @@ const TravelerDashboard = () => {
                 {!isApproved && (
                   <p className="text-muted-foreground text-center py-4 text-sm">You must be approved before posting trips.</p>
                 )}
-
                 {loading ? (
                   <div className="flex justify-center py-8">
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -284,8 +350,10 @@ const TravelerDashboard = () => {
                                 </span>
                               )}
                               {parcel.dimensions && <span>{parcel.dimensions}</span>}
-                              {parcel.price && <span className="font-medium text-foreground">You earn: R{Math.round(Number(parcel.price) * 0.65)}</span>}
                             </div>
+                            {parcel.price && (
+                              <p className="mt-2 text-sm">{payoutDisplay(parcel.price)}</p>
+                            )}
                             {parcel.description && (
                               <p className="text-xs text-muted-foreground mt-2">{parcel.description}</p>
                             )}
@@ -335,6 +403,9 @@ const TravelerDashboard = () => {
                               </span>
                             )}
                           </div>
+                          {match.parcels?.price && (
+                            <p className="mt-2 text-sm">{payoutDisplay(match.parcels.price)}</p>
+                          )}
                         </div>
                         <Badge className="bg-warning/10 text-warning">
                           <Clock className="w-3 h-3 mr-1" />pending
@@ -364,7 +435,7 @@ const TravelerDashboard = () => {
                   <p className="text-muted-foreground text-center py-8">No accepted deliveries yet.</p>
                 ) : (
                   acceptedMatches.map(match => (
-                    <div key={match.id} className="bg-card border border-border rounded-xl p-5">
+                    <div key={match.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 font-medium text-foreground">
                           <CheckCircle className="w-4 h-4 text-success" />
@@ -376,8 +447,36 @@ const TravelerDashboard = () => {
                         <p>Weight: {match.parcels?.weight_kg || "?"}kg</p>
                         {match.parcels?.sender_name && <p>Sender: {match.parcels.sender_name}</p>}
                         {match.parcels?.sender_phone && <p>Phone: {match.parcels.sender_phone}</p>}
-                        {match.parcels?.sender_email && <p>Email: {match.parcels.sender_email}</p>}
                         {match.accepted_at && <p>Accepted: {new Date(match.accepted_at).toLocaleDateString()}</p>}
+                      </div>
+                      {match.parcels?.price && (
+                        <p className="text-sm">{payoutDisplay(match.parcels.price)}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            setShowDeliveryDialog(match.id);
+                            setDeliveryPhoto(null);
+                          }}
+                        >
+                          <Camera className="w-3.5 h-3.5 mr-1.5" />
+                          Mark as Delivered
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                          onClick={() => {
+                            setShowCancelDialog(match.id);
+                            setCancelReason("");
+                          }}
+                        >
+                          <XCircle className="w-3.5 h-3.5 mr-1.5" />
+                          Cancel
+                        </Button>
                       </div>
                     </div>
                   ))
@@ -388,6 +487,80 @@ const TravelerDashboard = () => {
         </div>
       </main>
       <Footer />
+
+      {/* Cancel Dialog */}
+      <Dialog open={!!showCancelDialog} onOpenChange={(open) => { if (!open) setShowCancelDialog(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Delivery</DialogTitle>
+            <DialogDescription>Please select a reason for cancelling this delivery.</DialogDescription>
+          </DialogHeader>
+          <RadioGroup value={cancelReason} onValueChange={setCancelReason} className="space-y-3">
+            {CANCEL_REASONS.map(reason => (
+              <div key={reason} className="flex items-center space-x-2">
+                <RadioGroupItem value={reason} id={reason} />
+                <Label htmlFor={reason}>{reason}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelDialog(null)}>Back</Button>
+            <Button
+              variant="destructive"
+              disabled={!cancelReason || cancelling === showCancelDialog}
+              onClick={handleCancel}
+            >
+              {cancelling ? "Cancelling..." : "Confirm Cancel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delivery Proof Dialog */}
+      <Dialog open={!!showDeliveryDialog} onOpenChange={(open) => { if (!open) setShowDeliveryDialog(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Submit Delivery Proof</DialogTitle>
+            <DialogDescription>Upload a photo of the parcel at the delivery destination.</DialogDescription>
+          </DialogHeader>
+          <div
+            className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => photoInputRef.current?.click()}
+          >
+            {deliveryPhoto ? (
+              <div className="space-y-2">
+                <CheckCircle className="w-8 h-8 text-success mx-auto" />
+                <p className="text-sm text-foreground">{deliveryPhoto.name}</p>
+                <p className="text-xs text-muted-foreground">Click to change</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Upload className="w-8 h-8 text-muted-foreground mx-auto" />
+                <p className="text-sm text-muted-foreground">Click to upload photo</p>
+              </div>
+            )}
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/jpeg,image/png"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setDeliveryPhoto(file);
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeliveryDialog(null)}>Back</Button>
+            <Button
+              disabled={!deliveryPhoto || submittingProof}
+              onClick={handleSubmitDeliveryProof}
+            >
+              {submittingProof ? "Submitting..." : "Submit Proof"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
