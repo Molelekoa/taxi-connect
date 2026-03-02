@@ -65,7 +65,7 @@ export const DEFAULT_DISTANCE_KM = 400;
 /** Weight limits for parcel service */
 export const WEIGHT_LIMITS = {
   min: 0,
-  max: 20,
+  max: 50,
 } as const;
 
 /** Envelope band discount factor (15% cheaper) */
@@ -92,9 +92,9 @@ export interface WeightBand {
 export const WEIGHT_BANDS: WeightBand[] = [
   { id: "envelope", label: "Envelope", range: [0, 1], midpoint: 0.5, icon: "Mail", reference: "Documents, medication, or a phone" },
   { id: "light", label: "Light", range: [1, 5], midpoint: 3, icon: "Feather", reference: "A few books or a pair of shoes" },
-  { id: "medium", label: "Medium", range: [5, 10], midpoint: 7.5, icon: "Package", reference: "A microwave or a small suitcase" },
-  { id: "heavy", label: "Heavy", range: [10, 15], midpoint: 12.5, icon: "Dumbbell", reference: "A large bag of dog food" },
-  { id: "extra-heavy", label: "Extra Heavy", range: [15, 20], midpoint: 17.5, icon: "Weight", reference: "A car tyre or a full toolbox" },
+  { id: "medium", label: "Medium", range: [5, 15], midpoint: 10, icon: "Package", reference: "A microwave or a medium suitcase" },
+  { id: "heavy", label: "Heavy", range: [15, 30], midpoint: 22.5, icon: "Dumbbell", reference: "A large dog food bag or small furniture" },
+  { id: "extra-heavy", label: "Extra Heavy", range: [30, 50], midpoint: 40, icon: "Weight", reference: "A washing machine drum or heavy toolbox" },
 ];
 
 /** Get a weight band by ID */

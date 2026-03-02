@@ -48,8 +48,11 @@ const parcelBookingSchema = z.object({
   recipientName: z.string().min(2, "Recipient name is required"),
   recipientPhone: z.string().min(10, "Recipient phone required"),
   weightBand: z.string().min(1, "Please select a weight band"),
-  description: z.string().optional(),
+  description: z.string().trim().min(3, "Contents description is required for safety compliance"),
   includeTracking: z.boolean().optional(),
+  contentsDeclarationAccepted: z.literal(true, {
+    errorMap: () => ({ message: "You must declare that you are not sending illegal goods" }),
+  }),
   idDocumentName: z.string().min(1, "ID or Passport upload is required"),
   legalDeclarationAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the legal declaration to proceed" }),
@@ -70,14 +73,17 @@ const verifiedSenderSchema = z.object({
   recipientName: z.string().min(2, "Recipient name is required"),
   recipientPhone: z.string().min(10, "Recipient phone required"),
   weightBand: z.string().min(1, "Please select a weight band"),
-  description: z.string().optional(),
+  description: z.string().trim().min(3, "Contents description is required for safety compliance"),
   includeTracking: z.boolean().optional(),
+  contentsDeclarationAccepted: z.literal(true, {
+    errorMap: () => ({ message: "You must declare that you are not sending illegal goods" }),
+  }),
   idDocumentName: z.string().optional(),
   legalDeclarationAccepted: z.boolean().optional(),
 });
 
 type FormData = z.infer<typeof parcelBookingSchema>;
-type FormDataInput = Partial<Omit<FormData, 'legalDeclarationAccepted'> & { legalDeclarationAccepted: boolean }>;
+type FormDataInput = Partial<Omit<FormData, 'legalDeclarationAccepted' | 'contentsDeclarationAccepted'> & { legalDeclarationAccepted: boolean; contentsDeclarationAccepted: boolean }>;
 
 const SmallParcelBooking = () => {
   const location = useLocation();
@@ -149,6 +155,7 @@ const SmallParcelBooking = () => {
     weightBand: prefilled?.weightBand || "",
     description: "",
     includeTracking: prefilled?.includeTracking || false,
+    contentsDeclarationAccepted: false,
     idDocumentName: "",
     legalDeclarationAccepted: false,
   });
@@ -549,7 +556,7 @@ const SmallParcelBooking = () => {
               Book Your Parcel Delivery
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Affordable parcel delivery (1–20 kg) across South Africa, Lesotho, and Zimbabwe through our optimized logistics network.
+              Affordable parcel delivery (up to 50 kg) across South Africa, Lesotho, and Zimbabwe through our optimized logistics network.
             </p>
           </div>
 
@@ -913,14 +920,51 @@ const SmallParcelBooking = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description">Contents Description (optional)</Label>
+                    <Label htmlFor="description">Contents Description *</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => handleInputChange('description', e.target.value)}
-                      placeholder="Brief description of parcel contents"
+                      placeholder="e.g., Clothing, electronics, documents, household goods"
                       rows={3}
+                      className={errors.description ? 'border-destructive' : ''}
                     />
+                    {errors.description && <p className="text-destructive text-xs">{errors.description}</p>}
+                    <p className="text-xs text-muted-foreground">
+                      This information is kept confidential and is not shared with travelers. It is required for safety and legal compliance to ensure no prohibited or illegal items are transported through our network.
+                    </p>
+                  </div>
+
+                  {/* Contents Declaration */}
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                    <div className="flex gap-3">
+                      <Checkbox
+                        id="contentsDeclaration"
+                        checked={formData.contentsDeclarationAccepted || false}
+                        onCheckedChange={(checked) => {
+                          handleInputChange('contentsDeclarationAccepted', checked === true);
+                        }}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label
+                          htmlFor="contentsDeclaration"
+                          className="text-sm font-medium cursor-pointer flex items-center gap-2 text-amber-800 dark:text-amber-200"
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                          Contents Declaration *
+                        </Label>
+                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 leading-relaxed">
+                          I declare that the contents described above are accurate and do not include any illegal,
+                          prohibited, hazardous, stolen, or counterfeit items under the laws of South Africa, Lesotho,
+                          or Zimbabwe. I understand that Parcolo reserves the right to refuse or report any parcel
+                          suspected of containing prohibited goods.
+                        </p>
+                      </div>
+                    </div>
+                    {errors.contentsDeclarationAccepted && (
+                      <p className="text-destructive text-xs mt-2 ml-7">{errors.contentsDeclarationAccepted}</p>
+                    )}
                   </div>
                 </div>
 
@@ -1088,9 +1132,8 @@ const SmallParcelBooking = () => {
                         <div className="space-y-1 text-sm">
                           <p><span className="text-muted-foreground">Weight:</span> {getWeightBand(formData.weightBand || "")?.label ?? ""} ({getWeightBand(formData.weightBand || "")?.range[0]}–{getWeightBand(formData.weightBand || "")?.range[1]} kg)</p>
                           <p><span className="text-muted-foreground">Tracking:</span> {formData.includeTracking ? "Yes (+R" + TRACKING_FEE + ")" : "No"}</p>
-                          {formData.description && (
-                            <p><span className="text-muted-foreground">Contents:</span> {formData.description}</p>
-                          )}
+                          <p><span className="text-muted-foreground">Contents:</span> {formData.description}</p>
+                          <p className="flex items-center gap-1 text-primary"><CheckCircle className="w-3 h-3" /> Contents declaration accepted</p>
                         </div>
                       </div>
 
