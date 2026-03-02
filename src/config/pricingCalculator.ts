@@ -50,6 +50,12 @@ export const BAND_MULTIPLIERS: Record<string, number> = {
 /** Parcel tracking add-on fee (ZAR) */
 export const TRACKING_FEE = 100.00;
 
+/** Long-distance discount threshold (km) */
+export const LONG_DISTANCE_DISCOUNT_THRESHOLD_KM = 800;
+
+/** Long-distance discount factor (0.80 = 20% reduction) */
+export const LONG_DISTANCE_DISCOUNT_FACTOR = 0.80;
+
 /** Fallback fare per km when route not in database */
 export const FALLBACK_FARE_PER_KM = 1.50;
 
@@ -137,8 +143,12 @@ export const calculateBandPrice = (
 
   envelopePrice = Math.round(envelopePrice * 100) / 100;
 
-  // --- Step 2: Apply band multiplier ---
-  const finalPrice = Math.round(envelopePrice * multiplier * 100) / 100 + trackingFee;
+  // --- Step 2: Apply band multiplier and long-distance discount ---
+  let discountedPrice = envelopePrice * multiplier;
+  if (effectiveDistance > LONG_DISTANCE_DISCOUNT_THRESHOLD_KM) {
+    discountedPrice *= LONG_DISTANCE_DISCOUNT_FACTOR;
+  }
+  const finalPrice = Math.round(discountedPrice * 100) / 100 + trackingFee;
 
   // --- Step 3: Build result using the underlying calculation for metadata ---
   const result = calculateDeliveryPrice(originCity, destinationCity, band.midpoint, distanceKm, includeTracking);
