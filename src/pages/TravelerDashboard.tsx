@@ -82,9 +82,10 @@ const TravelerDashboard = () => {
 
         if (routes && routes.length > 0) {
           // Fetch pending parcels - the RLS policy will filter to pending only
+          // Only select non-PII columns for browsing — full contact details are revealed after match acceptance
           const { data: allPending } = await supabase
             .from("parcels")
-            .select("*")
+            .select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking")
             .eq("status", "pending") as { data: any[] | null };
 
           // Client-side filter by route match (case-insensitive)

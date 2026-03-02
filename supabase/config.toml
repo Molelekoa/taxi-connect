@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.claim-parcel]
 verify_jwt = false
+
+[functions.upload-document]
+verify_jwt = false
