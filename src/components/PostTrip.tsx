@@ -1,30 +1,30 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarDays, MapPin, Scale } from "lucide-react";
+import { CalendarDays, CalendarIcon, MapPin, Scale } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CITIES } from "@/config/cities";
 
 interface PostTripProps {
   onTripPosted: () => void;
 }
 
-const CITIES = [
-  "Johannesburg", "Pretoria", "Durban", "Cape Town", "Bloemfontein",
-  "Maseru", "Harare", "Bulawayo",
-];
-
 const PostTrip = ({ onTripPosted }: PostTripProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [travelDate, setTravelDate] = useState<Date>();
   const [form, setForm] = useState({
     origin_city: "",
     destination_city: "",
-    travel_date: "",
     available_weight_kg: "",
     notes: "",
   });
@@ -45,7 +45,7 @@ const PostTrip = ({ onTripPosted }: PostTripProps) => {
         traveler_id: profileId,
         origin_city: form.origin_city,
         destination_city: form.destination_city,
-        travel_date: form.travel_date,
+        travel_date: format(travelDate!, "yyyy-MM-dd"),
         available_weight_kg: parseFloat(form.available_weight_kg),
         notes: form.notes || null,
       } as any);
@@ -67,13 +67,19 @@ const PostTrip = ({ onTripPosted }: PostTripProps) => {
           await supabase.functions.invoke("find-matching-parcels", {
             body: { tripId: recentTrip.id },
           });
+
+          // Check for earlier traveler reassignment opportunities
+          try {
+            await supabase.functions.invoke("check-earlier-traveler", {
+              body: { tripId: recentTrip.id },
+            });
+          } catch {
+            // Silent — best-effort
+          }
         }
       } catch {
         // Silent fallback — trigger should have handled it
       }
-
-      setForm({ origin_city: "", destination_city: "", travel_date: "", available_weight_kg: "", notes: "" });
-      onTripPosted();
     } catch (err: any) {
       toast({ title: "Failed to post trip", description: err.message, variant: "destructive" });
     } finally {
@@ -114,13 +120,31 @@ const PostTrip = ({ onTripPosted }: PostTripProps) => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" />Travel Date</Label>
-          <Input
-            type="date"
-            value={form.travel_date}
-            onChange={(e) => setForm(f => ({ ...f, travel_date: e.target.value }))}
-            required
-          />
+          <Label className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" />Travel Date *</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !travelDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {travelDate ? format(travelDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={travelDate}
+                onSelect={setTravelDate}
+                disabled={(date) => date < new Date()}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="space-y-1.5">
           <Label className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5" />Available Weight (kg)</Label>
@@ -145,7 +169,7 @@ const PostTrip = ({ onTripPosted }: PostTripProps) => {
         />
       </div>
 
-      <Button type="submit" variant="coral" className="w-full" disabled={loading}>
+      <Button type="submit" variant="coral" className="w-full" disabled={loading || !travelDate}>
         {loading ? "Posting..." : "Post Trip"}
       </Button>
     </form>

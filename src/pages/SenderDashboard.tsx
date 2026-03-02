@@ -1,54 +1,125 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User } from "lucide-react";
+import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const SenderDashboard = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [parcels, setParcels] = useState<any[]>([]);
   const [matchesByParcel, setMatchesByParcel] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState<string | null>(null);
+  const [reassigning, setReassigning] = useState<string | null>(null);
+  const [earlierNotifications, setEarlierNotifications] = useState<Record<string, any>>({});
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
-      setLoading(true);
+  const fetchData = async () => {
+    if (!user) return;
+    setLoading(true);
 
-      const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
-      if (!pid) { setLoading(false); return; }
+    const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
+    if (!pid) { setLoading(false); return; }
 
-      // Fetch parcels
-      const { data: parcelsData } = await supabase
-        .from("parcels")
-        .select("*")
-        .order("created_at", { ascending: false }) as { data: any[] | null };
-      setParcels(parcelsData || []);
+    // Fetch parcels
+    const { data: parcelsData } = await supabase
+      .from("parcels")
+      .select("*")
+      .order("created_at", { ascending: false }) as { data: any[] | null };
+    setParcels(parcelsData || []);
 
-      // Fetch matches for sender's parcels
-      const { data: matchesData } = await supabase
-        .from("matches")
-        .select("*, trips(*, profiles:traveler_id(full_name, phone, email))")
-        .eq("status", "accepted") as { data: any[] | null };
+    // Fetch matches for sender's parcels
+    const { data: matchesData } = await supabase
+      .from("matches")
+      .select("*, trips(*, profiles:traveler_id(full_name, phone))")
+      .eq("status", "accepted") as { data: any[] | null };
 
-      const grouped: Record<string, any[]> = {};
-      for (const m of matchesData || []) {
-        if (!grouped[m.parcel_id]) grouped[m.parcel_id] = [];
-        grouped[m.parcel_id].push(m);
+    const grouped: Record<string, any[]> = {};
+    for (const m of matchesData || []) {
+      if (!grouped[m.parcel_id]) grouped[m.parcel_id] = [];
+      grouped[m.parcel_id].push(m);
+    }
+    setMatchesByParcel(grouped);
+
+    // Fetch earlier_traveler_available notifications
+    const { data: notifs } = await supabase
+      .from("notifications")
+      .select("*, matches:related_match_id(id, trip_id, parcel_id, trips(travel_date, profiles:traveler_id(full_name)))")
+      .eq("user_id", pid)
+      .eq("type", "earlier_traveler_available")
+      .eq("read", false) as { data: any[] | null };
+
+    const notifsByParcel: Record<string, any> = {};
+    for (const n of notifs || []) {
+      const parcelId = n.matches?.parcel_id;
+      if (parcelId) {
+        notifsByParcel[parcelId] = n;
       }
-      setMatchesByParcel(grouped);
-      setLoading(false);
-    };
+    }
+    setEarlierNotifications(notifsByParcel);
 
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchData();
   }, [user]);
+
+  const handleRetry = async (parcelId: string) => {
+    setRetrying(parcelId);
+    try {
+      const { error } = await supabase.functions.invoke("find-matching-trips", {
+        body: { parcelId },
+      });
+      if (error) throw error;
+      toast({ title: "Matching retried", description: "We've searched for available travelers." });
+      await fetchData();
+    } catch (err: any) {
+      toast({ title: "Retry failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRetrying(null);
+    }
+  };
+
+  const handleReassign = async (parcelId: string, newMatchId: string, notificationId: string) => {
+    setReassigning(parcelId);
+    try {
+      const { error } = await supabase.functions.invoke("reassign-parcel", {
+        body: { parcelId, newMatchId },
+      });
+      if (error) throw error;
+
+      // Mark notification as read
+      await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
+
+      toast({ title: "Parcel reassigned", description: "Your parcel has been reassigned to the earlier traveler." });
+      await fetchData();
+    } catch (err: any) {
+      toast({ title: "Reassignment failed", description: err.message, variant: "destructive" });
+    } finally {
+      setReassigning(null);
+    }
+  };
+
+  const handleDismissEarlier = async (notificationId: string) => {
+    await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
+    setEarlierNotifications(prev => {
+      const next = { ...prev };
+      for (const key of Object.keys(next)) {
+        if (next[key]?.id === notificationId) delete next[key];
+      }
+      return next;
+    });
+  };
 
   const statusConfig: Record<string, { className: string; icon: any }> = {
     pending: { className: "bg-warning/10 text-warning", icon: Clock },
@@ -82,6 +153,7 @@ const SenderDashboard = () => {
                   const config = statusConfig[parcel.status] || statusConfig.pending;
                   const StatusIcon = config.icon;
                   const matches = matchesByParcel[parcel.id] || [];
+                  const earlierNotif = earlierNotifications[parcel.id];
 
                   return (
                     <div key={parcel.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
@@ -106,6 +178,21 @@ const SenderDashboard = () => {
                         </Badge>
                       </div>
 
+                      {/* Retry Matching for pending parcels */}
+                      {parcel.status === "pending" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRetry(parcel.id)}
+                          disabled={retrying === parcel.id}
+                          className="w-full"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${retrying === parcel.id ? "animate-spin" : ""}`} />
+                          {retrying === parcel.id ? "Searching..." : "Retry Matching"}
+                        </Button>
+                      )}
+
+                      {/* Matched traveler info */}
                       {matches.length > 0 && (
                         <div className="bg-success/5 border border-success/20 rounded-lg p-3 space-y-2">
                           <p className="text-xs font-semibold text-success flex items-center gap-1">
@@ -115,10 +202,38 @@ const SenderDashboard = () => {
                             <div key={m.id} className="text-xs text-muted-foreground">
                               {m.trips?.profiles?.full_name && <p>Name: {m.trips.profiles.full_name}</p>}
                               {m.trips?.profiles?.phone && <p>Phone: {m.trips.profiles.phone}</p>}
-                              {m.trips?.profiles?.email && <p>Email: {m.trips.profiles.email}</p>}
                               <p>Trip date: {m.trips?.travel_date}</p>
                             </div>
                           ))}
+                        </div>
+                      )}
+
+                      {/* Earlier traveler reassignment prompt */}
+                      {earlierNotif && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
+                          <p className="text-xs font-semibold text-primary flex items-center gap-1">
+                            <ArrowRightLeft className="w-3 h-3" /> Earlier traveler available
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {earlierNotif.content}
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleReassign(parcel.id, earlierNotif.related_match_id, earlierNotif.id)}
+                              disabled={reassigning === parcel.id}
+                            >
+                              {reassigning === parcel.id ? "Reassigning..." : "Reassign"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDismissEarlier(earlierNotif.id)}
+                            >
+                              Keep Current
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>

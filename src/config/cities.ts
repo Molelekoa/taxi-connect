@@ -1,0 +1,38 @@
+export const CITIES = [
+  "Johannesburg",
+  "Pretoria",
+  "Durban",
+  "Cape Town",
+  "Bloemfontein",
+  "Maseru",
+  "Harare",
+  "Bulawayo",
+];
+
+export const CITY_OPTIONS: { value: string; label: string }[] = [
+  { value: "Johannesburg", label: "Johannesburg (SA)" },
+  { value: "Pretoria", label: "Pretoria (SA)" },
+  { value: "Durban", label: "Durban (SA)" },
+  { value: "Cape Town", label: "Cape Town (SA)" },
+  { value: "Bloemfontein", label: "Bloemfontein (SA)" },
+  { value: "Maseru", label: "Maseru (Lesotho)" },
+  { value: "Harare", label: "Harare (Zimbabwe)" },
+  { value: "Bulawayo", label: "Bulawayo (Zimbabwe)" },
+];
+
+// For carrier registration form which uses lowercase slugs
+export const CARRIER_CITY_OPTIONS: { value: string; label: string }[] = [
+  { value: "johannesburg", label: "Johannesburg" },
+  { value: "pretoria", label: "Pretoria" },
+  { value: "durban", label: "Durban" },
+  { value: "cape-town", label: "Cape Town" },
+  { value: "bloemfontein", label: "Bloemfontein" },
+  { value: "port-elizabeth", label: "Port Elizabeth" },
+  { value: "east-london", label: "East London" },
+  { value: "polokwane", label: "Polokwane" },
+  { value: "nelspruit", label: "Nelspruit" },
+  { value: "kimberley", label: "Kimberley" },
+  { value: "maseru", label: "Maseru (Lesotho)" },
+  { value: "harare", label: "Harare (Zimbabwe)" },
+  { value: "bulawayo", label: "Bulawayo (Zimbabwe)" },
+];
