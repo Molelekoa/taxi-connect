@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
         await supabase.from("notifications").insert({
           user_id: parcel.sender_id,
           type: "new_match",
-          content: `A traveler is available for your parcel on ${trip.travel_date}`,
+          content: `A traveler is available for your ${parcel.pickup_location} → ${parcel.dropoff_location} parcel on ${trip.travel_date}`,
           related_match_id: match.id,
         });
       }
