@@ -406,6 +406,25 @@ const SmallParcelBooking = () => {
         title: "Booking Submitted!",
         description: "We'll contact you soon to confirm pickup details.",
       });
+
+      // Belt-and-suspenders: call find-matching-trips as fallback in case trigger didn't fire
+      try {
+        // Get the most recent parcel for this sender to find the ID
+        const { data: recentParcel } = await supabase
+          .from("parcels")
+          .select("id")
+          .eq("sender_id", profileId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        if (recentParcel) {
+          await supabase.functions.invoke("find-matching-trips", {
+            body: { parcelId: recentParcel.id },
+          });
+        }
+      } catch {
+        // Silent fallback — trigger should have handled it
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};

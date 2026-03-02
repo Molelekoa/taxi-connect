@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_metrics: {
+        Row: {
+          created_at: string
+          id: string
+          metric_name: string
+          metric_value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric_name: string
+          metric_value?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric_name?: string
+          metric_value?: number
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          performed_by: string | null
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_by?: string | null
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_by?: string | null
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       delivery_ratings: {
         Row: {
           created_at: string
@@ -503,6 +557,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_metric: {
+        Args: { _name: string; _value?: number }
+        Returns: undefined
       }
       owns_profile: { Args: { _profile_id: string }; Returns: boolean }
       owns_traveler_profile: { Args: { _tp_id: string }; Returns: boolean }
