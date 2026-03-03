@@ -384,6 +384,7 @@ const SmallParcelBooking = () => {
         dropoff_location: formData.destinationCity,
         pickup_address: `${formData.pickupHouseNumber} ${formData.pickupStreet}, ${formData.pickupSuburb}${formData.pickupAdditionalInfo ? ' (' + formData.pickupAdditionalInfo + ')' : ''}`,
         delivery_address: `${formData.deliveryHouseNumber} ${formData.deliveryStreet}, ${formData.deliverySuburb}${formData.deliveryAdditionalInfo ? ' (' + formData.deliveryAdditionalInfo + ')' : ''}`,
+        suburb: formData.pickupSuburb || null,
         recipient_name: formData.recipientName,
         recipient_phone: formData.recipientPhone,
         weight_band: formData.weightBand,

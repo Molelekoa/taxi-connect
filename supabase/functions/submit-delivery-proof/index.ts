@@ -29,8 +29,8 @@ Deno.serve(async (req) => {
     const { matchId, photoUrl, lat, lng } = await req.json();
     const hasPhoto = !!photoUrl;
     const hasGeo = lat != null && lng != null;
-    if (!matchId || (!hasPhoto && !hasGeo)) {
-      return new Response(JSON.stringify({ error: "matchId and at least one of photoUrl or lat+lng required" }), {
+    if (!matchId || !hasPhoto || !hasGeo) {
+      return new Response(JSON.stringify({ error: "matchId, photoUrl, and lat+lng are all required for delivery proof" }), {
         status: 400,
         headers: corsHeaders,
       });
@@ -101,14 +101,15 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString();
 
-    // Update parcel to delivered_pending_verification with photo and/or geotag
-    const parcelPayload: Record<string, any> = { status: "delivered_pending_verification" };
-    if (hasPhoto) parcelPayload.photo_url = photoUrl;
-    if (hasGeo) {
-      parcelPayload.delivery_lat = lat;
-      parcelPayload.delivery_lng = lng;
-      parcelPayload.delivery_geotagged_at = now;
-    }
+    // Update parcel to delivered_pending_verification with photo and geotag + delivered_at
+    const parcelPayload: Record<string, any> = {
+      status: "delivered_pending_verification",
+      photo_url: photoUrl,
+      delivery_lat: lat,
+      delivery_lng: lng,
+      delivery_geotagged_at: now,
+      delivered_at: now,
+    };
     await supabase
       .from("parcels")
       .update(parcelPayload)

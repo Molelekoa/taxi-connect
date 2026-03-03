@@ -6,12 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const logError = async (supabase: any, userId: string | null, action: string, errorMessage: string, context?: Record<string, any>) => {
-  try {
-    await supabase.from("error_logs").insert({ user_id: userId, action, error_message: errorMessage, context: context ?? null });
-  } catch { /* silent */ }
-};
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,9 +20,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { matchId, reason } = await req.json();
-    if (!matchId || !reason) {
-      return new Response(JSON.stringify({ error: "matchId and reason required" }), {
+    const { matchId, photoUrl, lat, lng } = await req.json();
+    if (!matchId || !photoUrl || lat == null || lng == null) {
+      return new Response(JSON.stringify({ error: "matchId, photoUrl, lat, and lng are all required" }), {
         status: 400,
         headers: corsHeaders,
       });
@@ -69,7 +63,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch match with trip and parcel
+    // Fetch match
     const { data: match, error: matchErr } = await supabase
       .from("matches")
       .select("*, trips(*), parcels(*)")
@@ -83,7 +77,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify caller owns the trip
     if (match.trips.traveler_id !== profileId) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
@@ -93,66 +86,40 @@ Deno.serve(async (req) => {
 
     if (match.status !== "accepted") {
       return new Response(
-        JSON.stringify({ error: "Match is not in accepted state" }),
+        JSON.stringify({ error: "Match must be in accepted state" }),
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // Cancel the match
-    await supabase
-      .from("matches")
-      .update({ status: "cancelled" })
-      .eq("id", matchId);
+    const now = new Date().toISOString();
 
-    // Reset parcel to pending and clear traveler_id, store cancel reason and timestamp
+    // Update parcel to collected with collection proof
     await supabase
       .from("parcels")
-      .update({ status: "pending", traveler_id: null, cancel_reason: reason, cancelled_at: new Date().toISOString() })
+      .update({
+        status: "collected",
+        collection_photo_url: photoUrl,
+        collection_lat: lat,
+        collection_lng: lng,
+        collected_at: now,
+      })
       .eq("id", match.parcel_id);
-
-    // Log cancellation in cancellations table
-    await supabase.from("cancellations").insert({
-      parcel_id: match.parcel_id,
-      traveler_id: profileId,
-      reason: reason,
-    });
 
     // Notify sender
     if (match.parcels.sender_id) {
       await supabase.from("notifications").insert({
         user_id: match.parcels.sender_id,
-        type: "delivery_cancelled",
-        content: `Your traveler has cancelled the delivery. Reason: ${reason}. We're searching for a new traveler.`,
+        type: "parcel_collected",
+        content: `Your parcel from ${match.parcels.pickup_location ?? "?"} to ${match.parcels.dropoff_location ?? "?"} has been collected by the traveler.`,
         related_match_id: matchId,
       });
-    }
-
-    // Re-trigger matching to find a replacement
-    try {
-      await fetch(
-        `${Deno.env.get("SUPABASE_URL")}/functions/v1/find-matching-trips`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          },
-          body: JSON.stringify({ parcelId: match.parcel_id }),
-        }
-      );
-    } catch {
-      // Silent — best effort re-matching
     }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("cancel-accepted-match error:", err);
-    try {
-      const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-      await logError(svc, null, "cancel_accepted_match", err?.message || String(err));
-    } catch { /* silent */ }
+    console.error("submit-collection-proof error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: corsHeaders,

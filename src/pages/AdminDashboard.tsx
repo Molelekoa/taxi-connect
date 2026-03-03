@@ -94,7 +94,7 @@ type TravelerProfile = {
 
 // ── Status badge ───────────────────────────────────────────────────────────────
 
-const STATUSES = ["pending", "collected", "in-transit", "pending_confirmation", "delivered", "delivered_pending_verification", "delivered_verified"] as const;
+const STATUSES = ["pending", "collected", "in-transit", "pending_confirmation", "delivered", "delivered_pending_verification", "delivered_verified", "cancelled"] as const;
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   pending:                          { label: "Pending",                    className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
@@ -104,6 +104,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   delivered:                        { label: "Delivered",                  className: "bg-green-100 text-green-800 border-green-200" },
   delivered_pending_verification:   { label: "Awaiting Verification",      className: "bg-amber-100 text-amber-800 border-amber-200" },
   delivered_verified:               { label: "Verified",                   className: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  cancelled:                        { label: "Cancelled",                  className: "bg-red-100 text-red-800 border-red-200" },
 };
 
 const StatusBadge = ({ status }: { status: string | null }) => {
@@ -1207,7 +1208,13 @@ const DeliveryApprovalsTab = ({ pendingParcels, deliveredParcels, onApprove, onR
           </h3>
           <div className="space-y-4">
             {verifiedMatches.slice(0, 10).map(match => (
-              <DeliveryMatchCard key={match.id} match={match} senderName={match.parcels?.sender_name ?? null} />
+              <div key={match.id}>
+                <DeliveryMatchCard match={match} senderName={match.parcels?.sender_name ?? null} />
+                <div className="mt-2 px-5 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div><span className="font-medium text-foreground">Delivered:</span> {(match.parcels as any)?.delivered_at ? new Date((match.parcels as any).delivered_at).toLocaleString() : match.proof_submitted_at ? new Date(match.proof_submitted_at).toLocaleString() : "—"}</div>
+                  <div><span className="font-medium text-foreground">Verified:</span> {(match.parcels as any)?.verified_at ? new Date((match.parcels as any).verified_at).toLocaleString() : "—"}</div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -1225,6 +1232,18 @@ const ACTION_LABELS: Record<string, { label: string; className: string }> = {
   parcel_delivered: { label: "Delivered", className: "bg-green-100 text-green-800 border-green-200" },
   match_accepted: { label: "Accepted", className: "bg-green-100 text-green-800 border-green-200" },
   status_changed: { label: "Changed", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  cancelled_by_traveler: { label: "Cancelled", className: "bg-red-100 text-red-800 border-red-200" },
+  verified_by_admin: { label: "Verified", className: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+};
+
+const formatAuditValues = (values: Record<string, any> | null) => {
+  if (!values) return "—";
+  const parts: string[] = [];
+  if (values.status) parts.push(`Status: ${values.status}`);
+  if (values.traveler_id) parts.push(`Traveler: ${String(values.traveler_id).slice(0, 8)}…`);
+  if (values.cancel_reason) parts.push(`Reason: ${values.cancel_reason}`);
+  if (parts.length > 0) return parts.join(" · ");
+  return JSON.stringify(values);
 };
 
 const AuditLogTab = () => {
@@ -1256,13 +1275,14 @@ const AuditLogTab = () => {
                 <TableHead>Time</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Table</TableHead>
+                <TableHead>Record ID</TableHead>
                 <TableHead>Old</TableHead>
                 <TableHead>New</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {logs.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No audit events yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No audit events yet.</TableCell></TableRow>
               ) : logs.map(log => {
                 const cfg = ACTION_LABELS[log.action] ?? ACTION_LABELS.status_changed;
                 return (
@@ -1272,8 +1292,9 @@ const AuditLogTab = () => {
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.className}`}>{cfg.label}</span>
                     </TableCell>
                     <TableCell className="text-xs">{log.table_name}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{log.old_values ? JSON.stringify(log.old_values) : "—"}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{log.new_values ? JSON.stringify(log.new_values) : "—"}</TableCell>
+                    <TableCell className="text-xs font-mono text-muted-foreground">{log.record_id?.slice(0, 8)}…</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[200px]" title={log.old_values ? JSON.stringify(log.old_values) : ""}>{formatAuditValues(log.old_values)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[200px]" title={log.new_values ? JSON.stringify(log.new_values) : ""}>{formatAuditValues(log.new_values)}</TableCell>
                   </TableRow>
                 );
               })}

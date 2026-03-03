@@ -148,6 +148,7 @@ const SenderDashboard = () => {
     delivered_pending_verification: { className: "bg-accent/10 text-accent", icon: ShieldCheck, label: "Delivered – awaiting admin confirmation" },
     delivered_verified: { className: "bg-success/10 text-success", icon: CheckCircle, label: "Delivered – confirmed" },
     delivered: { className: "bg-success/10 text-success", icon: CheckCircle, label: "Delivery complete" },
+    cancelled: { className: "bg-destructive/10 text-destructive", icon: Clock, label: "Cancelled" },
   };
 
   return (
