@@ -99,18 +99,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update parcel to pending_confirmation with photo and/or geotag
-    const updatePayload: Record<string, any> = { status: "pending_confirmation" };
-    if (hasPhoto) updatePayload.photo_url = photoUrl;
+    const now = new Date().toISOString();
+
+    // Update parcel to delivered_pending_verification with photo and/or geotag
+    const parcelPayload: Record<string, any> = { status: "delivered_pending_verification" };
+    if (hasPhoto) parcelPayload.photo_url = photoUrl;
     if (hasGeo) {
-      updatePayload.delivery_lat = lat;
-      updatePayload.delivery_lng = lng;
-      updatePayload.delivery_geotagged_at = new Date().toISOString();
+      parcelPayload.delivery_lat = lat;
+      parcelPayload.delivery_lng = lng;
+      parcelPayload.delivery_geotagged_at = now;
     }
     await supabase
       .from("parcels")
-      .update(updatePayload)
+      .update(parcelPayload)
       .eq("id", match.parcel_id);
+
+    // Update match record with proof data
+    const matchPayload: Record<string, any> = {
+      delivery_status: "delivered_pending_verification",
+      proof_submitted_at: now,
+    };
+    if (hasPhoto) matchPayload.proof_photo_url = photoUrl;
+    if (hasGeo) matchPayload.proof_geotag = { lat, lng };
+    await supabase
+      .from("matches")
+      .update(matchPayload)
+      .eq("id", matchId);
 
     // Notify sender
     if (match.parcels.sender_id) {
@@ -130,7 +144,6 @@ Deno.serve(async (req) => {
 
     if (adminRoles) {
       for (const admin of adminRoles) {
-        // Get admin profile id
         const { data: adminProfileId } = await supabase.rpc("get_profile_id", {
           _auth_uid: admin.user_id,
         });

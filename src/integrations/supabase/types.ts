@@ -149,24 +149,36 @@ export type Database = {
         Row: {
           accepted_at: string | null
           created_at: string
+          delivery_status: string | null
           id: string
           parcel_id: string
+          proof_geotag: Json | null
+          proof_photo_url: string | null
+          proof_submitted_at: string | null
           status: string
           trip_id: string
         }
         Insert: {
           accepted_at?: string | null
           created_at?: string
+          delivery_status?: string | null
           id?: string
           parcel_id: string
+          proof_geotag?: Json | null
+          proof_photo_url?: string | null
+          proof_submitted_at?: string | null
           status?: string
           trip_id: string
         }
         Update: {
           accepted_at?: string | null
           created_at?: string
+          delivery_status?: string | null
           id?: string
           parcel_id?: string
+          proof_geotag?: Json | null
+          proof_photo_url?: string | null
+          proof_submitted_at?: string | null
           status?: string
           trip_id?: string
         }

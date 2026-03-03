@@ -138,11 +138,16 @@ const SenderDashboard = () => {
     }
   };
 
-  const statusConfig: Record<string, { className: string; icon: any }> = {
-    pending: { className: "bg-warning/10 text-warning", icon: Clock },
-    matched: { className: "bg-primary/10 text-primary", icon: CheckCircle },
-    pending_confirmation: { className: "bg-accent/10 text-accent", icon: ShieldCheck },
-    delivered: { className: "bg-success/10 text-success", icon: CheckCircle },
+  const statusConfig: Record<string, { className: string; icon: any; label: string }> = {
+    pending: { className: "bg-warning/10 text-warning", icon: Clock, label: "Awaiting pickup" },
+    matched: { className: "bg-primary/10 text-primary", icon: CheckCircle, label: "Matched, awaiting pickup" },
+    collected: { className: "bg-primary/10 text-primary", icon: CheckCircle, label: "On the way" },
+    in_transit: { className: "bg-primary/10 text-primary", icon: CheckCircle, label: "On the way" },
+    "in-transit": { className: "bg-primary/10 text-primary", icon: CheckCircle, label: "On the way" },
+    pending_confirmation: { className: "bg-accent/10 text-accent", icon: ShieldCheck, label: "Awaiting Confirmation" },
+    delivered_pending_verification: { className: "bg-accent/10 text-accent", icon: ShieldCheck, label: "Delivered – awaiting admin confirmation" },
+    delivered_verified: { className: "bg-success/10 text-success", icon: CheckCircle, label: "Delivered – confirmed" },
+    delivered: { className: "bg-success/10 text-success", icon: CheckCircle, label: "Delivery complete" },
   };
 
   return (
@@ -173,7 +178,7 @@ const SenderDashboard = () => {
                   const StatusIcon = config.icon;
                   const matches = matchesByParcel[parcel.id] || [];
                   const earlierNotif = earlierNotifications[parcel.id];
-                  const isPendingConfirmation = parcel.status === "pending_confirmation";
+                  const isPendingConfirmation = parcel.status === "pending_confirmation" || parcel.status === "delivered_pending_verification";
 
                   return (
                     <div key={parcel.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
@@ -194,7 +199,7 @@ const SenderDashboard = () => {
                         </div>
                         <Badge className={config.className}>
                           <StatusIcon className="w-3 h-3 mr-1" />
-                          {parcel.status === "pending_confirmation" ? "Awaiting Confirmation" : parcel.status}
+                          {config.label}
                         </Badge>
                       </div>
 

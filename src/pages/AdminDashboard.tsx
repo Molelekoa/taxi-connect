@@ -94,14 +94,16 @@ type TravelerProfile = {
 
 // ── Status badge ───────────────────────────────────────────────────────────────
 
-const STATUSES = ["pending", "collected", "in-transit", "pending_confirmation", "delivered"] as const;
+const STATUSES = ["pending", "collected", "in-transit", "pending_confirmation", "delivered", "delivered_pending_verification", "delivered_verified"] as const;
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pending:                { label: "Pending",              className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-  collected:              { label: "Collected",            className: "bg-blue-100 text-blue-800 border-blue-200" },
-  "in-transit":           { label: "In Transit",           className: "bg-orange-100 text-orange-800 border-orange-200" },
-  pending_confirmation:   { label: "Pending Confirmation", className: "bg-purple-100 text-purple-800 border-purple-200" },
-  delivered:              { label: "Delivered",            className: "bg-green-100 text-green-800 border-green-200" },
+  pending:                          { label: "Pending",                    className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  collected:                        { label: "Collected",                  className: "bg-blue-100 text-blue-800 border-blue-200" },
+  "in-transit":                     { label: "In Transit",                 className: "bg-orange-100 text-orange-800 border-orange-200" },
+  pending_confirmation:             { label: "Pending Confirmation",       className: "bg-purple-100 text-purple-800 border-purple-200" },
+  delivered:                        { label: "Delivered",                  className: "bg-green-100 text-green-800 border-green-200" },
+  delivered_pending_verification:   { label: "Awaiting Verification",      className: "bg-amber-100 text-amber-800 border-amber-200" },
+  delivered_verified:               { label: "Verified",                   className: "bg-emerald-100 text-emerald-800 border-emerald-200" },
 };
 
 const StatusBadge = ({ status }: { status: string | null }) => {
@@ -584,9 +586,9 @@ const AdminDashboard = () => {
                <TabsTrigger value="travelers" className="flex items-center gap-1.5"><Truck className="w-4 h-4" /> Travelers ({travelerProfiles.length})</TabsTrigger>
                 <TabsTrigger value="deliveries" className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4" /> Deliveries
-                  {parcels.filter(p => p.status === "pending_confirmation").length > 0 && (
+                  {parcels.filter(p => p.status === "delivered_pending_verification").length > 0 && (
                     <span className="ml-1 bg-primary text-primary-foreground text-[10px] rounded-full px-1.5 py-0.5 font-bold">
-                      {parcels.filter(p => p.status === "pending_confirmation").length}
+                      {parcels.filter(p => p.status === "delivered_pending_verification").length}
                     </span>
                   )}
                 </TabsTrigger>
@@ -917,16 +919,28 @@ const AdminDashboard = () => {
               {/* ── TAB: DELIVERY APPROVALS ──────────────────────────────────── */}
               <TabsContent value="deliveries">
                 <DeliveryApprovalsTab
-                  pendingParcels={parcels.filter(p => p.status === "pending_confirmation")}
-                  deliveredParcels={parcels.filter(p => p.status === "delivered")}
-                  onApprove={async (id) => {
+                  pendingParcels={parcels.filter(p => p.status === "delivered_pending_verification")}
+                  deliveredParcels={parcels.filter(p => p.status === "delivered_verified")}
+                  onApprove={async (matchId) => {
                     try {
-                      const res = await supabase.functions.invoke("approve-delivery", { body: { parcelId: id } });
+                      const res = await supabase.functions.invoke("verify-delivery", { body: { matchId, action: "approve" } });
                       if (res.error) throw new Error(res.error.message);
                       toast({ title: "Delivery approved", description: "Traveler has been notified with payment timeline." });
                       queryClient.invalidateQueries({ queryKey: ["admin-parcels"] });
+                      queryClient.invalidateQueries({ queryKey: ["admin-delivery-matches"] });
                     } catch (err: any) {
                       toast({ title: "Failed to approve", description: err.message, variant: "destructive" });
+                    }
+                  }}
+                  onReject={async (matchId) => {
+                    try {
+                      const res = await supabase.functions.invoke("verify-delivery", { body: { matchId, action: "reject" } });
+                      if (res.error) throw new Error(res.error.message);
+                      toast({ title: "Delivery rejected", description: "Traveler has been notified to resubmit proof." });
+                      queryClient.invalidateQueries({ queryKey: ["admin-parcels"] });
+                      queryClient.invalidateQueries({ queryKey: ["admin-delivery-matches"] });
+                    } catch (err: any) {
+                      toast({ title: "Failed to reject", description: err.message, variant: "destructive" });
                     }
                   }}
                 />
@@ -1016,133 +1030,184 @@ const TravelerStatusBadge = ({ status }: { status: string }) => {
 
 // ── Delivery Approvals Tab ─────────────────────────────────────────────────────
 
-const DeliveryParcelCard = ({ parcel, onApprove }: { parcel: Parcel; onApprove?: (id: string) => void }) => (
-  <Card>
-    <CardContent className="p-5 space-y-3">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 font-medium text-foreground text-sm">
-            <MapPin className="w-4 h-4 text-primary" />
-            {parcel.pickup_location} → {parcel.dropoff_location}
+type MatchWithProof = {
+  id: string;
+  parcel_id: string;
+  trip_id: string;
+  status: string;
+  delivery_status: string | null;
+  proof_photo_url: string | null;
+  proof_geotag: any;
+  proof_submitted_at: string | null;
+  parcels: Parcel | null;
+  trips: { traveler_id: string; profiles?: { full_name: string | null } | null } | null;
+};
+
+const DeliveryMatchCard = ({ match, senderName, onApprove, onReject }: {
+  match: MatchWithProof;
+  senderName: string | null;
+  onApprove?: (matchId: string) => void;
+  onReject?: (matchId: string) => void;
+}) => {
+  const parcel = match.parcels;
+  return (
+    <Card>
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 font-medium text-foreground text-sm">
+              <MapPin className="w-4 h-4 text-primary" />
+              {parcel?.pickup_location} → {parcel?.dropoff_location}
+            </div>
+            <StatusBadge status={match.delivery_status ?? parcel?.status ?? ""} />
           </div>
-          <StatusBadge status={parcel.status} />
         </div>
-      </div>
 
-      {/* Full details grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground border-t border-border pt-3">
-        <div><span className="font-medium text-foreground">Sender:</span> {parcel.sender_name ?? "—"}</div>
-        <div><span className="font-medium text-foreground">Sender Phone:</span> {parcel.sender_phone ?? "—"}</div>
-        <div><span className="font-medium text-foreground">Sender Email:</span> {parcel.sender_email ?? "—"}</div>
-        <div><span className="font-medium text-foreground">Recipient:</span> {parcel.recipient_name ?? "—"}</div>
-        <div><span className="font-medium text-foreground">Recipient Phone:</span> {parcel.recipient_phone ?? "—"}</div>
-        <div><span className="font-medium text-foreground">Pickup Address:</span> {parcel.pickup_address ?? "—"}</div>
-        <div><span className="font-medium text-foreground">Delivery Address:</span> {parcel.delivery_address ?? "—"}</div>
-        <div><span className="font-medium text-foreground">Weight:</span> {parcel.weight_kg != null ? `${parcel.weight_kg}kg` : "—"} ({bandLabel(parcel.weight_band)})</div>
-        <div><span className="font-medium text-foreground">Price:</span> {parcel.price != null ? `R${parcel.price}` : "—"}</div>
-        <div><span className="font-medium text-foreground">Description:</span> {parcel.description ?? "—"}</div>
-      </div>
-
-      {/* Sender confirmation */}
-      <div className="text-xs">
-        {parcel.sender_confirmed_at ? (
-          <p className="text-green-600 font-medium">✓ Sender confirmed arrival — {new Date(parcel.sender_confirmed_at).toLocaleString()}</p>
-        ) : (
-          <p className="text-yellow-600 font-medium">⏳ Sender has not confirmed yet</p>
-        )}
-      </div>
-
-      {/* Photo proof */}
-      {parcel.photo_url && (
-        <div>
-          <p className="text-xs font-medium text-foreground mb-1">📸 Delivery proof photo:</p>
-          <img
-            src={parcel.photo_url}
-            alt="Delivery proof"
-            className="rounded-lg border border-border max-h-48 object-cover"
-          />
-        </div>
-      )}
-
-      {/* Geotag details */}
-      {parcel.delivery_lat != null && parcel.delivery_lng != null && (
-        <div className="bg-secondary/50 rounded-lg p-3 text-xs space-y-1">
-          <p className="font-medium text-foreground">📍 Delivery Geotag</p>
-          <p>Coordinates: {parcel.delivery_lat.toFixed(5)}, {parcel.delivery_lng.toFixed(5)}</p>
-          <a
-            href={`https://www.google.com/maps?q=${parcel.delivery_lat},${parcel.delivery_lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline inline-flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" /> View on Google Maps
-          </a>
-          {parcel.delivery_geotagged_at && (
-            <p className="text-muted-foreground">Tagged: {new Date(parcel.delivery_geotagged_at).toLocaleString()}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground border-t border-border pt-3">
+          <div><span className="font-medium text-foreground">Parcel ID:</span> {parcel?.id?.slice(0, 8)}…</div>
+          <div><span className="font-medium text-foreground">Traveler:</span> {match.trips?.profiles?.full_name ?? "—"}</div>
+          <div><span className="font-medium text-foreground">Sender:</span> {senderName ?? parcel?.sender_name ?? "—"}</div>
+          <div><span className="font-medium text-foreground">Sender Phone:</span> {parcel?.sender_phone ?? "—"}</div>
+          <div><span className="font-medium text-foreground">Recipient:</span> {parcel?.recipient_name ?? "—"}</div>
+          <div><span className="font-medium text-foreground">Recipient Phone:</span> {parcel?.recipient_phone ?? "—"}</div>
+          <div><span className="font-medium text-foreground">Pickup Address:</span> {parcel?.pickup_address ?? "—"}</div>
+          <div><span className="font-medium text-foreground">Delivery Address:</span> {parcel?.delivery_address ?? "—"}</div>
+          <div><span className="font-medium text-foreground">Weight:</span> {parcel?.weight_kg != null ? `${parcel.weight_kg}kg` : "—"} ({bandLabel(parcel?.weight_band ?? null)})</div>
+          <div><span className="font-medium text-foreground">Price:</span> {parcel?.price != null ? `R${parcel.price}` : "—"}</div>
+          {match.proof_submitted_at && (
+            <div><span className="font-medium text-foreground">Submitted:</span> {new Date(match.proof_submitted_at).toLocaleString()}</div>
           )}
         </div>
-      )}
 
-      {/* No geotag or photo warning */}
-      {!parcel.photo_url && parcel.delivery_lat == null && (
-        <p className="text-xs text-destructive font-medium">⚠ No delivery proof submitted (no photo or geotag)</p>
-      )}
+        {/* Photo proof from match */}
+        {match.proof_photo_url && (
+          <div>
+            <p className="text-xs font-medium text-foreground mb-1">📸 Delivery proof photo:</p>
+            <img
+              src={match.proof_photo_url}
+              alt="Delivery proof"
+              className="rounded-lg border border-border max-h-48 object-cover"
+            />
+          </div>
+        )}
 
-      {/* Approve button only for pending */}
-      {onApprove && (
-        <Button
-          variant="default"
-          size="sm"
-          className="w-full"
-          onClick={() => onApprove(parcel.id)}
-        >
-          <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-          Approve Delivery
-        </Button>
-      )}
-    </CardContent>
-  </Card>
-);
+        {/* Geotag from match */}
+        {match.proof_geotag && (
+          <div className="bg-secondary/50 rounded-lg p-3 text-xs space-y-1">
+            <p className="font-medium text-foreground">📍 Delivery Geotag</p>
+            <p>Coordinates: {match.proof_geotag.lat.toFixed(5)}, {match.proof_geotag.lng.toFixed(5)}</p>
+            <a
+              href={`https://www.google.com/maps?q=${match.proof_geotag.lat},${match.proof_geotag.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" /> View on Google Maps
+            </a>
+          </div>
+        )}
 
-const DeliveryApprovalsTab = ({ pendingParcels, deliveredParcels, onApprove }: {
+        {/* Fallback: show parcel-level proof if match doesn't have it */}
+        {!match.proof_photo_url && parcel?.photo_url && (
+          <div>
+            <p className="text-xs font-medium text-foreground mb-1">📸 Delivery proof photo (parcel):</p>
+            <img src={parcel.photo_url} alt="Delivery proof" className="rounded-lg border border-border max-h-48 object-cover" />
+          </div>
+        )}
+        {!match.proof_geotag && parcel?.delivery_lat != null && parcel?.delivery_lng != null && (
+          <div className="bg-secondary/50 rounded-lg p-3 text-xs space-y-1">
+            <p className="font-medium text-foreground">📍 Delivery Geotag (parcel)</p>
+            <p>Coordinates: {parcel.delivery_lat.toFixed(5)}, {parcel.delivery_lng.toFixed(5)}</p>
+            <a href={`https://www.google.com/maps?q=${parcel.delivery_lat},${parcel.delivery_lng}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+              <ExternalLink className="w-3 h-3" /> View on Google Maps
+            </a>
+          </div>
+        )}
+
+        {!match.proof_photo_url && !parcel?.photo_url && !match.proof_geotag && parcel?.delivery_lat == null && (
+          <p className="text-xs text-destructive font-medium">⚠ No delivery proof submitted</p>
+        )}
+
+        {/* Action buttons */}
+        {(onApprove || onReject) && (
+          <div className="flex gap-2">
+            {onApprove && (
+              <Button variant="default" size="sm" className="flex-1" onClick={() => onApprove(match.id)}>
+                <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Approve
+              </Button>
+            )}
+            {onReject && (
+              <Button variant="outline" size="sm" className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => onReject(match.id)}>
+                <ShieldX className="w-3.5 h-3.5 mr-1.5" /> Reject
+              </Button>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+const DeliveryApprovalsTab = ({ pendingParcels, deliveredParcels, onApprove, onReject }: {
   pendingParcels: Parcel[];
   deliveredParcels: Parcel[];
-  onApprove: (id: string) => void;
+  onApprove: (matchId: string) => void;
+  onReject: (matchId: string) => void;
 }) => {
+  const pendingParcelIds = pendingParcels.map(p => p.id);
+  const deliveredParcelIds = deliveredParcels.map(p => p.id);
+  const allIds = [...pendingParcelIds, ...deliveredParcelIds];
+
+  const { data: matches = [] } = useQuery({
+    queryKey: ["admin-delivery-matches", allIds.join(",")],
+    queryFn: async () => {
+      if (allIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*, parcels(*), trips(traveler_id, profiles:traveler_id(full_name))")
+        .in("parcel_id", allIds)
+        .eq("status", "accepted");
+      if (error) throw error;
+      return (data ?? []) as MatchWithProof[];
+    },
+    enabled: allIds.length > 0,
+  });
+
+  const pendingMatches = matches.filter(m => m.delivery_status === "delivered_pending_verification");
+  const verifiedMatches = matches.filter(m => m.delivery_status === "delivered_verified");
+
   return (
     <div className="space-y-8">
-      {/* Pending section */}
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <Clock className="w-4 h-4 text-yellow-600" />
-          Awaiting Approval ({pendingParcels.length})
+          Awaiting Verification ({pendingMatches.length})
         </h3>
-        {pendingParcels.length === 0 ? (
+        {pendingMatches.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">
               <ShieldCheck className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground text-sm">No deliveries awaiting approval.</p>
+              <p className="text-muted-foreground text-sm">No deliveries awaiting verification.</p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            {pendingParcels.map(parcel => (
-              <DeliveryParcelCard key={parcel.id} parcel={parcel} onApprove={onApprove} />
+            {pendingMatches.map(match => (
+              <DeliveryMatchCard key={match.id} match={match} senderName={match.parcels?.sender_name ?? null} onApprove={onApprove} onReject={onReject} />
             ))}
           </div>
         )}
       </div>
 
-      {/* Recently delivered section */}
-      {deliveredParcels.length > 0 && (
+      {verifiedMatches.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-green-600" />
-            Recently Delivered ({deliveredParcels.length})
+            Verified Deliveries ({verifiedMatches.length})
           </h3>
           <div className="space-y-4">
-            {deliveredParcels.slice(0, 10).map(parcel => (
-              <DeliveryParcelCard key={parcel.id} parcel={parcel} />
+            {verifiedMatches.slice(0, 10).map(match => (
+              <DeliveryMatchCard key={match.id} match={match} senderName={match.parcels?.sender_name ?? null} />
             ))}
           </div>
         </div>
