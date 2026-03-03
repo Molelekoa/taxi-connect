@@ -153,8 +153,9 @@ const SenderDashboard = () => {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="font-display font-bold text-2xl text-foreground mb-6 flex items-center gap-2">
               <Package className="w-6 h-6 text-primary" />
-              My Parcels
+              Sent Parcels
             </h1>
+            <p className="text-sm text-muted-foreground -mt-4 mb-6">Parcels you've booked for delivery</p>
 
             {loading ? (
               <div className="flex justify-center py-12">
