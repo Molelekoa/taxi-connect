@@ -68,6 +68,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cancellations: {
+        Row: {
+          created_at: string
+          id: string
+          parcel_id: string
+          reason: string | null
+          traveler_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parcel_id: string
+          reason?: string | null
+          traveler_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parcel_id?: string
+          reason?: string | null
+          traveler_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancellations_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellations_traveler_id_fkey"
+            columns: ["traveler_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_ratings: {
         Row: {
           created_at: string
@@ -247,7 +286,13 @@ export type Database = {
       parcels: {
         Row: {
           cancel_reason: string | null
+          cancelled_at: string | null
+          collected_at: string | null
+          collection_lat: number | null
+          collection_lng: number | null
+          collection_photo_url: string | null
           created_at: string
+          delivered_at: string | null
           delivery_address: string | null
           delivery_geotagged_at: string | null
           delivery_lat: number | null
@@ -271,14 +316,22 @@ export type Database = {
           sender_name: string | null
           sender_phone: string | null
           status: string | null
+          suburb: string | null
           traveler_id: string | null
           updated_at: string
+          verified_at: string | null
           weight_band: string | null
           weight_kg: number | null
         }
         Insert: {
           cancel_reason?: string | null
+          cancelled_at?: string | null
+          collected_at?: string | null
+          collection_lat?: number | null
+          collection_lng?: number | null
+          collection_photo_url?: string | null
           created_at?: string
+          delivered_at?: string | null
           delivery_address?: string | null
           delivery_geotagged_at?: string | null
           delivery_lat?: number | null
@@ -302,14 +355,22 @@ export type Database = {
           sender_name?: string | null
           sender_phone?: string | null
           status?: string | null
+          suburb?: string | null
           traveler_id?: string | null
           updated_at?: string
+          verified_at?: string | null
           weight_band?: string | null
           weight_kg?: number | null
         }
         Update: {
           cancel_reason?: string | null
+          cancelled_at?: string | null
+          collected_at?: string | null
+          collection_lat?: number | null
+          collection_lng?: number | null
+          collection_photo_url?: string | null
           created_at?: string
+          delivered_at?: string | null
           delivery_address?: string | null
           delivery_geotagged_at?: string | null
           delivery_lat?: number | null
@@ -333,8 +394,10 @@ export type Database = {
           sender_name?: string | null
           sender_phone?: string | null
           status?: string | null
+          suburb?: string | null
           traveler_id?: string | null
           updated_at?: string
+          verified_at?: string | null
           weight_band?: string | null
           weight_kg?: number | null
         }

@@ -56,6 +56,15 @@ const TravelerDashboard = () => {
   const [submittingProof, setSubmittingProof] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // Collection proof state
+  const [showCollectionDialog, setShowCollectionDialog] = useState<string | null>(null);
+  const [collectionPhoto, setCollectionPhoto] = useState<File | null>(null);
+  const [submittingCollection, setSubmittingCollection] = useState(false);
+  const collectionPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [collectionGeoCoords, setCollectionGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [collectionGeoLoading, setCollectionGeoLoading] = useState(false);
+  const [collectionGeoError, setCollectionGeoError] = useState<string | null>(null);
+
   // Geotag state
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -254,30 +263,29 @@ const TravelerDashboard = () => {
   };
 
   const handleSubmitDeliveryProof = async () => {
-    if (!showDeliveryDialog || (!deliveryPhoto && !geoCoords) || !profileId) return;
+    if (!showDeliveryDialog || !deliveryPhoto || !geoCoords || !profileId) {
+      toast({ title: "Both photo and GPS location are required", variant: "destructive" });
+      return;
+    }
     setSubmittingProof(true);
     try {
       let photoUrl: string | undefined;
 
-      if (deliveryPhoto) {
-        const uploadForm = new FormData();
-        uploadForm.append("file", deliveryPhoto);
-        uploadForm.append("profileId", profileId);
-        uploadForm.append("purpose", "delivery-proof");
+      const uploadForm = new FormData();
+      uploadForm.append("file", deliveryPhoto);
+      uploadForm.append("profileId", profileId);
+      uploadForm.append("purpose", "delivery-proof");
 
-        const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
-          body: uploadForm,
-        });
+      const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
+        body: uploadForm,
+      });
 
-        if (uploadError || !uploadResult?.success) {
-          throw new Error(uploadError?.message || "Photo upload failed");
-        }
-        photoUrl = uploadResult.url;
+      if (uploadError || !uploadResult?.success) {
+        throw new Error(uploadError?.message || "Photo upload failed");
       }
+      photoUrl = uploadResult.url;
 
-      const body: any = { matchId: showDeliveryDialog };
-      if (photoUrl) body.photoUrl = photoUrl;
-      if (geoCoords) { body.lat = geoCoords.lat; body.lng = geoCoords.lng; }
+      const body: any = { matchId: showDeliveryDialog, photoUrl, lat: geoCoords.lat, lng: geoCoords.lng };
 
       const res = await supabase.functions.invoke("submit-delivery-proof", { body });
       if (res.error) throw new Error(res.error.message);
@@ -292,6 +300,64 @@ const TravelerDashboard = () => {
       toast({ title: "Failed to submit proof", description: err.message, variant: "destructive" });
     } finally {
       setSubmittingProof(false);
+    }
+  };
+
+  const handleTagCollectionLocation = () => {
+    if (!navigator.geolocation) {
+      setCollectionGeoError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setCollectionGeoLoading(true);
+    setCollectionGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCollectionGeoCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setCollectionGeoLoading(false);
+      },
+      (err) => {
+        setCollectionGeoError(err.message || "Failed to get location.");
+        setCollectionGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleSubmitCollectionProof = async () => {
+    if (!showCollectionDialog || !collectionPhoto || !collectionGeoCoords || !profileId) {
+      toast({ title: "Both photo and GPS location are required", variant: "destructive" });
+      return;
+    }
+    setSubmittingCollection(true);
+    try {
+      const uploadForm = new FormData();
+      uploadForm.append("file", collectionPhoto);
+      uploadForm.append("profileId", profileId);
+      uploadForm.append("purpose", "collection-proof");
+
+      const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
+        body: uploadForm,
+      });
+
+      if (uploadError || !uploadResult?.success) {
+        throw new Error(uploadError?.message || "Photo upload failed");
+      }
+
+      const res = await supabase.functions.invoke("submit-collection-proof", {
+        body: { matchId: showCollectionDialog, photoUrl: uploadResult.url, lat: collectionGeoCoords.lat, lng: collectionGeoCoords.lng },
+      });
+      if (res.error) throw new Error(res.error.message);
+
+      toast({ title: "Collection proof submitted!", description: "The sender has been notified." });
+      setShowCollectionDialog(null);
+      setCollectionPhoto(null);
+      setCollectionGeoCoords(null);
+      setCollectionGeoError(null);
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Failed to submit collection proof", description: err.message, variant: "destructive" });
+    } finally {
+      setSubmittingCollection(false);
     }
   };
 
@@ -548,6 +614,23 @@ const TravelerDashboard = () => {
                         <p className="text-sm">{payoutDisplay(match.parcels.price)}</p>
                       )}
                       <div className="flex gap-2">
+                        {/* Show "Mark Collected" if parcel hasn't been collected yet */}
+                        {(!match.parcels?.status || match.parcels?.status === "matched" || match.parcels?.status === "pending") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => {
+                              setShowCollectionDialog(match.id);
+                              setCollectionPhoto(null);
+                              setCollectionGeoCoords(null);
+                              setCollectionGeoError(null);
+                            }}
+                          >
+                            <Package className="w-3.5 h-3.5 mr-1.5" />
+                            Mark Collected
+                          </Button>
+                        )}
                         <Button
                           variant="default"
                           size="sm"
@@ -555,6 +638,8 @@ const TravelerDashboard = () => {
                           onClick={() => {
                             setShowDeliveryDialog(match.id);
                             setDeliveryPhoto(null);
+                            setGeoCoords(null);
+                            setGeoError(null);
                           }}
                         >
                           <Camera className="w-3.5 h-3.5 mr-1.5" />
@@ -676,12 +761,12 @@ const TravelerDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delivery Proof Dialog */}
+      {/* Delivery Proof Dialog — both photo AND geotag required */}
       <Dialog open={!!showDeliveryDialog} onOpenChange={(open) => { if (!open) { setShowDeliveryDialog(null); setGeoCoords(null); setGeoError(null); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Submit Delivery Proof</DialogTitle>
-            <DialogDescription>Upload a photo and/or tag your GPS location as proof of delivery.</DialogDescription>
+            <DialogDescription>Both a photo and GPS location are required as proof of delivery.</DialogDescription>
           </DialogHeader>
 
           {/* Photo upload */}
@@ -698,7 +783,7 @@ const TravelerDashboard = () => {
             ) : (
               <div className="space-y-2">
                 <Upload className="w-8 h-8 text-muted-foreground mx-auto" />
-                <p className="text-sm text-muted-foreground">Click to upload photo</p>
+                <p className="text-sm text-muted-foreground">Click to upload photo <span className="text-destructive">*</span></p>
               </div>
             )}
             <input
@@ -713,11 +798,11 @@ const TravelerDashboard = () => {
             />
           </div>
 
-          {/* Geotag option */}
+          {/* Geotag — required */}
           <div className="border border-border rounded-lg p-4 space-y-2">
             <p className="text-sm font-medium text-foreground flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
-              Tag My Location
+              Tag My Location <span className="text-destructive">*</span>
             </p>
             {geoCoords ? (
               <div className="flex items-center gap-2">
@@ -734,13 +819,91 @@ const TravelerDashboard = () => {
             {geoError && <p className="text-xs text-destructive">{geoError}</p>}
           </div>
 
+          {(!deliveryPhoto || !geoCoords) && (
+            <p className="text-xs text-destructive">Both photo and GPS location must be provided before submitting.</p>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeliveryDialog(null)}>Back</Button>
             <Button
-              disabled={(!deliveryPhoto && !geoCoords) || submittingProof}
+              disabled={!deliveryPhoto || !geoCoords || submittingProof}
               onClick={handleSubmitDeliveryProof}
             >
               {submittingProof ? "Submitting..." : "Submit Proof"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Collection Proof Dialog */}
+      <Dialog open={!!showCollectionDialog} onOpenChange={(open) => { if (!open) { setShowCollectionDialog(null); setCollectionGeoCoords(null); setCollectionGeoError(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Submit Collection Proof</DialogTitle>
+            <DialogDescription>Upload a photo of the parcel at pickup and tag your GPS location.</DialogDescription>
+          </DialogHeader>
+
+          {/* Photo upload */}
+          <div
+            className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => collectionPhotoInputRef.current?.click()}
+          >
+            {collectionPhoto ? (
+              <div className="space-y-2">
+                <CheckCircle className="w-8 h-8 text-success mx-auto" />
+                <p className="text-sm text-foreground">{collectionPhoto.name}</p>
+                <p className="text-xs text-muted-foreground">Click to change</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Upload className="w-8 h-8 text-muted-foreground mx-auto" />
+                <p className="text-sm text-muted-foreground">Click to upload photo <span className="text-destructive">*</span></p>
+              </div>
+            )}
+            <input
+              ref={collectionPhotoInputRef}
+              type="file"
+              accept="image/jpeg,image/png"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setCollectionPhoto(file);
+              }}
+            />
+          </div>
+
+          {/* Geotag */}
+          <div className="border border-border rounded-lg p-4 space-y-2">
+            <p className="text-sm font-medium text-foreground flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              Tag Pickup Location <span className="text-destructive">*</span>
+            </p>
+            {collectionGeoCoords ? (
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-success shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Location tagged: {collectionGeoCoords.lat.toFixed(5)}, {collectionGeoCoords.lng.toFixed(5)}
+                </p>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleTagCollectionLocation} disabled={collectionGeoLoading}>
+                {collectionGeoLoading ? "Getting location..." : "Capture GPS Location"}
+              </Button>
+            )}
+            {collectionGeoError && <p className="text-xs text-destructive">{collectionGeoError}</p>}
+          </div>
+
+          {(!collectionPhoto || !collectionGeoCoords) && (
+            <p className="text-xs text-destructive">Both photo and GPS location must be provided.</p>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCollectionDialog(null)}>Back</Button>
+            <Button
+              disabled={!collectionPhoto || !collectionGeoCoords || submittingCollection}
+              onClick={handleSubmitCollectionProof}
+            >
+              {submittingCollection ? "Submitting..." : "Confirm Collection"}
             </Button>
           </DialogFooter>
         </DialogContent>

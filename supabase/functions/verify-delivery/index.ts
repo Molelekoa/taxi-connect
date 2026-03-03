@@ -46,10 +46,10 @@ Deno.serve(async (req) => {
         .update({ delivery_status: "delivered_verified" })
         .eq("id", matchId);
 
-      // Update parcel status
+      // Update parcel status and set verified_at
       await supabase
         .from("parcels")
-        .update({ status: "delivered_verified" })
+        .update({ status: "delivered_verified", verified_at: new Date().toISOString() })
         .eq("id", match.parcel_id);
 
       // Calculate payment timeline
