@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -23,6 +23,7 @@ import {
 import {
   Users, Package, Truck, LayoutDashboard, Copy, Check, Phone, Mail, Eye,
   DollarSign, MapPin, Scale, Search, TrendingUp, ShieldCheck, ShieldX, Clock,
+  FileText, ExternalLink, Loader2,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -60,6 +61,9 @@ type Parcel = {
   sender_phone: string | null;
   photo_url: string | null;
   sender_confirmed_at: string | null;
+  delivery_lat: number | null;
+  delivery_lng: number | null;
+  delivery_geotagged_at: string | null;
 };
 
 type TravelerRoute = {
@@ -139,6 +143,81 @@ const CopyButton = ({ text }: { text: string | null }) => {
   );
 };
 
+// ── Document link with signed URL ──────────────────────────────────────────────
+
+const DocumentLink = ({ storagePath, label }: { storagePath: string | null; label: string }) => {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  const generateUrl = useCallback(async () => {
+    if (!storagePath) return;
+    // If it's already a full URL (http/https), use it directly
+    if (storagePath.startsWith("http")) {
+      setSignedUrl(storagePath);
+      return;
+    }
+    setLoading(true);
+    setError(false);
+    const { data, error: err } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(storagePath, 3600); // 1 hour expiry
+    setLoading(false);
+    if (err || !data?.signedUrl) {
+      setError(true);
+    } else {
+      setSignedUrl(data.signedUrl);
+    }
+  }, [storagePath]);
+
+  useEffect(() => {
+    if (storagePath) generateUrl();
+  }, [storagePath, generateUrl]);
+
+  if (!storagePath) {
+    return (
+      <Row label={label}>
+        <span className="text-muted-foreground text-xs">Not uploaded</span>
+      </Row>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Row label={label}>
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Loader2 className="w-3 h-3 animate-spin" /> Loading…
+        </span>
+      </Row>
+    );
+  }
+
+  if (error) {
+    return (
+      <Row label={label}>
+        <button onClick={generateUrl} className="text-xs text-destructive hover:underline">
+          Failed to load — retry
+        </button>
+      </Row>
+    );
+  }
+
+  return (
+    <Row label={label}>
+      <a
+        href={signedUrl ?? "#"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1 text-primary hover:underline text-xs"
+      >
+        <FileText className="w-3 h-3" />
+        View Document
+        <ExternalLink className="w-3 h-3" />
+      </a>
+    </Row>
+  );
+};
+
 // ── Traveler detail sheet ──────────────────────────────────────────────────────
 
 const TravelerSheet = ({ traveler, profile, open, onClose }: { traveler: TravelerProfile | null; profile: Profile | null; open: boolean; onClose: () => void }) => (
@@ -179,26 +258,77 @@ const TravelerSheet = ({ traveler, profile, open, onClose }: { traveler: Travele
             <Row label="Phone"><CopyButton text={traveler.emergency_contact_phone ?? null} /></Row>
           </Section>
           <Section title="Documents">
-            {traveler.id_copy_url ? (
-              <Row label="ID Copy">
-                <a href={traveler.id_copy_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs">View Document ↗</a>
-              </Row>
-            ) : (
-              <Row label="ID Copy"><span className="text-muted-foreground text-xs">Not uploaded</span></Row>
-            )}
-            {traveler.license_copy_url ? (
-              <Row label="License Copy">
-                <a href={traveler.license_copy_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs">View Document ↗</a>
-              </Row>
-            ) : (
-              <Row label="License Copy"><span className="text-muted-foreground text-xs">Not uploaded</span></Row>
-            )}
+            <DocumentLink storagePath={traveler.id_copy_url} label="ID Copy" />
+            <DocumentLink storagePath={traveler.license_copy_url} label="License Copy" />
           </Section>
         </div>
       )}
     </SheetContent>
   </Sheet>
 );
+
+// ── Status history for a parcel ────────────────────────────────────────────────
+
+type AuditEntry = {
+  id: string;
+  action: string;
+  table_name: string;
+  record_id: string;
+  old_values: Record<string, any> | null;
+  new_values: Record<string, any> | null;
+  performed_by: string | null;
+  created_at: string;
+};
+
+const ParcelStatusHistory = ({ parcelId }: { parcelId: string }) => {
+  const { data: history = [], isLoading } = useQuery({
+    queryKey: ["parcel-status-history", parcelId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("*")
+        .eq("table_name", "parcels")
+        .eq("record_id", parcelId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as AuditEntry[];
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+        <Loader2 className="w-3 h-3 animate-spin" /> Loading history…
+      </div>
+    );
+  }
+
+  if (history.length === 0) {
+    return <p className="text-xs text-muted-foreground">No status changes recorded.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {history.map((entry) => {
+        const oldStatus = entry.old_values?.status ?? "—";
+        const newStatus = entry.new_values?.status ?? "—";
+        return (
+          <div key={entry.id} className="flex items-start gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+            <div className="text-xs">
+              <div className="text-foreground">
+                <StatusBadge status={oldStatus} /> → <StatusBadge status={newStatus} />
+              </div>
+              <div className="text-muted-foreground mt-0.5">
+                {new Date(entry.created_at).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 // ── Parcel detail sheet ────────────────────────────────────────────────────────
 
@@ -252,6 +382,9 @@ const ParcelDetailSheet = ({ parcel, open, onClose, onStatusChange }: {
             </Row>
             <Row label="Created">{new Date(parcel.created_at).toLocaleString()}</Row>
           </Section>
+          <Section title="Status History">
+            <ParcelStatusHistory parcelId={parcel.id} />
+          </Section>
         </div>
       )}
     </SheetContent>
@@ -285,6 +418,34 @@ const AdminDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // ── Realtime subscription for parcel status changes ────────────────────────
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-parcel-status")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "parcels" },
+        (payload) => {
+          const oldStatus = (payload.old as any)?.status;
+          const newStatus = (payload.new as any)?.status;
+          if (oldStatus && newStatus && oldStatus !== newStatus) {
+            const senderName = (payload.new as any)?.sender_name || "A parcel";
+            const route = `${(payload.new as any)?.pickup_location ?? "?"} → ${(payload.new as any)?.dropoff_location ?? "?"}`;
+            toast({
+              title: `📦 Status Update: ${statusConfig[newStatus]?.label ?? newStatus}`,
+              description: `${senderName} (${route}) changed from ${statusConfig[oldStatus]?.label ?? oldStatus} to ${statusConfig[newStatus]?.label ?? newStatus}`,
+            });
+            queryClient.invalidateQueries({ queryKey: ["admin-parcels"] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast, queryClient]);
+
   // Fetch all profiles
   const { data: profiles = [], isLoading: profilesLoading } = useQuery({
     queryKey: ["admin-profiles"],
@@ -301,7 +462,7 @@ const AdminDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("parcels").select("*").order("created_at", { ascending: false });
       if (error) throw error;
-      return (data as unknown) as Parcel[];
+      return data as Parcel[];
     },
   });
 
@@ -700,7 +861,7 @@ const AdminDashboard = () => {
                           ) : travelerProfiles.map((tp) => {
                             const profile = profileById(tp.profile_id);
                             const primaryRoute = tp.traveler_routes.find((r) => r.is_primary) ?? tp.traveler_routes[0];
-                            const tStatus = (tp as any).status || "pending";
+                            const tStatus = tp.status || "pending";
                             return (
                               <TableRow key={tp.id}>
                                 <TableCell className="font-medium text-sm">{profile?.full_name ?? "—"}</TableCell>
@@ -872,39 +1033,39 @@ const DeliveryApprovalsTab = ({ parcels, onApprove }: { parcels: Parcel[]; onApp
                   <p>Sender: {parcel.sender_name ?? "—"} · {parcel.sender_phone ?? ""}</p>
                   <p>Recipient: {parcel.recipient_name ?? "—"} · {parcel.recipient_phone ?? ""}</p>
                   <p>Weight: {parcel.weight_kg != null ? `${parcel.weight_kg}kg` : "—"} · Price: {parcel.price != null ? `R${parcel.price}` : "—"}</p>
-                  {(parcel as any).sender_confirmed_at && (
-                    <p className="text-success font-medium">✓ Sender confirmed arrival</p>
+                  {parcel.sender_confirmed_at && (
+                    <p className="text-green-600 font-medium">✓ Sender confirmed arrival</p>
                   )}
-                  {!(parcel as any).sender_confirmed_at && (
-                    <p className="text-warning font-medium">⏳ Sender has not confirmed yet</p>
+                  {!parcel.sender_confirmed_at && (
+                    <p className="text-yellow-600 font-medium">⏳ Sender has not confirmed yet</p>
                   )}
                 </div>
               </div>
               <StatusBadge status={parcel.status} />
             </div>
-            {(parcel as any).photo_url && (
+            {parcel.photo_url && (
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Delivery proof photo:</p>
                 <img
-                  src={(parcel as any).photo_url}
+                  src={parcel.photo_url}
                   alt="Delivery proof"
                   className="rounded-lg border border-border max-h-48 object-cover"
                 />
               </div>
             )}
-            {(parcel as any).delivery_lat != null && (parcel as any).delivery_lng != null && (
+            {parcel.delivery_lat != null && parcel.delivery_lng != null && (
               <div className="text-xs text-muted-foreground">
                 <p className="mb-1">📍 Delivery geotag:</p>
                 <a
-                  href={`https://www.google.com/maps?q=${(parcel as any).delivery_lat},${(parcel as any).delivery_lng}`}
+                  href={`https://www.google.com/maps?q=${parcel.delivery_lat},${parcel.delivery_lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  {(parcel as any).delivery_lat.toFixed(5)}, {(parcel as any).delivery_lng.toFixed(5)} — View on Google Maps ↗
+                  {parcel.delivery_lat.toFixed(5)}, {parcel.delivery_lng.toFixed(5)} — View on Google Maps ↗
                 </a>
-                {(parcel as any).delivery_geotagged_at && (
-                  <p className="mt-0.5">Tagged: {new Date((parcel as any).delivery_geotagged_at).toLocaleString()}</p>
+                {parcel.delivery_geotagged_at && (
+                  <p className="mt-0.5">Tagged: {new Date(parcel.delivery_geotagged_at).toLocaleString()}</p>
                 )}
               </div>
             )}
@@ -925,17 +1086,6 @@ const DeliveryApprovalsTab = ({ parcels, onApprove }: { parcels: Parcel[]; onApp
 };
 
 // ── Audit Log Tab ──────────────────────────────────────────────────────────────
-
-type AuditEntry = {
-  id: string;
-  action: string;
-  table_name: string;
-  record_id: string;
-  old_values: Record<string, any> | null;
-  new_values: Record<string, any> | null;
-  performed_by: string | null;
-  created_at: string;
-};
 
 const ACTION_LABELS: Record<string, { label: string; className: string }> = {
   traveler_approved: { label: "Approved", className: "bg-green-100 text-green-800 border-green-200" },
