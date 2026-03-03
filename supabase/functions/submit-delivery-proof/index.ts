@@ -26,9 +26,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { matchId, photoUrl } = await req.json();
-    if (!matchId || !photoUrl) {
-      return new Response(JSON.stringify({ error: "matchId and photoUrl required" }), {
+    const { matchId, photoUrl, lat, lng } = await req.json();
+    const hasPhoto = !!photoUrl;
+    const hasGeo = lat != null && lng != null;
+    if (!matchId || (!hasPhoto && !hasGeo)) {
+      return new Response(JSON.stringify({ error: "matchId and at least one of photoUrl or lat+lng required" }), {
         status: 400,
         headers: corsHeaders,
       });
@@ -97,10 +99,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update parcel to pending_confirmation with photo
+    // Update parcel to pending_confirmation with photo and/or geotag
+    const updatePayload: Record<string, any> = { status: "pending_confirmation" };
+    if (hasPhoto) updatePayload.photo_url = photoUrl;
+    if (hasGeo) {
+      updatePayload.delivery_lat = lat;
+      updatePayload.delivery_lng = lng;
+      updatePayload.delivery_geotagged_at = new Date().toISOString();
+    }
     await supabase
       .from("parcels")
-      .update({ status: "pending_confirmation", photo_url: photoUrl })
+      .update(updatePayload)
       .eq("id", match.parcel_id);
 
     // Notify sender

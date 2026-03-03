@@ -83,6 +83,8 @@ type TravelerProfile = {
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_relation: string | null;
+  id_copy_url: string | null;
+  license_copy_url: string | null;
   traveler_routes: TravelerRoute[];
 };
 
@@ -175,6 +177,22 @@ const TravelerSheet = ({ traveler, profile, open, onClose }: { traveler: Travele
             <Row label="Name">{traveler.emergency_contact_name ?? "—"}</Row>
             <Row label="Relation">{traveler.emergency_contact_relation ?? "—"}</Row>
             <Row label="Phone"><CopyButton text={traveler.emergency_contact_phone ?? null} /></Row>
+          </Section>
+          <Section title="Documents">
+            {traveler.id_copy_url ? (
+              <Row label="ID Copy">
+                <a href={traveler.id_copy_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs">View Document ↗</a>
+              </Row>
+            ) : (
+              <Row label="ID Copy"><span className="text-muted-foreground text-xs">Not uploaded</span></Row>
+            )}
+            {traveler.license_copy_url ? (
+              <Row label="License Copy">
+                <a href={traveler.license_copy_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs">View Document ↗</a>
+              </Row>
+            ) : (
+              <Row label="License Copy"><span className="text-muted-foreground text-xs">Not uploaded</span></Row>
+            )}
           </Section>
         </div>
       )}
@@ -872,6 +890,22 @@ const DeliveryApprovalsTab = ({ parcels, onApprove }: { parcels: Parcel[]; onApp
                   alt="Delivery proof"
                   className="rounded-lg border border-border max-h-48 object-cover"
                 />
+              </div>
+            )}
+            {(parcel as any).delivery_lat != null && (parcel as any).delivery_lng != null && (
+              <div className="text-xs text-muted-foreground">
+                <p className="mb-1">📍 Delivery geotag:</p>
+                <a
+                  href={`https://www.google.com/maps?q=${(parcel as any).delivery_lat},${(parcel as any).delivery_lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {(parcel as any).delivery_lat.toFixed(5)}, {(parcel as any).delivery_lng.toFixed(5)} — View on Google Maps ↗
+                </a>
+                {(parcel as any).delivery_geotagged_at && (
+                  <p className="mt-0.5">Tagged: {new Date((parcel as any).delivery_geotagged_at).toLocaleString()}</p>
+                )}
               </div>
             )}
             <Button

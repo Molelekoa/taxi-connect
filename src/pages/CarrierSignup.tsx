@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CarrierRegistrationForm from "@/components/CarrierRegistrationForm";
 import SenderRegistrationForm from "@/components/SenderRegistrationForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Fuel, Coins, Calendar, Heart, Truck, Package } from "lucide-react";
+import { Fuel, Coins, Calendar, Heart, Truck, Package, CheckCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 const communityBenefits = [
   {
     icon: Fuel,
@@ -32,12 +35,34 @@ const communityBenefits = [
 const CarrierSignup = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const registrationRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const [isTraveler, setIsTraveler] = useState(false);
+  const [isSender, setIsSender] = useState(false);
+  const [roleCheckDone, setRoleCheckDone] = useState(false);
 
   useEffect(() => {
     if (showRegistration && registrationRef.current) {
       registrationRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [showRegistration]);
+
+  useEffect(() => {
+    if (!user) { setRoleCheckDone(true); return; }
+    const checkRoles = async () => {
+      const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
+      if (!pid) { setRoleCheckDone(true); return; }
+
+      const [{ data: tp }, { data: profile }] = await Promise.all([
+        supabase.from("traveler_profiles").select("id").eq("profile_id", pid).maybeSingle(),
+        supabase.from("profiles").select("role").eq("id", pid).single(),
+      ]);
+
+      setIsTraveler(!!tp);
+      setIsSender(profile?.role === "sender");
+      setRoleCheckDone(true);
+    };
+    checkRoles();
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,21 +152,45 @@ const CarrierSignup = () => {
                 </TabsList>
 
                 <TabsContent value="traveler" className="space-y-4">
-                  <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      <strong className="text-foreground">Travelers</strong> — I travel between cities and can deliver parcels along my route
-                    </p>
-                  </div>
-                  <CarrierRegistrationForm />
+                  {isTraveler ? (
+                    <div className="bg-success/10 border border-success/30 rounded-lg p-6 text-center space-y-3">
+                      <CheckCircle className="w-8 h-8 text-success mx-auto" />
+                      <p className="font-medium text-foreground">You're already registered as a Traveler</p>
+                      <Link to="/traveler-dashboard">
+                        <Button variant="default" size="sm">Go to Traveler Dashboard</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          <strong className="text-foreground">Travelers</strong> — I travel between cities and can deliver parcels along my route
+                        </p>
+                      </div>
+                      <CarrierRegistrationForm />
+                    </>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="sender" className="space-y-4">
-                  <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      <strong className="text-foreground">Senders</strong> — I need to send a parcel to someone in another city
-                    </p>
-                  </div>
-                  <SenderRegistrationForm />
+                  {isSender ? (
+                    <div className="bg-success/10 border border-success/30 rounded-lg p-6 text-center space-y-3">
+                      <CheckCircle className="w-8 h-8 text-success mx-auto" />
+                      <p className="font-medium text-foreground">You're already registered as a Sender</p>
+                      <Link to="/sender-dashboard">
+                        <Button variant="default" size="sm">Go to Sent Parcels</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          <strong className="text-foreground">Senders</strong> — I need to send a parcel to someone in another city
+                        </p>
+                      </div>
+                      <SenderRegistrationForm />
+                    </>
+                  )}
                 </TabsContent>
               </Tabs>
             </div>

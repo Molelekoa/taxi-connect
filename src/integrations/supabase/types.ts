@@ -237,6 +237,9 @@ export type Database = {
           cancel_reason: string | null
           created_at: string
           delivery_address: string | null
+          delivery_geotagged_at: string | null
+          delivery_lat: number | null
+          delivery_lng: number | null
           description: string | null
           dimensions: string | null
           dropoff_location: string | null
@@ -265,6 +268,9 @@ export type Database = {
           cancel_reason?: string | null
           created_at?: string
           delivery_address?: string | null
+          delivery_geotagged_at?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
           description?: string | null
           dimensions?: string | null
           dropoff_location?: string | null
@@ -293,6 +299,9 @@ export type Database = {
           cancel_reason?: string | null
           created_at?: string
           delivery_address?: string | null
+          delivery_geotagged_at?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
           description?: string | null
           dimensions?: string | null
           dropoff_location?: string | null

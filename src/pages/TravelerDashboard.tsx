@@ -55,6 +55,11 @@ const TravelerDashboard = () => {
   const [submittingProof, setSubmittingProof] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // Geotag state
+  const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -130,7 +135,39 @@ const TravelerDashboard = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [user]);
+  useEffect(() => {
+    fetchData();
+
+    // Realtime subscription for traveler approval status
+    if (!user) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const setupRealtime = async () => {
+      const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
+      if (!pid) return;
+
+      channel = supabase
+        .channel("traveler-status")
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "traveler_profiles", filter: `profile_id=eq.${pid}` },
+          (payload) => {
+            const newStatus = (payload.new as any)?.status;
+            if (newStatus) {
+              setTravelerStatus(newStatus);
+              fetchData(); // re-fetch all data when status changes
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const handleAccept = async (matchId: string) => {
     setAccepting(matchId);
@@ -183,33 +220,60 @@ const TravelerDashboard = () => {
     }
   };
 
+  const handleTagLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGeoCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setGeoLoading(false);
+      },
+      (err) => {
+        setGeoError(err.message || "Failed to get location.");
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const handleSubmitDeliveryProof = async () => {
-    if (!showDeliveryDialog || !deliveryPhoto || !profileId) return;
+    if (!showDeliveryDialog || (!deliveryPhoto && !geoCoords) || !profileId) return;
     setSubmittingProof(true);
     try {
-      // Upload photo
-      const uploadForm = new FormData();
-      uploadForm.append("file", deliveryPhoto);
-      uploadForm.append("profileId", profileId);
-      uploadForm.append("purpose", "delivery-proof");
+      let photoUrl: string | undefined;
 
-      const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
-        body: uploadForm,
-      });
+      if (deliveryPhoto) {
+        const uploadForm = new FormData();
+        uploadForm.append("file", deliveryPhoto);
+        uploadForm.append("profileId", profileId);
+        uploadForm.append("purpose", "delivery-proof");
 
-      if (uploadError || !uploadResult?.success) {
-        throw new Error(uploadError?.message || "Photo upload failed");
+        const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
+          body: uploadForm,
+        });
+
+        if (uploadError || !uploadResult?.success) {
+          throw new Error(uploadError?.message || "Photo upload failed");
+        }
+        photoUrl = uploadResult.url;
       }
 
-      // Submit proof
-      const res = await supabase.functions.invoke("submit-delivery-proof", {
-        body: { matchId: showDeliveryDialog, photoUrl: uploadResult.url },
-      });
+      const body: any = { matchId: showDeliveryDialog };
+      if (photoUrl) body.photoUrl = photoUrl;
+      if (geoCoords) { body.lat = geoCoords.lat; body.lng = geoCoords.lng; }
+
+      const res = await supabase.functions.invoke("submit-delivery-proof", { body });
       if (res.error) throw new Error(res.error.message);
 
       toast({ title: "Delivery proof submitted!", description: "Awaiting admin confirmation." });
       setShowDeliveryDialog(null);
       setDeliveryPhoto(null);
+      setGeoCoords(null);
+      setGeoError(null);
       fetchData();
     } catch (err: any) {
       toast({ title: "Failed to submit proof", description: err.message, variant: "destructive" });
@@ -527,12 +591,14 @@ const TravelerDashboard = () => {
       </Dialog>
 
       {/* Delivery Proof Dialog */}
-      <Dialog open={!!showDeliveryDialog} onOpenChange={(open) => { if (!open) setShowDeliveryDialog(null); }}>
+      <Dialog open={!!showDeliveryDialog} onOpenChange={(open) => { if (!open) { setShowDeliveryDialog(null); setGeoCoords(null); setGeoError(null); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Submit Delivery Proof</DialogTitle>
-            <DialogDescription>Upload a photo of the parcel at the delivery destination.</DialogDescription>
+            <DialogDescription>Upload a photo and/or tag your GPS location as proof of delivery.</DialogDescription>
           </DialogHeader>
+
+          {/* Photo upload */}
           <div
             className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => photoInputRef.current?.click()}
@@ -560,10 +626,32 @@ const TravelerDashboard = () => {
               }}
             />
           </div>
+
+          {/* Geotag option */}
+          <div className="border border-border rounded-lg p-4 space-y-2">
+            <p className="text-sm font-medium text-foreground flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              Tag My Location
+            </p>
+            {geoCoords ? (
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-success shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Location tagged: {geoCoords.lat.toFixed(5)}, {geoCoords.lng.toFixed(5)}
+                </p>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleTagLocation} disabled={geoLoading}>
+                {geoLoading ? "Getting location..." : "Capture GPS Location"}
+              </Button>
+            )}
+            {geoError && <p className="text-xs text-destructive">{geoError}</p>}
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeliveryDialog(null)}>Back</Button>
             <Button
-              disabled={!deliveryPhoto || submittingProof}
+              disabled={(!deliveryPhoto && !geoCoords) || submittingProof}
               onClick={handleSubmitDeliveryProof}
             >
               {submittingProof ? "Submitting..." : "Submit Proof"}
