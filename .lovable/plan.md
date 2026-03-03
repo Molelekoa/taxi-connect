@@ -1,40 +1,47 @@
 
 
-# Plan: Admin Notifications, Document Viewing Fix, and Parcel Status Tracking
+# Plan: Enhanced Delivery Approval Flow with Geotag Details, Payment Notification, and Status Sync
 
-## Issues Found
+## What's Happening Now
 
-### 1. Document links show "Not uploaded" — two problems
-- The existing traveler record has `id_copy_url = null` and `license_copy_url = null`, meaning documents weren't uploaded during that registration.
-- Even when documents ARE uploaded, the `register-traveler` function stores **file paths** (e.g. `userId/id-copy-file.jpg`), not URLs. The admin TravelerSheet tries to use these as `<a href={...}>` links, which won't work. The admin needs **signed URLs** generated from these storage paths using `supabase.storage.from("documents").createSignedUrl()`.
+1. **Admin Deliveries tab** only shows `pending_confirmation` parcels. Once approved, the parcel disappears — there's no way to review delivered parcels or their geotag/photo proof after approval.
+2. **Admin approve action** (`onApprove`) just sets status to `delivered` via a raw update. It does NOT notify the traveler or insert a notification record.
+3. **Traveler Dashboard** only shows `accepted` matches in the "Carrying" tab. Once the parcel moves to `pending_confirmation` or `delivered`, it vanishes — the traveler never sees a "Delivered" confirmation or payment info.
 
-**Fix**: Update the `TravelerSheet` to detect when the value is a storage path (not a full URL) and generate a signed URL on-the-fly. Add a small async helper that creates signed URLs when the sheet opens. Also add a "No documents uploaded" message when both are null.
+## Changes
 
-### 2. Admin notification on delivery status change — already partially done
-The `submit-delivery-proof` edge function already notifies admins when a traveler submits delivery proof (lines 126-146). However, other status changes (collected, in-transit) by the traveler do NOT notify the admin.
+### 1. Admin Deliveries Tab — Show Full Parcel Details + Delivered History
+- Show all parcel details (sender, recipient, addresses, weight, price, description) in each delivery approval card — not just the route summary.
+- Add a sub-section showing delivered parcels below the pending ones so the admin can review past approvals with their geotag/photo proof.
+- The existing geotag Google Maps link and photo display already work — they just need to remain visible after approval.
 
-**Fix**: Add a realtime subscription in `AdminDashboard` on the `parcels` table listening for status UPDATE events. When a parcel status changes, show a toast notification and auto-refresh the parcels list. This gives the admin live visibility into all status transitions without requiring edge function changes for every status update.
+**File**: `src/pages/AdminDashboard.tsx` — expand `DeliveryApprovalsTab` to show full details and include a "Recently Delivered" section filtered by `status === "delivered"`.
 
-### 3. Parcel status tracking for admin communication
-The admin currently has no way to see a timeline of status changes. The audit log captures status changes but in a generic format.
+### 2. Admin Approve → Notify Traveler with Payment Timeline
+When the admin clicks "Approve Delivery":
+- Update parcel status to `delivered` (existing).
+- Insert a notification for the traveler with payment timeline logic:
+  - If delivery day is Mon–Thu: "Payment will be made within 72 hours."
+  - If delivery day is Fri–Sun: "Payment will be made on Wednesday."
+- This notification insert uses the service role via the existing `updateStatus` mutation path. Since `notifications` INSERT requires service role (no client INSERT policy), we'll create a small edge function `approve-delivery` that handles both the status update and notification insert atomically.
 
-**Fix**: Add a "Status History" section to the `ParcelDetailSheet` that queries the `audit_log` table filtered by `table_name = 'parcels'` and the parcel's `record_id`. This shows a chronological timeline of all status transitions (who changed it, when, from what to what).
+**New file**: `supabase/functions/approve-delivery/index.ts` — accepts `{ parcelId }`, sets status to `delivered`, calculates payment date, inserts notification for the traveler.
 
-### 4. Missing fields in Parcel type
-The `Parcel` type in AdminDashboard is missing `delivery_lat`, `delivery_lng`, and `delivery_geotagged_at` — these were added to the database but the type wasn't updated.
+### 3. Traveler Dashboard — Show Delivered Parcels
+- Add a "Delivered" section or tab showing parcels with `status === "delivered"` or `pending_confirmation`.
+- When a parcel is approved by admin, the traveler sees it move to "Delivered" with the payment message from the notification.
+- Add a realtime subscription on `parcels` (filtered by traveler's matches) to auto-update when admin approves.
 
-**Fix**: Add these three fields to the `Parcel` type and remove the `as any` casts in the DeliveryApprovalsTab.
+**File**: `src/pages/TravelerDashboard.tsx` — fetch delivered matches, display them in the "Carrying" tab with a "Delivered" badge and payment info.
 
----
+### 4. Admin Dashboard Status Sync
+- When admin approves delivery, invalidate both parcels and deliveries queries so the parcel moves from "Deliveries" pending list to the delivered section and updates the Parcels tab status.
+
+**File**: `src/pages/AdminDashboard.tsx` — update the approve handler to call the new edge function instead of raw status update.
 
 ## Files Modified
-
-- **`src/pages/AdminDashboard.tsx`**:
-  - Fix `Parcel` type to include geotag fields
-  - Fix `TravelerSheet` to generate signed URLs for document paths
-  - Add realtime subscription on `parcels` table for live status change toasts
-  - Add status history timeline in `ParcelDetailSheet` (from audit_log)
-  - Remove `as any` casts in DeliveryApprovalsTab
-
-No database changes needed. No edge function changes needed.
+- `src/pages/AdminDashboard.tsx` — expanded delivery details, delivered history, new approve handler
+- `src/pages/TravelerDashboard.tsx` — show delivered parcels with payment timeline
+- `supabase/functions/approve-delivery/index.ts` — new edge function for atomic approval + notification
+- `supabase/config.toml` — register new edge function
 
