@@ -1,47 +1,70 @@
 
 
-# Plan: Enhanced Delivery Approval Flow with Geotag Details, Payment Notification, and Status Sync
+# Plan: Delivery Verification System Enhancement
 
-## What's Happening Now
+## Current State Analysis
 
-1. **Admin Deliveries tab** only shows `pending_confirmation` parcels. Once approved, the parcel disappears — there's no way to review delivered parcels or their geotag/photo proof after approval.
-2. **Admin approve action** (`onApprove`) just sets status to `delivered` via a raw update. It does NOT notify the traveler or insert a notification record.
-3. **Traveler Dashboard** only shows `accepted` matches in the "Carrying" tab. Once the parcel moves to `pending_confirmation` or `delivered`, it vanishes — the traveler never sees a "Delivered" confirmation or payment info.
+**Already built:**
+- Traveler proof submission UI (photo + geotag dialog) in TravelerDashboard
+- `submit-delivery-proof` edge function (stores proof on parcels table)
+- `approve-delivery` edge function (updates parcel to delivered, notifies traveler)
+- Admin Deliveries tab with full details, photo, geotag, approve button
+- Traveler "Delivered" tab showing pending_confirmation/delivered parcels
+- Sender dashboard with basic status display
+
+**What's missing:**
+- Proof data on `matches` table (currently only on parcels) — `proof_photo_url`, `proof_geotag`, `proof_submitted_at`, `delivery_status`
+- Reject functionality for admin (only approve exists)
+- `verify-delivery` edge function (approve-delivery is close but lacks reject path)
+- Human-readable delivery status labels in sender dashboard
+- `delivered_pending_verification` and `delivered_verified` status values in the parcels CHECK constraint
 
 ## Changes
 
-### 1. Admin Deliveries Tab — Show Full Parcel Details + Delivered History
-- Show all parcel details (sender, recipient, addresses, weight, price, description) in each delivery approval card — not just the route summary.
-- Add a sub-section showing delivered parcels below the pending ones so the admin can review past approvals with their geotag/photo proof.
-- The existing geotag Google Maps link and photo display already work — they just need to remain visible after approval.
+### 1. Database Migration
+Add columns to `matches` table:
+- `proof_photo_url` (text, nullable)
+- `proof_geotag` (jsonb, nullable)
+- `proof_submitted_at` (timestamptz, nullable)
+- `delivery_status` (text, default null) — values: `delivered_pending_verification`, `delivered_verified`, `rejected`
 
-**File**: `src/pages/AdminDashboard.tsx` — expand `DeliveryApprovalsTab` to show full details and include a "Recently Delivered" section filtered by `status === "delivered"`.
+Update parcels status CHECK constraint to also allow `delivered_pending_verification` and `delivered_verified`.
 
-### 2. Admin Approve → Notify Traveler with Payment Timeline
-When the admin clicks "Approve Delivery":
-- Update parcel status to `delivered` (existing).
-- Insert a notification for the traveler with payment timeline logic:
-  - If delivery day is Mon–Thu: "Payment will be made within 72 hours."
-  - If delivery day is Fri–Sun: "Payment will be made on Wednesday."
-- This notification insert uses the service role via the existing `updateStatus` mutation path. Since `notifications` INSERT requires service role (no client INSERT policy), we'll create a small edge function `approve-delivery` that handles both the status update and notification insert atomically.
+### 2. Update `submit-delivery-proof` Edge Function
+In addition to updating the parcel, also update the match record with `proof_photo_url`, `proof_geotag` (JSON with lat/lng), `proof_submitted_at`, and set `delivery_status = 'delivered_pending_verification'`. Change parcel status to `delivered_pending_verification` instead of `pending_confirmation`.
 
-**New file**: `supabase/functions/approve-delivery/index.ts` — accepts `{ parcelId }`, sets status to `delivered`, calculates payment date, inserts notification for the traveler.
+### 3. New `verify-delivery` Edge Function
+Accepts `{ matchId, action: "approve" | "reject" }`. On approve: set match `delivery_status = 'delivered_verified'`, update parcel status to `delivered_verified`, notify traveler with payment timeline, notify sender. On reject: set match `delivery_status = 'rejected'`, reset parcel status to matched/accepted, notify traveler to resubmit proof.
 
-### 3. Traveler Dashboard — Show Delivered Parcels
-- Add a "Delivered" section or tab showing parcels with `status === "delivered"` or `pending_confirmation`.
-- When a parcel is approved by admin, the traveler sees it move to "Delivered" with the payment message from the notification.
-- Add a realtime subscription on `parcels` (filtered by traveler's matches) to auto-update when admin approves.
+### 4. Admin Dashboard — Deliveries Tab
+- Update filter to show `delivered_pending_verification` parcels (instead of `pending_confirmation`)
+- Show proof photo thumbnail from match record
+- Show geotag as Google Maps link from match `proof_geotag`
+- Show `proof_submitted_at` date
+- Add traveler name and sender name (join via match → trip → profile)
+- Add "Reject" button alongside "Approve" — reject calls `verify-delivery` with `action: "reject"`
+- "Delivered" section filters by `delivered_verified` status
+- Update status config and STATUSES array for new values
 
-**File**: `src/pages/TravelerDashboard.tsx` — fetch delivered matches, display them in the "Carrying" tab with a "Delivered" badge and payment info.
+### 5. Sender Dashboard — Human-Readable Statuses
+Update `statusConfig` in SenderDashboard to map:
+- `pending` → "Matched, awaiting pickup"
+- `matched` → "Matched, awaiting pickup"
+- `collected` / `in_transit` → "On the way"
+- `delivered_pending_verification` → "Delivered – awaiting admin confirmation"
+- `delivered_verified` → "Delivered – confirmed"
+- `delivered` → "Delivery complete"
 
-### 4. Admin Dashboard Status Sync
-- When admin approves delivery, invalidate both parcels and deliveries queries so the parcel moves from "Deliveries" pending list to the delivered section and updates the Parcels tab status.
-
-**File**: `src/pages/AdminDashboard.tsx` — update the approve handler to call the new edge function instead of raw status update.
+### 6. Traveler Dashboard
+- Update delivered tab filter to include `delivered_pending_verification` and `delivered_verified`
+- Show appropriate status labels for new statuses
 
 ## Files Modified
-- `src/pages/AdminDashboard.tsx` — expanded delivery details, delivered history, new approve handler
-- `src/pages/TravelerDashboard.tsx` — show delivered parcels with payment timeline
-- `supabase/functions/approve-delivery/index.ts` — new edge function for atomic approval + notification
-- `supabase/config.toml` — register new edge function
+- **Database migration** — add columns to matches, update parcels CHECK constraint
+- `supabase/functions/submit-delivery-proof/index.ts` — also write proof to match record
+- `supabase/functions/verify-delivery/index.ts` — **new** edge function for approve/reject
+- `supabase/config.toml` — register verify-delivery
+- `src/pages/AdminDashboard.tsx` — update deliveries tab filters, add reject button, new statuses
+- `src/pages/SenderDashboard.tsx` — human-readable status labels
+- `src/pages/TravelerDashboard.tsx` — update filters for new statuses
 
