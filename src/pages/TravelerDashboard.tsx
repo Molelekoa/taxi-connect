@@ -39,6 +39,7 @@ const TravelerDashboard = () => {
   const [trips, setTrips] = useState<any[]>([]);
   const [pendingMatches, setPendingMatches] = useState<any[]>([]);
   const [acceptedMatches, setAcceptedMatches] = useState<any[]>([]);
+  const [deliveredMatches, setDeliveredMatches] = useState<any[]>([]);
   const [browseParcels, setBrowseParcels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
@@ -96,6 +97,18 @@ const TravelerDashboard = () => {
       .select("*, parcels(*), trips(*)")
       .eq("status", "accepted") as { data: any[] | null };
     setAcceptedMatches((accepted || []).filter((m: any) => m.trips?.traveler_id === pid));
+
+    // Fetch delivered/pending_confirmation matches
+    const { data: delivered } = await supabase
+      .from("matches")
+      .select("*, parcels(*), trips(*)")
+      .in("status", ["accepted"]) as { data: any[] | null };
+    // Filter by traveler AND parcel status being delivered or pending_confirmation
+    const deliveredFiltered = (delivered || []).filter((m: any) =>
+      m.trips?.traveler_id === pid &&
+      (m.parcels?.status === "delivered" || m.parcels?.status === "pending_confirmation")
+    );
+    setDeliveredMatches(deliveredFiltered);
 
     if (tp?.status === "approved") {
       const { data: tpFull } = await supabase
@@ -355,6 +368,14 @@ const TravelerDashboard = () => {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="accepted">Carrying</TabsTrigger>
+                <TabsTrigger value="delivered">
+                  Delivered
+                  {deliveredMatches.length > 0 && (
+                    <span className="ml-1.5 bg-success text-success-foreground text-[10px] rounded-full px-1.5 py-0.5 font-bold">
+                      {deliveredMatches.length}
+                    </span>
+                  )}
+                </TabsTrigger>
               </TabsList>
 
               {/* My Trips */}
@@ -552,6 +573,61 @@ const TravelerDashboard = () => {
                           Cancel
                         </Button>
                       </div>
+                    </div>
+                  ))
+                )}
+              </TabsContent>
+
+              {/* Delivered */}
+              <TabsContent value="delivered" className="space-y-3">
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : deliveredMatches.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No delivered parcels yet.</p>
+                ) : (
+                  deliveredMatches.map(match => (
+                    <div key={match.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 font-medium text-foreground">
+                          <CheckCircle className="w-4 h-4 text-success" />
+                          {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
+                        </div>
+                        <Badge className={match.parcels?.status === "delivered"
+                          ? "bg-success/10 text-success"
+                          : "bg-warning/10 text-warning"
+                        }>
+                          {match.parcels?.status === "delivered" ? "Delivered ✓" : "Pending Confirmation"}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
+                        {match.parcels?.sender_name && <p>Sender: {match.parcels.sender_name}</p>}
+                        {match.parcels?.recipient_name && <p>Recipient: {match.parcels.recipient_name}</p>}
+                      </div>
+                      {match.parcels?.price && (
+                        <p className="text-sm">{payoutDisplay(match.parcels.price)}</p>
+                      )}
+                      {match.parcels?.status === "delivered" && (
+                        <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-xs">
+                          <p className="font-medium text-success">💰 Payment Information</p>
+                          <p className="text-foreground mt-1">
+                            {(() => {
+                              const day = new Date().getDay();
+                              return day >= 1 && day <= 4
+                                ? "Payment will be made within 72 hours."
+                                : "Payment will be made on Wednesday.";
+                            })()}
+                          </p>
+                        </div>
+                      )}
+                      {match.parcels?.status === "pending_confirmation" && (
+                        <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 text-xs">
+                          <p className="font-medium text-warning">⏳ Awaiting Admin Approval</p>
+                          <p className="text-foreground mt-1">Your delivery proof has been submitted. An admin will review and approve it shortly.</p>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}

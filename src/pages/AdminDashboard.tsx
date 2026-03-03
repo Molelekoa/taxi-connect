@@ -23,7 +23,7 @@ import {
 import {
   Users, Package, Truck, LayoutDashboard, Copy, Check, Phone, Mail, Eye,
   DollarSign, MapPin, Scale, Search, TrendingUp, ShieldCheck, ShieldX, Clock,
-  FileText, ExternalLink, Loader2,
+  FileText, ExternalLink, Loader2, CheckCircle,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -917,8 +917,18 @@ const AdminDashboard = () => {
               {/* ── TAB: DELIVERY APPROVALS ──────────────────────────────────── */}
               <TabsContent value="deliveries">
                 <DeliveryApprovalsTab
-                  parcels={parcels.filter(p => p.status === "pending_confirmation")}
-                  onApprove={(id) => updateStatus.mutate({ id, status: "delivered" })}
+                  pendingParcels={parcels.filter(p => p.status === "pending_confirmation")}
+                  deliveredParcels={parcels.filter(p => p.status === "delivered")}
+                  onApprove={async (id) => {
+                    try {
+                      const res = await supabase.functions.invoke("approve-delivery", { body: { parcelId: id } });
+                      if (res.error) throw new Error(res.error.message);
+                      toast({ title: "Delivery approved", description: "Traveler has been notified with payment timeline." });
+                      queryClient.invalidateQueries({ queryKey: ["admin-parcels"] });
+                    } catch (err: any) {
+                      toast({ title: "Failed to approve", description: err.message, variant: "destructive" });
+                    }
+                  }}
                 />
               </TabsContent>
 
@@ -1006,81 +1016,137 @@ const TravelerStatusBadge = ({ status }: { status: string }) => {
 
 // ── Delivery Approvals Tab ─────────────────────────────────────────────────────
 
-const DeliveryApprovalsTab = ({ parcels, onApprove }: { parcels: Parcel[]; onApprove: (id: string) => void }) => {
-  if (parcels.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <ShieldCheck className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">No deliveries awaiting approval.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+const DeliveryParcelCard = ({ parcel, onApprove }: { parcel: Parcel; onApprove?: (id: string) => void }) => (
+  <Card>
+    <CardContent className="p-5 space-y-3">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 font-medium text-foreground text-sm">
+            <MapPin className="w-4 h-4 text-primary" />
+            {parcel.pickup_location} → {parcel.dropoff_location}
+          </div>
+          <StatusBadge status={parcel.status} />
+        </div>
+      </div>
 
+      {/* Full details grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground border-t border-border pt-3">
+        <div><span className="font-medium text-foreground">Sender:</span> {parcel.sender_name ?? "—"}</div>
+        <div><span className="font-medium text-foreground">Sender Phone:</span> {parcel.sender_phone ?? "—"}</div>
+        <div><span className="font-medium text-foreground">Sender Email:</span> {parcel.sender_email ?? "—"}</div>
+        <div><span className="font-medium text-foreground">Recipient:</span> {parcel.recipient_name ?? "—"}</div>
+        <div><span className="font-medium text-foreground">Recipient Phone:</span> {parcel.recipient_phone ?? "—"}</div>
+        <div><span className="font-medium text-foreground">Pickup Address:</span> {parcel.pickup_address ?? "—"}</div>
+        <div><span className="font-medium text-foreground">Delivery Address:</span> {parcel.delivery_address ?? "—"}</div>
+        <div><span className="font-medium text-foreground">Weight:</span> {parcel.weight_kg != null ? `${parcel.weight_kg}kg` : "—"} ({bandLabel(parcel.weight_band)})</div>
+        <div><span className="font-medium text-foreground">Price:</span> {parcel.price != null ? `R${parcel.price}` : "—"}</div>
+        <div><span className="font-medium text-foreground">Description:</span> {parcel.description ?? "—"}</div>
+      </div>
+
+      {/* Sender confirmation */}
+      <div className="text-xs">
+        {parcel.sender_confirmed_at ? (
+          <p className="text-green-600 font-medium">✓ Sender confirmed arrival — {new Date(parcel.sender_confirmed_at).toLocaleString()}</p>
+        ) : (
+          <p className="text-yellow-600 font-medium">⏳ Sender has not confirmed yet</p>
+        )}
+      </div>
+
+      {/* Photo proof */}
+      {parcel.photo_url && (
+        <div>
+          <p className="text-xs font-medium text-foreground mb-1">📸 Delivery proof photo:</p>
+          <img
+            src={parcel.photo_url}
+            alt="Delivery proof"
+            className="rounded-lg border border-border max-h-48 object-cover"
+          />
+        </div>
+      )}
+
+      {/* Geotag details */}
+      {parcel.delivery_lat != null && parcel.delivery_lng != null && (
+        <div className="bg-secondary/50 rounded-lg p-3 text-xs space-y-1">
+          <p className="font-medium text-foreground">📍 Delivery Geotag</p>
+          <p>Coordinates: {parcel.delivery_lat.toFixed(5)}, {parcel.delivery_lng.toFixed(5)}</p>
+          <a
+            href={`https://www.google.com/maps?q=${parcel.delivery_lat},${parcel.delivery_lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline inline-flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" /> View on Google Maps
+          </a>
+          {parcel.delivery_geotagged_at && (
+            <p className="text-muted-foreground">Tagged: {new Date(parcel.delivery_geotagged_at).toLocaleString()}</p>
+          )}
+        </div>
+      )}
+
+      {/* No geotag or photo warning */}
+      {!parcel.photo_url && parcel.delivery_lat == null && (
+        <p className="text-xs text-destructive font-medium">⚠ No delivery proof submitted (no photo or geotag)</p>
+      )}
+
+      {/* Approve button only for pending */}
+      {onApprove && (
+        <Button
+          variant="default"
+          size="sm"
+          className="w-full"
+          onClick={() => onApprove(parcel.id)}
+        >
+          <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+          Approve Delivery
+        </Button>
+      )}
+    </CardContent>
+  </Card>
+);
+
+const DeliveryApprovalsTab = ({ pendingParcels, deliveredParcels, onApprove }: {
+  pendingParcels: Parcel[];
+  deliveredParcels: Parcel[];
+  onApprove: (id: string) => void;
+}) => {
   return (
-    <div className="space-y-4">
-      {parcels.map(parcel => (
-        <Card key={parcel.id}>
-          <CardContent className="p-5 space-y-3">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 font-medium text-foreground text-sm">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  {parcel.pickup_location} → {parcel.dropoff_location}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                  <p>Sender: {parcel.sender_name ?? "—"} · {parcel.sender_phone ?? ""}</p>
-                  <p>Recipient: {parcel.recipient_name ?? "—"} · {parcel.recipient_phone ?? ""}</p>
-                  <p>Weight: {parcel.weight_kg != null ? `${parcel.weight_kg}kg` : "—"} · Price: {parcel.price != null ? `R${parcel.price}` : "—"}</p>
-                  {parcel.sender_confirmed_at && (
-                    <p className="text-green-600 font-medium">✓ Sender confirmed arrival</p>
-                  )}
-                  {!parcel.sender_confirmed_at && (
-                    <p className="text-yellow-600 font-medium">⏳ Sender has not confirmed yet</p>
-                  )}
-                </div>
-              </div>
-              <StatusBadge status={parcel.status} />
-            </div>
-            {parcel.photo_url && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Delivery proof photo:</p>
-                <img
-                  src={parcel.photo_url}
-                  alt="Delivery proof"
-                  className="rounded-lg border border-border max-h-48 object-cover"
-                />
-              </div>
-            )}
-            {parcel.delivery_lat != null && parcel.delivery_lng != null && (
-              <div className="text-xs text-muted-foreground">
-                <p className="mb-1">📍 Delivery geotag:</p>
-                <a
-                  href={`https://www.google.com/maps?q=${parcel.delivery_lat},${parcel.delivery_lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  {parcel.delivery_lat.toFixed(5)}, {parcel.delivery_lng.toFixed(5)} — View on Google Maps ↗
-                </a>
-                {parcel.delivery_geotagged_at && (
-                  <p className="mt-0.5">Tagged: {new Date(parcel.delivery_geotagged_at).toLocaleString()}</p>
-                )}
-              </div>
-            )}
-            <Button
-              variant="default"
-              size="sm"
-              className="w-full"
-              onClick={() => onApprove(parcel.id)}
-            >
-              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-              Approve Delivery
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="space-y-8">
+      {/* Pending section */}
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-yellow-600" />
+          Awaiting Approval ({pendingParcels.length})
+        </h3>
+        {pendingParcels.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <ShieldCheck className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground text-sm">No deliveries awaiting approval.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {pendingParcels.map(parcel => (
+              <DeliveryParcelCard key={parcel.id} parcel={parcel} onApprove={onApprove} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Recently delivered section */}
+      {deliveredParcels.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            Recently Delivered ({deliveredParcels.length})
+          </h3>
+          <div className="space-y-4">
+            {deliveredParcels.slice(0, 10).map(parcel => (
+              <DeliveryParcelCard key={parcel.id} parcel={parcel} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
