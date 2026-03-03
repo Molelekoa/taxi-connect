@@ -135,7 +135,7 @@ const TravelerDashboard = () => {
         if (routes && routes.length > 0) {
           const { data: allPending } = await supabase
             .from("parcels")
-            .select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking")
+            .select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking, suburb, pickup_address, delivery_address")
             .eq("status", "pending") as { data: any[] | null };
 
           const matched = (allPending || []).filter((p: any) => {
@@ -495,10 +495,17 @@ const TravelerDashboard = () => {
                       <div key={parcel.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="flex items-center gap-2 font-medium text-foreground">
+                      <div className="flex items-center gap-2 font-medium text-foreground">
                               <Package className="w-4 h-4 text-accent" />
                               {parcel.pickup_location} → {parcel.dropoff_location}
                             </div>
+                            {(parcel.suburb || parcel.pickup_address || parcel.delivery_address) && (
+                              <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                {parcel.suburb && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />Suburb: {parcel.suburb}</span>}
+                                {parcel.pickup_address && <span>Pickup: {parcel.pickup_address}</span>}
+                                {parcel.delivery_address && <span>Drop-off: {parcel.delivery_address}</span>}
+                              </div>
+                            )}
                             <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1"><Scale className="w-3 h-3" />{getBandLabel(parcel.weight_band) || `${parcel.weight_kg || "?"}kg`}</span>
                               {parcel.pickup_earliest && (
@@ -549,18 +556,25 @@ const TravelerDashboard = () => {
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2 font-medium text-foreground">
-                            <Package className="w-4 h-4 text-accent" />
-                            {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1"><Scale className="w-3 h-3" />{getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</span>
-                            {match.parcels?.pickup_earliest && (
-                              <span className="flex items-center gap-1">
-                                <CalendarDays className="w-3 h-3" />
-                                {match.parcels.pickup_earliest} – {match.parcels.pickup_latest}
-                              </span>
-                            )}
-                          </div>
+                             <Package className="w-4 h-4 text-accent" />
+                             {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
+                           </div>
+                           {(match.parcels?.suburb || match.parcels?.pickup_address || match.parcels?.delivery_address) && (
+                             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                               {match.parcels?.suburb && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />Suburb: {match.parcels.suburb}</span>}
+                               {match.parcels?.pickup_address && <span>Pickup: {match.parcels.pickup_address}</span>}
+                               {match.parcels?.delivery_address && <span>Drop-off: {match.parcels.delivery_address}</span>}
+                             </div>
+                           )}
+                           <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+                             <span className="flex items-center gap-1"><Scale className="w-3 h-3" />{getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</span>
+                             {match.parcels?.pickup_earliest && (
+                               <span className="flex items-center gap-1">
+                                 <CalendarDays className="w-3 h-3" />
+                                 {match.parcels.pickup_earliest} – {match.parcels.pickup_latest}
+                               </span>
+                             )}
+                           </div>
                           {match.parcels?.price && (
                             <p className="mt-2 text-sm">{payoutDisplay(match.parcels.price)}</p>
                           )}
@@ -601,15 +615,18 @@ const TravelerDashboard = () => {
                         </div>
                         <Badge className="bg-success/10 text-success">accepted</Badge>
                       </div>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <p>Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
-                        {match.parcels?.pickup_earliest && (
-                          <p className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />Pickup: {match.parcels.pickup_earliest} – {match.parcels.pickup_latest}</p>
-                        )}
-                        {match.parcels?.sender_name && <p>Sender: {match.parcels.sender_name}</p>}
-                        {match.parcels?.sender_phone && <p>Phone: {match.parcels.sender_phone}</p>}
-                        {match.accepted_at && <p>Accepted: {new Date(match.accepted_at).toLocaleDateString()}</p>}
-                      </div>
+                       <div className="text-xs text-muted-foreground space-y-1">
+                         <p>Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
+                         {match.parcels?.suburb && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />Suburb: {match.parcels.suburb}</p>}
+                         {match.parcels?.pickup_address && <p>Pickup: {match.parcels.pickup_address}</p>}
+                         {match.parcels?.delivery_address && <p>Drop-off: {match.parcels.delivery_address}</p>}
+                         {match.parcels?.pickup_earliest && (
+                           <p className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />Pickup: {match.parcels.pickup_earliest} – {match.parcels.pickup_latest}</p>
+                         )}
+                         {match.parcels?.sender_name && <p>Sender: {match.parcels.sender_name}</p>}
+                         {match.parcels?.sender_phone && <p>Phone: {match.parcels.sender_phone}</p>}
+                         {match.accepted_at && <p>Accepted: {new Date(match.accepted_at).toLocaleDateString()}</p>}
+                       </div>
                       {match.parcels?.price && (
                         <p className="text-sm">{payoutDisplay(match.parcels.price)}</p>
                       )}

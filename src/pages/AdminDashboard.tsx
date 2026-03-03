@@ -491,11 +491,21 @@ const AdminDashboard = () => {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("parcels").update({ status }).eq("id", id);
+      const { error } = await supabase.from("parcels").update({ status } as any).eq("id", id);
       if (error) throw error;
+      // Notify sender about status change
+      const parcel = parcels.find(p => p.id === id);
+      if (parcel?.sender_id) {
+        const statusLabel = statusConfig[status]?.label ?? status;
+        await supabase.from("notifications").insert({
+          user_id: parcel.sender_id,
+          type: "status_update",
+          content: `Your parcel from ${parcel.pickup_location ?? "?"} to ${parcel.dropoff_location ?? "?"} status has been updated to: ${statusLabel}.`,
+        } as any);
+      }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-parcels"] }); toast({ title: "Status updated" }); },
-    onError: () => toast({ title: "Failed to update status", variant: "destructive" }),
+    onError: (err: any) => toast({ title: "Failed to update status", description: err?.message || "Unknown error", variant: "destructive" }),
   });
 
   const updateTravelerStatus = useMutation({

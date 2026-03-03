@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     }
 
     // Validate purpose
-    const allowedPurposes = ["id-document", "license-copy", "id-copy"];
+    const allowedPurposes = ["id-document", "license-copy", "id-copy", "delivery-proof", "collection-proof"];
     if (!allowedPurposes.includes(purpose)) {
       return new Response(JSON.stringify({ error: "Invalid purpose" }), {
         status: 400,
@@ -123,7 +123,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, filePath }), {
+    // Generate signed URL for proof uploads so the caller gets a usable URL
+    let url = filePath;
+    if (purpose === "delivery-proof" || purpose === "collection-proof") {
+      const { data: signedData } = await supabaseAdmin.storage
+        .from("documents")
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
+      if (signedData?.signedUrl) url = signedData.signedUrl;
+    }
+
+    return new Response(JSON.stringify({ success: true, filePath, url }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
