@@ -1,65 +1,34 @@
 
 
-# Diagnosis, Error Tracking, and Sender Parcel Deletion
+# Fix "My Parcels" vs "Accepted" Confusion for Travelers
 
-## Diagnosis: Accept-Match Failure
+## Problem
 
-The edge function logs show **no error logs** for `accept-match` -- only boot/shutdown. However, the analytics reveal **401 errors on `find-matching-trips` and `find-matching-parcels`** called by database triggers. The `accept-match` CORS headers are missing the extended Supabase client headers (`x-supabase-client-platform`, etc.), which can cause preflight failures on some browsers/clients. The current `accept-match` CORS header is:
+The nav menu has a "My Parcels" link going to `/sender-dashboard` which shows all parcels where the user is the `sender_id`. The Traveler Dashboard has an "Accepted" tab showing parcels the user is delivering (via matches). 
 
-```
-"authorization, x-client-info, apikey, content-type"
-```
+If a user is both a sender and traveler, and they send a parcel, it appears under "My Parcels". If they also accept someone else's parcel for delivery, that shows under "Accepted". These are different parcels -- but the naming "My Parcels" is ambiguous because a traveler might think "my parcels" means "parcels I'm carrying".
 
-But `claim-parcel` (which works) uses the full set:
+## Solution
 
-```
-"authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version"
-```
+Rename and clarify the navigation and page titles to make the distinction obvious:
 
-**Root cause**: The `accept-match` edge function has incomplete CORS `Access-Control-Allow-Headers`, causing browsers to reject the preflight OPTIONS request. The client-side error message is generic ("Failed to accept") with no details logged server-side.
+### 1. Rename "My Parcels" to "Sent Parcels" in Navbar
+**File: `src/components/Navbar.tsx`**
+- Change the nav link label from "My Parcels" to "Sent Parcels"
+- Change the icon to `Package` (sending context) to differentiate from the truck/delivery context
 
-Additionally, the current audit log only tracks **successful** status changes via DB triggers -- it does not capture failed edge function calls or client-side errors.
-
-## Plan
-
-### 1. Fix accept-match CORS headers
-**File: `supabase/functions/accept-match/index.ts`**
-Update the `corsHeaders` to include the full set of Supabase client headers (matching `claim-parcel`).
-
-### 2. Create an error_logs table for user-facing error tracking
-**Database migration**: Create `error_logs` table with columns:
-- `id` (uuid, PK)
-- `user_id` (uuid, nullable) -- profile ID of the user who experienced the error
-- `action` (text) -- e.g., "accept_match", "claim_parcel", "submit_delivery_proof"
-- `error_message` (text) -- the error returned
-- `context` (jsonb, nullable) -- extra data like matchId, parcelId
-- `created_at` (timestamptz, default now())
-
-RLS: Admins can SELECT. No client INSERT -- errors will be logged via edge functions using service role.
-
-### 3. Add error logging to edge functions
-**Files: `accept-match`, `claim-parcel`, `cancel-accepted-match`, `submit-delivery-proof`**
-In each catch block and error response path, insert a row into `error_logs` with the action name, error message, user ID, and relevant context (matchId/parcelId).
-
-### 4. Admin Dashboard -- Error Log tab
-**File: `src/pages/AdminDashboard.tsx`**
-Add an "Errors" tab showing recent entries from `error_logs` in a table: timestamp, user, action, error message, context. This gives admins visibility into user-facing failures.
-
-### 5. Sender can delete pending parcels
+### 2. Update SenderDashboard page title
 **File: `src/pages/SenderDashboard.tsx`**
-- Add a "Remove Parcel" button on parcels with `status === "pending"` (no accepted match yet).
-- On click, show a confirmation dialog.
-- On confirm, call `supabase.from("parcels").delete().eq("id", parcelId)`.
-- The existing RLS policy "Senders can delete pending parcels" already permits this.
+- Change the `<h1>` from "My Parcels" to "Sent Parcels"
+- Add a subtitle: "Parcels you've booked for delivery"
 
-## Files Modified
-- `supabase/functions/accept-match/index.ts` -- fix CORS, add error logging
-- `supabase/functions/claim-parcel/index.ts` -- add error logging
-- `supabase/functions/cancel-accepted-match/index.ts` -- add error logging
-- `supabase/functions/submit-delivery-proof/index.ts` -- add error logging
-- `src/pages/AdminDashboard.tsx` -- add Errors tab
-- `src/pages/SenderDashboard.tsx` -- add delete parcel button with confirmation
+### 3. Update TravelerDashboard "Accepted" tab label
+**File: `src/pages/TravelerDashboard.tsx`**
+- Rename the "Accepted" tab to "Carrying" to make it clear these are parcels the traveler is delivering, not parcels they sent
+- Add a small helper text in the empty state: "Parcels you've accepted to deliver will appear here"
 
-## Database Migration
-- Create `error_logs` table with admin-only SELECT RLS policy
+### Files Modified
+- `src/components/Navbar.tsx` -- rename "My Parcels" to "Sent Parcels"
+- `src/pages/SenderDashboard.tsx` -- update page title and add subtitle
+- `src/pages/TravelerDashboard.tsx` -- rename "Accepted" tab to "Carrying"
 
