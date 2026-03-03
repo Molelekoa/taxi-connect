@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.submit-delivery-proof]
 verify_jwt = false
+
+[functions.approve-delivery]
+verify_jwt = false
