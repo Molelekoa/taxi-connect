@@ -290,7 +290,7 @@ const TravelerDashboard = () => {
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="accepted">Accepted</TabsTrigger>
+                <TabsTrigger value="accepted">Carrying</TabsTrigger>
               </TabsList>
 
               {/* My Trips */}
@@ -439,7 +439,7 @@ const TravelerDashboard = () => {
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : acceptedMatches.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No accepted deliveries yet.</p>
+                  <p className="text-muted-foreground text-center py-8">Parcels you've accepted to deliver will appear here.</p>
                 ) : (
                   acceptedMatches.map(match => (
                     <div key={match.id} className="bg-card border border-border rounded-xl p-5 space-y-3">

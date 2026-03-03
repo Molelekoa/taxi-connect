@@ -83,8 +83,8 @@ const Navbar = () => {
                       <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
                         isActive('/sender-dashboard') ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-secondary'
                       }`}>
-                        <BoxIcon className="w-5 h-5 text-muted-foreground" />
-                        My Parcels
+                        <Package className="w-5 h-5 text-muted-foreground" />
+                        Sent Parcels
                       </button>
                     </Link>
                   </>
