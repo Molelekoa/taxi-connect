@@ -412,6 +412,7 @@ const AdminDashboard = () => {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="audit" className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4" /> Audit Log</TabsTrigger>
+                <TabsTrigger value="errors" className="flex items-center gap-1.5"><ShieldX className="w-4 h-4" /> Errors</TabsTrigger>
                 <TabsTrigger value="metrics" className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4" /> Metrics</TabsTrigger>
               </TabsList>
 
@@ -747,6 +748,11 @@ const AdminDashboard = () => {
                 <AuditLogTab />
               </TabsContent>
 
+              {/* ── TAB: ERRORS ──────────────────────────────────────────── */}
+              <TabsContent value="errors">
+                <ErrorLogsTab profiles={profiles} />
+              </TabsContent>
+
               {/* ── TAB 6: METRICS ──────────────────────────────────────────── */}
               <TabsContent value="metrics">
                 <MetricsTab />
@@ -953,6 +959,79 @@ const AuditLogTab = () => {
                     <TableCell className="text-xs">{log.table_name}</TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{log.old_values ? JSON.stringify(log.old_values) : "—"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{log.new_values ? JSON.stringify(log.new_values) : "—"}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ── Error Logs Tab ─────────────────────────────────────────────────────────────
+
+type ErrorLogEntry = {
+  id: string;
+  user_id: string | null;
+  action: string;
+  error_message: string;
+  context: Record<string, any> | null;
+  created_at: string;
+};
+
+const ErrorLogsTab = ({ profiles }: { profiles: Profile[] }) => {
+  const { data: errors = [], isLoading } = useQuery({
+    queryKey: ["admin-error-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("error_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as ErrorLogEntry[];
+    },
+  });
+
+  const profileById = (id: string | null) => id ? profiles.find(p => p.id === id) : undefined;
+
+  if (isLoading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm font-medium flex items-center gap-2"><ShieldX className="w-4 h-4" /> Recent Errors</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Time</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Error</TableHead>
+                <TableHead>Context</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {errors.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No errors recorded.</TableCell></TableRow>
+              ) : errors.map(e => {
+                const profile = profileById(e.user_id);
+                return (
+                  <TableRow key={e.id}>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(e.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">{profile?.full_name || profile?.email || e.user_id || "—"}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border bg-red-100 text-red-800 border-red-200">
+                        {e.action}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate" title={e.error_message}>{e.error_message}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{e.context ? JSON.stringify(e.context) : "—"}</TableCell>
                   </TableRow>
                 );
               })}

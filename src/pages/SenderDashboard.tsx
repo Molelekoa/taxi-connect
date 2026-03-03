@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft, ShieldCheck } from "lucide-react";
+import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft, ShieldCheck, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -19,6 +23,7 @@ const SenderDashboard = () => {
   const [reassigning, setReassigning] = useState<string | null>(null);
   const [earlierNotifications, setEarlierNotifications] = useState<Record<string, any>>({});
   const [confirmingArrival, setConfirmingArrival] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -220,18 +225,57 @@ const SenderDashboard = () => {
                         </div>
                       )}
 
-                      {/* Retry Matching for pending parcels */}
+                      {/* Retry Matching + Remove for pending parcels */}
                       {parcel.status === "pending" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRetry(parcel.id)}
-                          disabled={retrying === parcel.id}
-                          className="w-full"
-                        >
-                          <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${retrying === parcel.id ? "animate-spin" : ""}`} />
-                          {retrying === parcel.id ? "Searching..." : "Retry Matching"}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRetry(parcel.id)}
+                            disabled={retrying === parcel.id}
+                            className="flex-1"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${retrying === parcel.id ? "animate-spin" : ""}`} />
+                            {retrying === parcel.id ? "Searching..." : "Retry Matching"}
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm" disabled={deleting === parcel.id}>
+                                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                                {deleting === parcel.id ? "Removing..." : "Remove"}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove this parcel?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the parcel from {parcel.pickup_location} to {parcel.dropoff_location}. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={async () => {
+                                    setDeleting(parcel.id);
+                                    try {
+                                      const { error } = await supabase.from("parcels").delete().eq("id", parcel.id);
+                                      if (error) throw error;
+                                      toast({ title: "Parcel removed", description: "The parcel has been deleted." });
+                                      await fetchData();
+                                    } catch (err: any) {
+                                      toast({ title: "Failed to remove", description: err.message, variant: "destructive" });
+                                    } finally {
+                                      setDeleting(null);
+                                    }
+                                  }}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Remove
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       )}
 
                       {/* Matched traveler info */}

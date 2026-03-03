@@ -110,6 +110,41 @@ export type Database = {
           },
         ]
       }
+      error_logs: {
+        Row: {
+          action: string
+          context: Json | null
+          created_at: string
+          error_message: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          context?: Json | null
+          created_at?: string
+          error_message: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          context?: Json | null
+          created_at?: string
+          error_message?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           accepted_at: string | null
