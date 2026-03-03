@@ -98,15 +98,15 @@ const TravelerDashboard = () => {
       .eq("status", "accepted") as { data: any[] | null };
     setAcceptedMatches((accepted || []).filter((m: any) => m.trips?.traveler_id === pid));
 
-    // Fetch delivered/pending_confirmation matches
+    // Fetch delivered/pending verification matches
     const { data: delivered } = await supabase
       .from("matches")
       .select("*, parcels(*), trips(*)")
       .in("status", ["accepted"]) as { data: any[] | null };
-    // Filter by traveler AND parcel status being delivered or pending_confirmation
+    // Filter by traveler AND parcel status being delivered-related
     const deliveredFiltered = (delivered || []).filter((m: any) =>
       m.trips?.traveler_id === pid &&
-      (m.parcels?.status === "delivered" || m.parcels?.status === "pending_confirmation")
+      ["delivered", "pending_confirmation", "delivered_pending_verification", "delivered_verified"].includes(m.parcels?.status)
     );
     setDeliveredMatches(deliveredFiltered);
 
@@ -594,11 +594,18 @@ const TravelerDashboard = () => {
                           <CheckCircle className="w-4 h-4 text-success" />
                           {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
                         </div>
-                        <Badge className={match.parcels?.status === "delivered"
-                          ? "bg-success/10 text-success"
-                          : "bg-warning/10 text-warning"
+                        <Badge className={
+                          match.parcels?.status === "delivered_verified"
+                            ? "bg-success/10 text-success"
+                            : match.parcels?.status === "delivered"
+                              ? "bg-success/10 text-success"
+                              : "bg-warning/10 text-warning"
                         }>
-                          {match.parcels?.status === "delivered" ? "Delivered ✓" : "Pending Confirmation"}
+                          {match.parcels?.status === "delivered_verified"
+                            ? "Verified ✓"
+                            : match.parcels?.status === "delivered"
+                              ? "Delivered ✓"
+                              : "Pending Verification"}
                         </Badge>
                       </div>
                       <div className="text-xs text-muted-foreground space-y-1">
@@ -609,23 +616,26 @@ const TravelerDashboard = () => {
                       {match.parcels?.price && (
                         <p className="text-sm">{payoutDisplay(match.parcels.price)}</p>
                       )}
-                      {match.parcels?.status === "delivered" && (
+                      {(match.parcels?.status === "delivered" || match.parcels?.status === "delivered_verified") && (
                         <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-xs">
                           <p className="font-medium text-success">💰 Payment Information</p>
                           <p className="text-foreground mt-1">
-                            {(() => {
-                              const day = new Date().getDay();
-                              return day >= 1 && day <= 4
-                                ? "Payment will be made within 72 hours."
-                                : "Payment will be made on Wednesday.";
-                            })()}
+                            {match.parcels?.status === "delivered_verified"
+                              ? "Your delivery has been verified! Payment is being processed."
+                              : (() => {
+                                  const day = new Date().getDay();
+                                  return day >= 1 && day <= 4
+                                    ? "Payment will be made within 72 hours."
+                                    : "Payment will be made on Wednesday.";
+                                })()
+                            }
                           </p>
                         </div>
                       )}
-                      {match.parcels?.status === "pending_confirmation" && (
+                      {(match.parcels?.status === "pending_confirmation" || match.parcels?.status === "delivered_pending_verification") && (
                         <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 text-xs">
-                          <p className="font-medium text-warning">⏳ Awaiting Admin Approval</p>
-                          <p className="text-foreground mt-1">Your delivery proof has been submitted. An admin will review and approve it shortly.</p>
+                          <p className="font-medium text-warning">⏳ Awaiting Admin Verification</p>
+                          <p className="text-foreground mt-1">Your delivery proof has been submitted. An admin will review and verify it shortly.</p>
                         </div>
                       )}
                     </div>
