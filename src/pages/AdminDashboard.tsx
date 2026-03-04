@@ -507,7 +507,11 @@ const AdminDashboard = () => {
         notifications.push({ user_id: parcel.traveler_id, type: "status_update", content: message });
       }
       if (notifications.length > 0) {
-        await supabase.from("notifications").insert(notifications as any);
+        const { error: notifError } = await supabase.from("notifications").insert(notifications as any);
+        if (notifError) {
+          console.error("Failed to insert notification:", notifError);
+          throw new Error(`Status updated but notification failed: ${notifError.message}`);
+        }
       }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-parcels"] }); toast({ title: "Status updated" }); },
