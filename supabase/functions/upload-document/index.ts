@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
     if (purpose === "delivery-proof" || purpose === "collection-proof") {
       const { data: signedData } = await supabaseAdmin.storage
         .from("documents")
-        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
+        .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
       if (signedData?.signedUrl) url = signedData.signedUrl;
     }
 
