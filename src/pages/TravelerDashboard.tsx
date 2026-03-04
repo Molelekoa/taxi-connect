@@ -711,9 +711,17 @@ const TravelerDashboard = () => {
                         </Badge>
                       </div>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
+                        <p className="flex items-center gap-1"><Scale className="w-3 h-3" />Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
+                        {match.parcels?.suburb && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />Suburb: {match.parcels.suburb}</p>}
+                        {match.parcels?.pickup_address && <p>Pickup: {match.parcels.pickup_address}</p>}
+                        {match.parcels?.delivery_address && <p>Drop-off: {match.parcels.delivery_address}</p>}
+                        {match.parcels?.pickup_earliest && (
+                          <p className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />Pickup: {match.parcels.pickup_earliest} – {match.parcels.pickup_latest}</p>
+                        )}
                         {match.parcels?.sender_name && <p>Sender: {match.parcels.sender_name}</p>}
+                        {match.parcels?.sender_phone && <p>Phone: {match.parcels.sender_phone}</p>}
                         {match.parcels?.recipient_name && <p>Recipient: {match.parcels.recipient_name}</p>}
+                        {match.parcels?.recipient_phone && <p>Recipient Phone: {match.parcels.recipient_phone}</p>}
                       </div>
                       {match.parcels?.price && (
                         <p className="text-sm">{payoutDisplay(match.parcels.price)}</p>
