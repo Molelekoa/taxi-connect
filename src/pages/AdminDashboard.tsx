@@ -493,15 +493,21 @@ const AdminDashboard = () => {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from("parcels").update({ status } as any).eq("id", id);
       if (error) throw error;
-      // Notify sender about status change
+      // Notify sender and traveler about status change
       const parcel = parcels.find(p => p.id === id);
+      const statusLabel = statusConfig[status]?.label ?? status;
+      const route = `${parcel?.pickup_location ?? "?"} → ${parcel?.dropoff_location ?? "?"}`;
+      const message = `Your parcel (${route}) status has been updated to: ${statusLabel}.`;
+      
+      const notifications: Array<{ user_id: string; type: string; content: string }> = [];
       if (parcel?.sender_id) {
-        const statusLabel = statusConfig[status]?.label ?? status;
-        await supabase.from("notifications").insert({
-          user_id: parcel.sender_id,
-          type: "status_update",
-          content: `Your parcel from ${parcel.pickup_location ?? "?"} to ${parcel.dropoff_location ?? "?"} status has been updated to: ${statusLabel}.`,
-        } as any);
+        notifications.push({ user_id: parcel.sender_id, type: "status_update", content: message });
+      }
+      if (parcel?.traveler_id && parcel.traveler_id !== parcel.sender_id) {
+        notifications.push({ user_id: parcel.traveler_id, type: "status_update", content: message });
+      }
+      if (notifications.length > 0) {
+        await supabase.from("notifications").insert(notifications as any);
       }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-parcels"] }); toast({ title: "Status updated" }); },
