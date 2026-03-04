@@ -1,101 +1,43 @@
-# Plan: Parcel Delivery Workflow Enhancements
+# Plan: Fix Traveler Dashboard Display & Admin Notification Issues
 
-## Analysis of What Already Exists vs What's Needed
+## Problems Identified
 
-**Already built:**
+1. **Traveler Dashboard cards lack detail** — the screenshots confirm parcels show minimal info. The Browse and Matched tabs need prominent suburb, addresses, and pickup dates. Sender/recipient details and weight band must be hidden until after acceptance.
+2. **Admin status notifications silently fail** — The `notifications` table RLS policy "Admins can insert notifications" is **RESTRICTIVE** (not PERMISSIVE). PostgreSQL requires at least one PERMISSIVE policy to pass for a given command. With only a RESTRICTIVE INSERT policy and no PERMISSIVE one, all inserts are denied. The admin dashboard code doesn't throw on notification insert failure, so the status update succeeds but the notification is silently swallowed.
 
-- Cancel flow via `cancel-accepted-match` edge function (resets parcel to pending, notifies sender, re-triggers matching)
-- Delivery proof submission (photo + geotag) via `submit-delivery-proof`
-- Admin verify/reject via `verify-delivery` edge function
-- Audit log triggers on parcels, matches, traveler_profiles
-- Suburb fields already exist in `SmallParcelBooking.tsx` form (pickupSuburb, deliverySuburb) but NOT stored as a column on parcels — they're concatenated into `pickup_address`/`delivery_address`
+## Changes
 
-**What's missing:**
+### 1. Database Migration — Fix notifications INSERT RLS
 
-1. `suburb` column on parcels (currently embedded in address string)
-2. `cancellations` table for logging cancellations with reason/traveler
-3. `delivered_at` and `verified_at` timestamps on parcels
-4. "Cancelled" status in parcels CHECK constraint + UI filters
-5. Forced photo upload +geotag (currently either/or) for delivery proof
-6. Forced Collection proof (photo+geotag when traveler picks up parcel)
-7. Admin "Cancelled" filter tab
-8. Enhanced audit log display (showing parcel ID, traveler ID, reason in readable format)
-9. Verified deliveries showing delivered_date + verified_date columns
+Drop the existing RESTRICTIVE admin insert policy and recreate it as **PERMISSIVE**. This allows admin-role users to actually insert notifications.
 
-## Database Changes (Migration)
+### 2. TravelerDashboard.tsx — Restructure parcel cards
 
-1. Add columns to `parcels`:
-  - `suburb` (text, nullable)
-  - `delivered_at` (timestamptz, nullable) — set when proof submitted
-  - `verified_at` (timestamptz, nullable) — set when admin approves
-  - `cancelled_at` (timestamptz, nullable)
-2. Update parcels status CHECK constraint to include `cancelled`
-3. Create `cancellations` table:
-  - `id` (uuid, PK)
-  - `parcel_id` (uuid, NOT NULL)
-  - `traveler_id` (uuid, nullable)
-  - `reason` (text, nullable)
-  - `created_at` (timestamptz, default now())
-  - RLS: admin SELECT only; inserts via service role (edge function)
+**Browse & Matched tabs (pre-acceptance):** Show:
 
-## Edge Function Changes
+- Route (pickup_location → dropoff_location)
+- Suburb
+- Pickup address & delivery address
+- Pickup window (earliest – latest)
+- Payout estimate
+- Description/dimensions  
+Weight Band
 
-### `cancel-accepted-match`
+Hide: sender name/phone, recipient name/phone.
 
-- Also insert into `cancellations` table with parcel_id, traveler profile_id, reason
-- Set `cancelled_at = now()` on the parcel when cancelling
+**Carrying tab (accepted):** Show all of the above PLUS:
 
-### `submit-delivery-proof`
+- Sender name & phone
+- Recipient name & phone
 
-- **Require both** photo AND geotag ( pop up message if either missing)
-- Set `delivered_at = now()` on the parcel
+**Delivered tab (accepted):** Same as Carrying — full details visible.
 
-### `verify-delivery`
+### 3. AdminDashboard.tsx — Handle notification insert errors
 
-- On approve: set `verified_at = now()` on the parcel (already sets status to `delivered_verified`)
-
-### New: Collection proof
-
-- Add a new edge function `submit-collection-proof` that:
-  - Accepts `matchId`, `photoUrl`, `lat`, `lng`
-  - Validates traveler owns the match
-  - Updates parcel status to `collected` with photo and geotag stored
-  - Notifies sender that parcel has been collected
-
-## UI Changes
-
-### SmallParcelBooking.tsx
-
-- Store `suburb` as a separate column when inserting parcel (use `pickupSuburb` value)
-
-### TravelerDashboard.tsx
-
-- **Carrying tab**: Add "Collected" button that requires photo+geotag before moving to collected status
-- **Delivery proof dialog**: Make both photo AND geotag mandatory (disable submit until both captured)
-- **Cancel button**: Already exists — no change needed
-
-### AdminDashboard.tsx
-
-- Add `cancelled` to STATUSES array and statusConfig
-- Add "Cancelled" filter option in Parcels tab
-- In Verified Deliveries section: show `delivered_at` and `verified_at` dates
-- Enhanced Audit Log: show Record ID (truncated), parse old/new values to show status transitions, traveler IDs, and reasons in human-readable format
-- Show suburb in parcel details
-
-### SenderDashboard.tsx
-
-- Add `cancelled` status config entry
-- Show suburb if available
+Add error checking on the notification insert so failures are surfaced rather than swallowed silently.
 
 ## Files Modified
 
-- **Database migration** — add columns, cancellations table, update CHECK
-- `supabase/functions/cancel-accepted-match/index.ts` — insert cancellation record, set cancelled_at
-- `supabase/functions/submit-delivery-proof/index.ts` — require both photo+geotag, set delivered_at
-- `supabase/functions/verify-delivery/index.ts` — set verified_at on approve
-- `supabase/functions/submit-collection-proof/index.ts` — **new** edge function for collection proof
-- `supabase/config.toml` — register submit-collection-proof
-- `src/pages/SmallParcelBooking.tsx` — store suburb column
-- `src/pages/TravelerDashboard.tsx` — mandatory proof, collection proof UI
-- `src/pages/AdminDashboard.tsx` — cancelled filter, enhanced audit, verified dates, suburb display
-- `src/pages/SenderDashboard.tsx` — cancelled status config
+- New migration SQL — fix notifications INSERT RLS policy
+- `src/pages/TravelerDashboard.tsx` — restructure all four tab card layouts
+- `src/pages/AdminDashboard.tsx` — add error handling on notification insert
