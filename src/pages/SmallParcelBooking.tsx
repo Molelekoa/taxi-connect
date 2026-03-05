@@ -361,7 +361,6 @@ const SmallParcelBooking = () => {
       if (!isVerifiedSender && idDocumentFile) {
         const uploadForm = new FormData();
         uploadForm.append("file", idDocumentFile);
-        uploadForm.append("profileId", profileId);
         uploadForm.append("purpose", "id-document");
 
         const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
