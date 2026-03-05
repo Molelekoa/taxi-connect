@@ -15,6 +15,13 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,7 +30,9 @@ import {
 import {
   Users, Package, Truck, LayoutDashboard, Copy, Check, Phone, Mail, Eye,
   DollarSign, MapPin, Scale, Search, TrendingUp, ShieldCheck, ShieldX, Clock,
-  FileText, ExternalLink, Loader2, CheckCircle,
+  FileText, ExternalLink, Loader2, CheckCircle, Image, Navigation, History,
+  XCircle, Trash2, HardDrive, AlertTriangle, Camera, ChevronRight,
+  Calendar, ArrowRight,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -50,6 +59,7 @@ type Parcel = {
   sender_id: string | null;
   traveler_id: string | null;
   created_at: string;
+  updated_at: string;
   recipient_name: string | null;
   recipient_phone: string | null;
   pickup_address: string | null;
@@ -64,6 +74,18 @@ type Parcel = {
   delivery_lat: number | null;
   delivery_lng: number | null;
   delivery_geotagged_at: string | null;
+  suburb: string | null;
+  pickup_earliest: string | null;
+  pickup_latest: string | null;
+  dimensions: string | null;
+  collected_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  collection_photo_url: string | null;
+  collection_lat: number | null;
+  collection_lng: number | null;
+  verified_at: string | null;
+  delivered_at: string | null;
 };
 
 type TravelerRoute = {
@@ -141,7 +163,7 @@ const CopyButton = ({ text }: { text: string | null }) => {
   return (
     <button onClick={handleCopy} className="flex items-center gap-1 text-xs text-foreground hover:text-primary transition-colors" title={`Copy ${text}`}>
       <span className="truncate max-w-[140px]">{text}</span>
-      {copied ? <Check className="w-3 h-3 text-green-500 shrink-0" /> : <Copy className="w-3 h-3 text-muted-foreground shrink-0" />}
+      {copied ? <Check className="w-3 h-3 text-success shrink-0" /> : <Copy className="w-3 h-3 text-muted-foreground shrink-0" />}
     </button>
   );
 };
@@ -155,7 +177,6 @@ const DocumentLink = ({ storagePath, label }: { storagePath: string | null; labe
 
   const generateUrl = useCallback(async () => {
     if (!storagePath) return;
-    // If it's already a full URL (http/https), use it directly
     if (storagePath.startsWith("http")) {
       setSignedUrl(storagePath);
       return;
@@ -164,7 +185,7 @@ const DocumentLink = ({ storagePath, label }: { storagePath: string | null; labe
     setError(false);
     const { data, error: err } = await supabase.storage
       .from("documents")
-      .createSignedUrl(storagePath, 3600); // 1 hour expiry
+      .createSignedUrl(storagePath, 3600);
     setLoading(false);
     if (err || !data?.signedUrl) {
       setError(true);
@@ -218,6 +239,56 @@ const DocumentLink = ({ storagePath, label }: { storagePath: string | null; labe
         <ExternalLink className="w-3 h-3" />
       </a>
     </Row>
+  );
+};
+
+// ── Photo viewer component ─────────────────────────────────────────────────────
+
+const ProofPhoto = ({ url, label }: { url: string | null; label: string }) => {
+  const [fullscreen, setFullscreen] = useState(false);
+  if (!url) return null;
+  return (
+    <>
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-foreground flex items-center gap-1">
+          <Camera className="w-3 h-3" /> {label}
+        </p>
+        <img
+          src={url}
+          alt={label}
+          className="rounded-lg border border-border max-h-40 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => setFullscreen(true)}
+        />
+      </div>
+      <Dialog open={fullscreen} onOpenChange={setFullscreen}>
+        <DialogContent className="max-w-3xl p-2">
+          <img src={url} alt={label} className="w-full rounded-lg" />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+// ── Geo link component ─────────────────────────────────────────────────────────
+
+const GeoLink = ({ lat, lng, timestamp, label }: { lat: number | null; lng: number | null; timestamp?: string | null; label: string }) => {
+  if (lat == null || lng == null) return null;
+  return (
+    <div className="bg-secondary/50 rounded-lg p-3 text-xs space-y-1">
+      <p className="font-medium text-foreground flex items-center gap-1">
+        <Navigation className="w-3 h-3" /> {label}
+      </p>
+      <p>Coordinates: {lat.toFixed(5)}, {lng.toFixed(5)}</p>
+      {timestamp && <p className="text-muted-foreground">Recorded: {new Date(timestamp).toLocaleString()}</p>}
+      <a
+        href={`https://www.google.com/maps?q=${lat},${lng}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary hover:underline inline-flex items-center gap-1"
+      >
+        <ExternalLink className="w-3 h-3" /> View on Google Maps
+      </a>
+    </div>
   );
 };
 
@@ -283,9 +354,9 @@ type AuditEntry = {
   created_at: string;
 };
 
-const ParcelStatusHistory = ({ parcelId }: { parcelId: string }) => {
+const ParcelTimeline = ({ parcelId, parcel, profiles }: { parcelId: string; parcel: Parcel; profiles: Profile[] }) => {
   const { data: history = [], isLoading } = useQuery({
-    queryKey: ["parcel-status-history", parcelId],
+    queryKey: ["parcel-full-timeline", parcelId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("audit_log")
@@ -298,101 +369,397 @@ const ParcelStatusHistory = ({ parcelId }: { parcelId: string }) => {
     },
   });
 
+  // Also fetch cancellations for this parcel
+  const { data: cancellations = [] } = useQuery({
+    queryKey: ["parcel-cancellations", parcelId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cancellations")
+        .select("*")
+        .eq("parcel_id", parcelId)
+        .order("created_at", { ascending: true });
+      if (error) return [];
+      return data ?? [];
+    },
+  });
+
+  const getProfileName = (id: string | null) => {
+    if (!id) return "System";
+    const p = profiles.find(pr => pr.id === id || pr.auth_id === id);
+    return p?.full_name || p?.email || id.slice(0, 8) + "…";
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
-        <Loader2 className="w-3 h-3 animate-spin" /> Loading history…
+        <Loader2 className="w-3 h-3 animate-spin" /> Loading timeline…
       </div>
     );
   }
 
-  if (history.length === 0) {
-    return <p className="text-xs text-muted-foreground">No status changes recorded.</p>;
+  // Build combined timeline
+  type TimelineEvent = { time: string; type: string; detail: string; actor?: string };
+  const events: TimelineEvent[] = [];
+
+  // Created event
+  events.push({ time: parcel.created_at, type: "created", detail: "Parcel created" });
+
+  // Audit entries
+  history.forEach((entry) => {
+    const oldStatus = entry.old_values?.status;
+    const newStatus = entry.new_values?.status;
+    const oldTraveler = entry.old_values?.traveler_id;
+    const newTraveler = entry.new_values?.traveler_id;
+
+    if (oldStatus !== newStatus) {
+      events.push({
+        time: entry.created_at,
+        type: "status",
+        detail: `${statusConfig[oldStatus]?.label ?? oldStatus ?? "?"} → ${statusConfig[newStatus]?.label ?? newStatus ?? "?"}`,
+        actor: getProfileName(entry.performed_by),
+      });
+    }
+    if (oldTraveler !== newTraveler) {
+      if (newTraveler && !oldTraveler) {
+        events.push({ time: entry.created_at, type: "assigned", detail: `Traveler assigned: ${getProfileName(newTraveler)}`, actor: getProfileName(entry.performed_by) });
+      } else if (!newTraveler && oldTraveler) {
+        events.push({ time: entry.created_at, type: "unassigned", detail: `Traveler unassigned: ${getProfileName(oldTraveler)}`, actor: getProfileName(entry.performed_by) });
+      }
+    }
+  });
+
+  // Collection event
+  if (parcel.collected_at) {
+    events.push({ time: parcel.collected_at, type: "collected", detail: "Parcel collected (pickup proof submitted)" });
   }
 
+  // Delivery event
+  if (parcel.delivered_at) {
+    events.push({ time: parcel.delivered_at, type: "delivered", detail: "Delivery proof submitted" });
+  }
+
+  // Verification event
+  if (parcel.verified_at) {
+    events.push({ time: parcel.verified_at, type: "verified", detail: "Delivery verified by admin" });
+  }
+
+  // Cancellation events
+  cancellations.forEach((c: any) => {
+    const travelerName = getProfileName(c.traveler_id);
+    events.push({
+      time: c.created_at,
+      type: "cancelled",
+      detail: `Cancelled by ${travelerName}${c.reason ? `: ${c.reason}` : ""}`,
+    });
+  });
+
+  if (parcel.cancelled_at) {
+    events.push({
+      time: parcel.cancelled_at,
+      type: "cancelled",
+      detail: `Parcel cancelled${parcel.cancel_reason ? `: ${parcel.cancel_reason}` : ""}`,
+    });
+  }
+
+  // Sort by time
+  events.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+  if (events.length === 0) {
+    return <p className="text-xs text-muted-foreground">No events recorded.</p>;
+  }
+
+  const typeColors: Record<string, string> = {
+    created: "bg-primary",
+    status: "bg-accent",
+    assigned: "bg-success",
+    unassigned: "bg-destructive",
+    collected: "bg-blue-500",
+    delivered: "bg-success",
+    verified: "bg-emerald-600",
+    cancelled: "bg-destructive",
+  };
+
   return (
-    <div className="space-y-2">
-      {history.map((entry) => {
-        const oldStatus = entry.old_values?.status ?? "—";
-        const newStatus = entry.new_values?.status ?? "—";
-        return (
-          <div key={entry.id} className="flex items-start gap-2">
-            <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-            <div className="text-xs">
-              <div className="text-foreground">
-                <StatusBadge status={oldStatus} /> → <StatusBadge status={newStatus} />
-              </div>
-              <div className="text-muted-foreground mt-0.5">
-                {new Date(entry.created_at).toLocaleString()}
-              </div>
-            </div>
+    <div className="space-y-3">
+      {events.map((event, i) => (
+        <div key={i} className="flex items-start gap-3">
+          <div className="flex flex-col items-center">
+            <div className={`w-2.5 h-2.5 rounded-full ${typeColors[event.type] ?? "bg-muted-foreground"} shrink-0 mt-1`} />
+            {i < events.length - 1 && <div className="w-px h-full bg-border min-h-[20px]" />}
           </div>
-        );
-      })}
+          <div className="text-xs pb-3">
+            <p className="text-foreground font-medium">{event.detail}</p>
+            <p className="text-muted-foreground">
+              {new Date(event.time).toLocaleString()}
+              {event.actor && <span> · by {event.actor}</span>}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
 
-// ── Parcel detail sheet ────────────────────────────────────────────────────────
+// ── Enhanced Parcel detail sheet ───────────────────────────────────────────────
 
-const ParcelDetailSheet = ({ parcel, open, onClose, onStatusChange }: {
+const ParcelDetailSheet = ({ parcel, open, onClose, onStatusChange, profiles }: {
   parcel: Parcel | null; open: boolean; onClose: () => void;
   onStatusChange: (id: string, status: string) => void;
-}) => (
-  <Sheet open={open} onOpenChange={onClose}>
-    <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-      <SheetHeader>
-        <SheetTitle>Booking Details</SheetTitle>
-      </SheetHeader>
-      {parcel && (
-        <div className="mt-6 space-y-5 text-sm">
-          <Section title="Sender">
-            <Row label="Name">{parcel.sender_name ?? "—"}</Row>
-            <Row label="Email"><CopyButton text={parcel.sender_email} /></Row>
-            <Row label="Phone"><CopyButton text={parcel.sender_phone} /></Row>
-          </Section>
-          <Section title="Recipient">
-            <Row label="Name">{parcel.recipient_name ?? "—"}</Row>
-            <Row label="Phone"><CopyButton text={parcel.recipient_phone} /></Row>
-          </Section>
-          <Section title="Route">
-            <Row label="Origin">{parcel.pickup_location ?? "—"}</Row>
-            <Row label="Pickup Address">{parcel.pickup_address ?? "—"}</Row>
-            <Row label="Destination">{parcel.dropoff_location ?? "—"}</Row>
-            <Row label="Delivery Address">{parcel.delivery_address ?? "—"}</Row>
-          </Section>
-          <Section title="Parcel">
-            <Row label="Weight Band">{bandLabel(parcel.weight_band)}</Row>
-            <Row label="Weight">{parcel.weight_kg != null ? `${parcel.weight_kg} kg` : "—"}</Row>
-            <Row label="Tracking">{parcel.include_tracking ? "Yes" : "No"}</Row>
-            <Row label="Description">{parcel.description ?? "—"}</Row>
-          </Section>
-          <Section title="Financials">
-            <Row label="Price">{parcel.price != null ? `R${parcel.price}` : "—"}</Row>
-          </Section>
-          <Section title="Status">
-            <Row label="Current">
-              <Select value={parcel.status ?? "pending"} onValueChange={(val) => onStatusChange(parcel.id, val)}>
-                <SelectTrigger className="h-7 text-xs w-32 border-0 p-0 shadow-none">
-                  <SelectValue><StatusBadge status={parcel.status} /></SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}><StatusBadge status={s} /></SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Row>
-            <Row label="Created">{new Date(parcel.created_at).toLocaleString()}</Row>
-          </Section>
-          <Section title="Status History">
-            <ParcelStatusHistory parcelId={parcel.id} />
-          </Section>
-        </div>
+  profiles: Profile[];
+}) => {
+  const [activeTab, setActiveTab] = useState("details");
+
+  // Fetch match data for this parcel (for proof photos/geotags)
+  const { data: matchData } = useQuery({
+    queryKey: ["parcel-match-detail", parcel?.id],
+    queryFn: async () => {
+      if (!parcel?.id) return null;
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*, trips(traveler_id, profiles:traveler_id(full_name, phone))")
+        .eq("parcel_id", parcel.id)
+        .eq("status", "accepted")
+        .maybeSingle();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!parcel?.id,
+  });
+
+  const travelerProfile = parcel?.traveler_id ? profiles.find(p => p.id === parcel.traveler_id) : null;
+
+  return (
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            Parcel Detail
+            {parcel && <StatusBadge status={parcel.status} />}
+          </SheetTitle>
+          {parcel && (
+            <p className="text-xs text-muted-foreground font-mono">ID: {parcel.id}</p>
+          )}
+        </SheetHeader>
+        {parcel && (
+          <div className="mt-4">
+            {/* Tab navigation */}
+            <div className="flex gap-1 mb-4 border-b border-border pb-2 overflow-x-auto">
+              {[
+                { key: "details", label: "Details", icon: FileText },
+                { key: "gallery", label: "Evidence", icon: Image },
+                { key: "timeline", label: "Timeline", icon: History },
+                ...(parcel.status === "cancelled" ? [{ key: "cancellation", label: "Cancellation", icon: XCircle }] : []),
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    activeTab === tab.key
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-secondary"
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Details tab */}
+            {activeTab === "details" && (
+              <div className="space-y-5 text-sm">
+                <Section title="Route">
+                  <Row label="Origin">{parcel.pickup_location ?? "—"}</Row>
+                  <Row label="Destination">{parcel.dropoff_location ?? "—"}</Row>
+                  {parcel.suburb && <Row label="Suburb">{parcel.suburb}</Row>}
+                  <Row label="Pickup Address">{parcel.pickup_address ?? "—"}</Row>
+                  <Row label="Delivery Address">{parcel.delivery_address ?? "—"}</Row>
+                </Section>
+                {(parcel.pickup_earliest || parcel.pickup_latest) && (
+                  <Section title="Pickup Window">
+                    <Row label="Earliest">{parcel.pickup_earliest ?? "—"}</Row>
+                    <Row label="Latest">{parcel.pickup_latest ?? "—"}</Row>
+                  </Section>
+                )}
+                <Section title="Sender">
+                  <Row label="Name">{parcel.sender_name ?? "—"}</Row>
+                  <Row label="Email"><CopyButton text={parcel.sender_email} /></Row>
+                  <Row label="Phone"><CopyButton text={parcel.sender_phone} /></Row>
+                </Section>
+                <Section title="Recipient">
+                  <Row label="Name">{parcel.recipient_name ?? "—"}</Row>
+                  <Row label="Phone"><CopyButton text={parcel.recipient_phone} /></Row>
+                </Section>
+                {travelerProfile && (
+                  <Section title="Assigned Traveler">
+                    <Row label="Name">{travelerProfile.full_name ?? "—"}</Row>
+                    <Row label="Phone"><CopyButton text={travelerProfile.phone} /></Row>
+                    <Row label="Email"><CopyButton text={travelerProfile.email} /></Row>
+                  </Section>
+                )}
+                {matchData?.trips?.profiles && (
+                  <Section title="Matched Traveler (via trip)">
+                    <Row label="Name">{(matchData.trips.profiles as any)?.full_name ?? "—"}</Row>
+                    <Row label="Phone"><CopyButton text={(matchData.trips.profiles as any)?.phone ?? null} /></Row>
+                  </Section>
+                )}
+                <Section title="Parcel">
+                  <Row label="Weight Band">{bandLabel(parcel.weight_band)}</Row>
+                  <Row label="Weight">{parcel.weight_kg != null ? `${parcel.weight_kg} kg` : "—"}</Row>
+                  <Row label="Dimensions">{parcel.dimensions ?? "—"}</Row>
+                  <Row label="Tracking">{parcel.include_tracking ? "Yes" : "No"}</Row>
+                  <Row label="Description">{parcel.description ?? "—"}</Row>
+                </Section>
+                <Section title="Financials">
+                  <Row label="Price">{parcel.price != null ? `R${parcel.price}` : "—"}</Row>
+                </Section>
+                <Section title="Status">
+                  <Row label="Current">
+                    <Select value={parcel.status ?? "pending"} onValueChange={(val) => onStatusChange(parcel.id, val)}>
+                      <SelectTrigger className="h-7 text-xs w-32 border-0 p-0 shadow-none">
+                        <SelectValue><StatusBadge status={parcel.status} /></SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUSES.map((s) => (
+                          <SelectItem key={s} value={s}><StatusBadge status={s} /></SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Row>
+                  <Row label="Created">{new Date(parcel.created_at).toLocaleString()}</Row>
+                  <Row label="Updated">{new Date(parcel.updated_at).toLocaleString()}</Row>
+                </Section>
+              </div>
+            )}
+
+            {/* Evidence / Gallery tab */}
+            {activeTab === "gallery" && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-foreground">Photos & Evidence</h4>
+
+                {/* Package photo */}
+                <ProofPhoto url={parcel.photo_url} label="Package Photo" />
+
+                {/* Collection proof */}
+                <ProofPhoto url={parcel.collection_photo_url} label="Collection Proof" />
+                <GeoLink lat={parcel.collection_lat} lng={parcel.collection_lng} timestamp={parcel.collected_at} label="Collection Geolocation" />
+
+                {/* Delivery proof from match */}
+                {matchData?.proof_photo_url && (
+                  <ProofPhoto url={matchData.proof_photo_url} label="Delivery Proof (Match)" />
+                )}
+                {matchData?.proof_geotag && typeof matchData.proof_geotag === "object" && !Array.isArray(matchData.proof_geotag) && (
+                  <GeoLink
+                    lat={(matchData.proof_geotag as any).lat}
+                    lng={(matchData.proof_geotag as any).lng}
+                    timestamp={matchData.proof_submitted_at}
+                    label="Delivery Geolocation (Match)"
+                  />
+                )}
+
+                {/* Delivery proof from parcel */}
+                {!matchData?.proof_photo_url && parcel.delivery_lat != null && (
+                  <GeoLink lat={parcel.delivery_lat} lng={parcel.delivery_lng} timestamp={parcel.delivery_geotagged_at} label="Delivery Geolocation" />
+                )}
+
+                {!parcel.photo_url && !parcel.collection_photo_url && !matchData?.proof_photo_url && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Image className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No photos uploaded yet</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Timeline tab */}
+            {activeTab === "timeline" && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <History className="w-4 h-4" /> Event Timeline
+                </h4>
+                <ParcelTimeline parcelId={parcel.id} parcel={parcel} profiles={profiles} />
+              </div>
+            )}
+
+            {/* Cancellation tab */}
+            {activeTab === "cancellation" && parcel.status === "cancelled" && (
+              <CancellationDetails parcel={parcel} profiles={profiles} />
+            )}
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+// ── Cancellation details component ─────────────────────────────────────────────
+
+const CancellationDetails = ({ parcel, profiles }: { parcel: Parcel; profiles: Profile[] }) => {
+  const { data: cancellations = [] } = useQuery({
+    queryKey: ["parcel-cancellations-detail", parcel.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cancellations")
+        .select("*")
+        .eq("parcel_id", parcel.id)
+        .order("created_at", { ascending: false });
+      if (error) return [];
+      return data ?? [];
+    },
+  });
+
+  const getProfileName = (id: string | null) => {
+    if (!id) return "Unknown";
+    const p = profiles.find(pr => pr.id === id);
+    return p?.full_name || p?.email || id.slice(0, 8) + "…";
+  };
+
+  const timeElapsed = parcel.cancelled_at
+    ? (() => {
+        const created = new Date(parcel.created_at).getTime();
+        const cancelled = new Date(parcel.cancelled_at).getTime();
+        const diffMs = cancelled - created;
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        if (hours > 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+        return `${hours}h ${minutes}m`;
+      })()
+    : "—";
+
+  return (
+    <div className="space-y-5 text-sm">
+      <Section title="Cancellation Summary">
+        <Row label="Cancelled At">{parcel.cancelled_at ? new Date(parcel.cancelled_at).toLocaleString() : "—"}</Row>
+        <Row label="Time Elapsed">{timeElapsed}</Row>
+        <Row label="Reason">{parcel.cancel_reason ?? "No reason provided"}</Row>
+        <Row label="Status">{parcel.traveler_id ? "Was assigned to traveler" : "Unassigned at cancellation"}</Row>
+      </Section>
+
+      {cancellations.length > 0 && (
+        <Section title="Cancellation Records">
+          {cancellations.map((c: any) => (
+            <div key={c.id} className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 space-y-1">
+              <p className="text-xs font-medium text-foreground">
+                Cancelled by: {getProfileName(c.traveler_id)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Reason: {c.reason ?? "No reason"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(c.created_at).toLocaleString()}
+              </p>
+            </div>
+          ))}
+        </Section>
       )}
-    </SheetContent>
-  </Sheet>
-);
+
+      <Section title="Reassignment">
+        <Row label="Current Traveler">{parcel.traveler_id ? getProfileName(parcel.traveler_id) : "None (unassigned)"}</Row>
+        <Row label="Current Status"><StatusBadge status={parcel.status} /></Row>
+      </Section>
+    </div>
+  );
+};
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div>
@@ -417,9 +784,18 @@ const AdminDashboard = () => {
   const [sheetProfile, setSheetProfile] = useState<Profile | null>(null);
   const [sheetParcel, setSheetParcel] = useState<Parcel | null>(null);
 
+  // Controlled tab state for clickable navigation
+  const [activeTab, setActiveTab] = useState("overview");
+
   // Filter state for parcels tab
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Helper: navigate to parcels tab with a specific status filter
+  const goToParcelsByStatus = (status: string) => {
+    setStatusFilter(status);
+    setActiveTab("parcels");
+  };
 
   // ── Realtime subscription for parcel status changes ────────────────────────
   useEffect(() => {
@@ -493,7 +869,6 @@ const AdminDashboard = () => {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from("parcels").update({ status } as any).eq("id", id);
       if (error) throw error;
-      // Notify sender and traveler about status change
       const parcel = parcels.find(p => p.id === id);
       const statusLabel = statusConfig[status]?.label ?? status;
       const route = `${parcel?.pickup_location ?? "?"} → ${parcel?.dropoff_location ?? "?"}`;
@@ -539,8 +914,8 @@ const AdminDashboard = () => {
 
   // Income stats
   const totalIncome = parcels.reduce((sum, p) => sum + (p.price || 0), 0);
-  const deliveredIncome = parcels.filter(p => p.status === 'delivered').reduce((sum, p) => sum + (p.price || 0), 0);
-  const pendingIncome = parcels.filter(p => p.status !== 'delivered').reduce((sum, p) => sum + (p.price || 0), 0);
+  const deliveredIncome = parcels.filter(p => p.status === 'delivered' || p.status === 'delivered_verified').reduce((sum, p) => sum + (p.price || 0), 0);
+  const pendingIncome = parcels.filter(p => !['delivered', 'delivered_verified', 'cancelled'].includes(p.status ?? '')).reduce((sum, p) => sum + (p.price || 0), 0);
 
   // Weight band breakdown
   const parcelsByBand = useMemo(() => {
@@ -576,7 +951,9 @@ const AdminDashboard = () => {
         (p.sender_name?.toLowerCase().includes(q)) ||
         (p.recipient_name?.toLowerCase().includes(q)) ||
         (p.pickup_location?.toLowerCase().includes(q)) ||
-        (p.dropoff_location?.toLowerCase().includes(q))
+        (p.dropoff_location?.toLowerCase().includes(q)) ||
+        (p.suburb?.toLowerCase().includes(q)) ||
+        (p.id.toLowerCase().includes(q))
       );
     }
     return result;
@@ -590,8 +967,8 @@ const AdminDashboard = () => {
       <main className="pt-20 pb-12">
         <div className="container-narrow">
           <div className="mb-8">
-            <h1 className="text-3xl font-display font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Manage shipments, users, and traveler registrations.</p>
+            <h1 className="text-3xl font-display font-bold text-foreground">Operations Hub</h1>
+            <p className="text-muted-foreground mt-1">Complete oversight of shipments, users, evidence, and storage.</p>
           </div>
 
           {loading ? (
@@ -599,12 +976,12 @@ const AdminDashboard = () => {
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <Tabs defaultValue="overview">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-6 flex flex-wrap gap-1 h-auto">
                 <TabsTrigger value="overview" className="flex items-center gap-1.5"><LayoutDashboard className="w-4 h-4" /> Overview</TabsTrigger>
                 <TabsTrigger value="users" className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Users ({profiles.length})</TabsTrigger>
                 <TabsTrigger value="parcels" className="flex items-center gap-1.5"><Package className="w-4 h-4" /> Parcels ({parcels.length})</TabsTrigger>
-               <TabsTrigger value="travelers" className="flex items-center gap-1.5"><Truck className="w-4 h-4" /> Travelers ({travelerProfiles.length})</TabsTrigger>
+                <TabsTrigger value="travelers" className="flex items-center gap-1.5"><Truck className="w-4 h-4" /> Travelers ({travelerProfiles.length})</TabsTrigger>
                 <TabsTrigger value="deliveries" className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4" /> Deliveries
                   {parcels.filter(p => p.status === "delivered_pending_verification").length > 0 && (
@@ -616,6 +993,7 @@ const AdminDashboard = () => {
                 <TabsTrigger value="audit" className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4" /> Audit Log</TabsTrigger>
                 <TabsTrigger value="errors" className="flex items-center gap-1.5"><ShieldX className="w-4 h-4" /> Errors</TabsTrigger>
                 <TabsTrigger value="metrics" className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4" /> Metrics</TabsTrigger>
+                <TabsTrigger value="storage" className="flex items-center gap-1.5"><HardDrive className="w-4 h-4" /> Storage</TabsTrigger>
               </TabsList>
 
               {/* ── TAB 1: OVERVIEW ─────────────────────────────────────────── */}
@@ -647,8 +1025,8 @@ const AdminDashboard = () => {
                       <CardTitle className="text-sm font-medium text-muted-foreground">Delivered Income</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <span className="text-2xl font-bold text-green-600">R{deliveredIncome.toLocaleString()}</span>
-                      <p className="text-xs text-muted-foreground mt-1">{parcels.filter(p => p.status === 'delivered').length} delivered</p>
+                      <span className="text-2xl font-bold text-success">R{deliveredIncome.toLocaleString()}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{parcels.filter(p => p.status === 'delivered' || p.status === 'delivered_verified').length} delivered</p>
                     </CardContent>
                   </Card>
                   <Card>
@@ -656,25 +1034,33 @@ const AdminDashboard = () => {
                       <CardTitle className="text-sm font-medium text-muted-foreground">Pending Income</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <span className="text-2xl font-bold text-yellow-600">R{pendingIncome.toLocaleString()}</span>
-                      <p className="text-xs text-muted-foreground mt-1">{parcels.filter(p => p.status !== 'delivered').length} in pipeline</p>
+                      <span className="text-2xl font-bold text-accent">R{pendingIncome.toLocaleString()}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{parcels.filter(p => !['delivered', 'delivered_verified', 'cancelled'].includes(p.status ?? '')).length} in pipeline</p>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Parcels by status */}
+                {/* Parcels by status — CLICKABLE */}
+                <h3 className="text-sm font-semibold text-foreground mb-3">Parcels by Status — click to drill down</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   {STATUSES.map((s) => (
-                    <Card key={s}>
+                    <Card
+                      key={s}
+                      className="cursor-pointer transition-all hover:shadow-elevated hover:border-primary/30 hover:-translate-y-0.5"
+                      onClick={() => goToParcelsByStatus(s)}
+                    >
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground capitalize">{statusConfig[s].label}</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="flex items-center justify-between">
                           <span className="text-2xl font-bold text-foreground">{parcelsByStatus[s]}</span>
-                          <StatusBadge status={s} />
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">parcels</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <StatusBadge status={s} />
+                          <span className="text-[10px] text-primary font-medium">View →</span>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -770,31 +1156,41 @@ const AdminDashboard = () => {
                 </Card>
               </TabsContent>
 
-              {/* ── TAB 3: PARCELS ──────────────────────────────────────────── */}
+              {/* ── TAB 3: PARCELS — Enhanced ──────────────────────────────── */}
               <TabsContent value="parcels">
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search sender, recipient, or location…"
+                      placeholder="Search by sender, recipient, location, suburb, or ID…"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9"
                     />
                   </div>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-44">
                       <SelectValue placeholder="All statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="all">All Statuses ({parcels.length})</SelectItem>
                       {STATUSES.map(s => (
-                        <SelectItem key={s} value={s}>{statusConfig[s].label}</SelectItem>
+                        <SelectItem key={s} value={s}>{statusConfig[s].label} ({parcelsByStatus[s]})</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {statusFilter !== "all" && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <StatusBadge status={statusFilter} />
+                    <span className="text-sm text-muted-foreground">{filteredParcels.length} parcels</span>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setStatusFilter("all")}>
+                      Clear filter ×
+                    </Button>
+                  </div>
+                )}
 
                 <Card>
                   <CardContent className="p-0">
@@ -802,56 +1198,93 @@ const AdminDashboard = () => {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="w-20">ID</TableHead>
                             <TableHead>Route</TableHead>
+                            <TableHead>Suburb</TableHead>
                             <TableHead>Sender</TableHead>
-                            <TableHead>Recipient</TableHead>
+                            <TableHead>Traveler</TableHead>
                             <TableHead>Band</TableHead>
-                            <TableHead>Tracking</TableHead>
                             <TableHead>Price</TableHead>
                             <TableHead>Status</TableHead>
+                            <TableHead>Pickup Window</TableHead>
+                            <TableHead>Proof</TableHead>
+                            <TableHead>Geo</TableHead>
                             <TableHead>Created</TableHead>
                             <TableHead></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {filteredParcels.length === 0 ? (
-                            <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No parcels found.</TableCell></TableRow>
-                          ) : filteredParcels.map((parcel) => (
-                            <TableRow key={parcel.id}>
-                              <TableCell className="text-xs max-w-[160px]">
-                                <span className="truncate block" title={`${parcel.pickup_location} → ${parcel.dropoff_location}`}>
-                                  {parcel.pickup_location ?? "—"} → {parcel.dropoff_location ?? "—"}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-xs">
-                                <div>{parcel.sender_name ?? "—"}</div>
-                                {parcel.sender_phone && <div className="text-muted-foreground">{parcel.sender_phone}</div>}
-                              </TableCell>
-                              <TableCell className="text-xs">
-                                <div>{parcel.recipient_name ?? "—"}</div>
-                                {parcel.recipient_phone && <div className="text-muted-foreground">{parcel.recipient_phone}</div>}
-                              </TableCell>
-                              <TableCell className="text-xs">{bandLabel(parcel.weight_band)}</TableCell>
-                              <TableCell className="text-xs">{parcel.include_tracking ? "✓" : "—"}</TableCell>
-                              <TableCell className="text-xs font-medium">{parcel.price != null ? `R${parcel.price}` : "—"}</TableCell>
-                              <TableCell>
-                                <Select value={parcel.status ?? "pending"} onValueChange={(val) => updateStatus.mutate({ id: parcel.id, status: val })}>
-                                  <SelectTrigger className="h-7 text-xs w-32 border-0 p-0 shadow-none">
-                                    <SelectValue><StatusBadge status={parcel.status} /></SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {STATUSES.map((s) => (<SelectItem key={s} value={s}><StatusBadge status={s} /></SelectItem>))}
-                                  </SelectContent>
-                                </Select>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground text-xs">{new Date(parcel.created_at).toLocaleDateString()}</TableCell>
-                              <TableCell>
-                                <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setSheetParcel(parcel)}>
-                                  <Eye className="w-3.5 h-3.5" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                            <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">No parcels found.</TableCell></TableRow>
+                          ) : filteredParcels.map((parcel) => {
+                            const traveler = profileById(parcel.traveler_id);
+                            return (
+                              <TableRow key={parcel.id} className="cursor-pointer hover:bg-secondary/50" onClick={() => setSheetParcel(parcel)}>
+                                <TableCell className="text-xs font-mono text-primary hover:underline">
+                                  {parcel.id.slice(0, 8)}…
+                                </TableCell>
+                                <TableCell className="text-xs max-w-[160px]">
+                                  <span className="truncate block" title={`${parcel.pickup_location} → ${parcel.dropoff_location}`}>
+                                    {parcel.pickup_location ?? "—"} → {parcel.dropoff_location ?? "—"}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-xs">{parcel.suburb ?? "—"}</TableCell>
+                                <TableCell className="text-xs">
+                                  <div>{parcel.sender_name ?? "—"}</div>
+                                  {parcel.sender_phone && <div className="text-muted-foreground">{parcel.sender_phone}</div>}
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  <div>{traveler?.full_name ?? "—"}</div>
+                                  {traveler?.phone && <div className="text-muted-foreground">{traveler.phone}</div>}
+                                </TableCell>
+                                <TableCell className="text-xs">{bandLabel(parcel.weight_band)}</TableCell>
+                                <TableCell className="text-xs font-medium">{parcel.price != null ? `R${parcel.price}` : "—"}</TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                  <Select value={parcel.status ?? "pending"} onValueChange={(val) => updateStatus.mutate({ id: parcel.id, status: val })}>
+                                    <SelectTrigger className="h-7 text-xs w-32 border-0 p-0 shadow-none">
+                                      <SelectValue><StatusBadge status={parcel.status} /></SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {STATUSES.map((s) => (<SelectItem key={s} value={s}><StatusBadge status={s} /></SelectItem>))}
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {parcel.pickup_earliest ? (
+                                    <span>{parcel.pickup_earliest}{parcel.pickup_latest ? ` – ${parcel.pickup_latest}` : ""}</span>
+                                  ) : "—"}
+                                </TableCell>
+                                <TableCell>
+                                  {(parcel.photo_url || parcel.collection_photo_url) ? (
+                                    <Camera className="w-4 h-4 text-success" />
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {(parcel.delivery_lat != null || parcel.collection_lat != null) ? (
+                                    <a
+                                      href={`https://www.google.com/maps?q=${parcel.delivery_lat ?? parcel.collection_lat},${parcel.delivery_lng ?? parcel.collection_lng}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-primary hover:text-primary/80"
+                                    >
+                                      <Navigation className="w-4 h-4" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-xs whitespace-nowrap">{new Date(parcel.created_at).toLocaleDateString()}</TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                  <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setSheetParcel(parcel)}>
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
@@ -902,7 +1335,7 @@ const AdminDashboard = () => {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-7 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        className="h-7 px-2 text-success hover:text-success hover:bg-success/10"
                                         onClick={() => updateTravelerStatus.mutate({ id: tp.id, status: "approved" })}
                                         title="Approve"
                                       >
@@ -913,7 +1346,7 @@ const AdminDashboard = () => {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                                         onClick={() => updateTravelerStatus.mutate({ id: tp.id, status: "rejected" })}
                                         title="Reject"
                                       >
@@ -981,6 +1414,11 @@ const AdminDashboard = () => {
               <TabsContent value="metrics">
                 <MetricsTab />
               </TabsContent>
+
+              {/* ── TAB 7: STORAGE MANAGER ──────────────────────────────────── */}
+              <TabsContent value="storage">
+                <StorageManagerTab parcels={parcels} />
+              </TabsContent>
             </Tabs>
           )}
         </div>
@@ -997,6 +1435,7 @@ const AdminDashboard = () => {
         open={!!sheetParcel}
         onClose={() => setSheetParcel(null)}
         onStatusChange={(id, status) => updateStatus.mutate({ id, status })}
+        profiles={profiles}
       />
     </div>
   );
@@ -1100,54 +1539,30 @@ const DeliveryMatchCard = ({ match, senderName, onApprove, onReject }: {
           )}
         </div>
 
-        {/* Photo proof from match */}
-        {match.proof_photo_url && (
+        {/* Photo + geotag side by side for verification */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Photo proof */}
           <div>
-            <p className="text-xs font-medium text-foreground mb-1">📸 Delivery proof photo:</p>
-            <img
-              src={match.proof_photo_url}
-              alt="Delivery proof"
-              className="rounded-lg border border-border max-h-48 object-cover"
-            />
+            {match.proof_photo_url ? (
+              <ProofPhoto url={match.proof_photo_url} label="Delivery proof" />
+            ) : parcel?.photo_url ? (
+              <ProofPhoto url={parcel.photo_url} label="Delivery proof (parcel)" />
+            ) : (
+              <p className="text-xs text-destructive font-medium">⚠ No photo proof</p>
+            )}
           </div>
-        )}
 
-        {/* Geotag from match */}
-        {match.proof_geotag && (
-          <div className="bg-secondary/50 rounded-lg p-3 text-xs space-y-1">
-            <p className="font-medium text-foreground">📍 Delivery Geotag</p>
-            <p>Coordinates: {match.proof_geotag.lat.toFixed(5)}, {match.proof_geotag.lng.toFixed(5)}</p>
-            <a
-              href={`https://www.google.com/maps?q=${match.proof_geotag.lat},${match.proof_geotag.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline inline-flex items-center gap-1"
-            >
-              <ExternalLink className="w-3 h-3" /> View on Google Maps
-            </a>
-          </div>
-        )}
-
-        {/* Fallback: show parcel-level proof if match doesn't have it */}
-        {!match.proof_photo_url && parcel?.photo_url && (
+          {/* Geotag */}
           <div>
-            <p className="text-xs font-medium text-foreground mb-1">📸 Delivery proof photo (parcel):</p>
-            <img src={parcel.photo_url} alt="Delivery proof" className="rounded-lg border border-border max-h-48 object-cover" />
+            {match.proof_geotag ? (
+              <GeoLink lat={match.proof_geotag.lat} lng={match.proof_geotag.lng} timestamp={match.proof_submitted_at} label="Delivery Geotag" />
+            ) : parcel?.delivery_lat != null ? (
+              <GeoLink lat={parcel.delivery_lat} lng={parcel.delivery_lng} timestamp={parcel.delivery_geotagged_at} label="Delivery Geotag (parcel)" />
+            ) : (
+              <p className="text-xs text-destructive font-medium">⚠ No geolocation data</p>
+            )}
           </div>
-        )}
-        {!match.proof_geotag && parcel?.delivery_lat != null && parcel?.delivery_lng != null && (
-          <div className="bg-secondary/50 rounded-lg p-3 text-xs space-y-1">
-            <p className="font-medium text-foreground">📍 Delivery Geotag (parcel)</p>
-            <p>Coordinates: {parcel.delivery_lat.toFixed(5)}, {parcel.delivery_lng.toFixed(5)}</p>
-            <a href={`https://www.google.com/maps?q=${parcel.delivery_lat},${parcel.delivery_lng}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
-              <ExternalLink className="w-3 h-3" /> View on Google Maps
-            </a>
-          </div>
-        )}
-
-        {!match.proof_photo_url && !parcel?.photo_url && !match.proof_geotag && parcel?.delivery_lat == null && (
-          <p className="text-xs text-destructive font-medium">⚠ No delivery proof submitted</p>
-        )}
+        </div>
 
         {/* Action buttons */}
         {(onApprove || onReject) && (
@@ -1201,7 +1616,7 @@ const DeliveryApprovalsTab = ({ pendingParcels, deliveredParcels, onApprove, onR
     <div className="space-y-8">
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-yellow-600" />
+          <Clock className="w-4 h-4 text-accent" />
           Awaiting Verification ({pendingMatches.length})
         </h3>
         {pendingMatches.length === 0 ? (
@@ -1223,7 +1638,7 @@ const DeliveryApprovalsTab = ({ pendingParcels, deliveredParcels, onApprove, onR
       {verifiedMatches.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-600" />
+            <CheckCircle className="w-4 h-4 text-success" />
             Verified Deliveries ({verifiedMatches.length})
           </h3>
           <div className="space-y-4">
@@ -1417,7 +1832,6 @@ const MetricsTab = () => {
     },
   });
 
-  // Aggregate by metric name
   const totals = useMemo(() => {
     const counts: Record<string, number> = {};
     metrics.forEach(m => {
@@ -1426,7 +1840,6 @@ const MetricsTab = () => {
     return counts;
   }, [metrics]);
 
-  // Today's counts
   const todayCounts = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const counts: Record<string, number> = {};
@@ -1489,6 +1902,251 @@ const MetricsTab = () => {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+};
+
+// ── Storage Manager Tab ────────────────────────────────────────────────────────
+
+const StorageManagerTab = ({ parcels }: { parcels: Parcel[] }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [deleteFilter, setDeleteFilter] = useState<string>("cancelled");
+  const [deleteDaysOld, setDeleteDaysOld] = useState<number>(90);
+  const [photosOnly, setPhotosOnly] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // List storage objects to estimate usage
+  const { data: storageFiles = [], isLoading: storageLoading } = useQuery({
+    queryKey: ["admin-storage-files"],
+    queryFn: async () => {
+      const { data, error } = await supabase.storage.from("documents").list("", { limit: 1000 });
+      if (error) return [];
+      return data ?? [];
+    },
+  });
+
+  // Count photos across parcels
+  const photoStats = useMemo(() => {
+    let packagePhotos = 0;
+    let collectionPhotos = 0;
+    let deliveryGeos = 0;
+    parcels.forEach(p => {
+      if (p.photo_url) packagePhotos++;
+      if (p.collection_photo_url) collectionPhotos++;
+      if (p.delivery_lat != null) deliveryGeos++;
+    });
+    return { packagePhotos, collectionPhotos, deliveryGeos, documents: storageFiles.length };
+  }, [parcels, storageFiles]);
+
+  // Parcels eligible for deletion based on filters
+  const eligibleParcels = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - deleteDaysOld);
+
+    return parcels.filter(p => {
+      if (deleteFilter !== "all" && p.status !== deleteFilter) return false;
+      if (new Date(p.created_at) > cutoff) return false;
+      return true;
+    });
+  }, [parcels, deleteFilter, deleteDaysOld]);
+
+  const handleBulkDelete = async () => {
+    if (eligibleParcels.length === 0) return;
+    setIsDeleting(true);
+    try {
+      const res = await supabase.functions.invoke("delete-parcels", {
+        body: {
+          parcelIds: eligibleParcels.map(p => p.id),
+          photosOnly,
+        },
+      });
+      if (res.error) throw new Error(res.error.message);
+      const result = res.data;
+      toast({
+        title: "Cleanup complete",
+        description: `${result?.deletedParcels ?? 0} parcels processed, ${result?.deletedFiles ?? 0} files removed.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-parcels"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-storage-files"] });
+    } catch (err: any) {
+      toast({ title: "Cleanup failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Storage overview */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Documents Bucket</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <span className="text-2xl font-bold text-foreground">{photoStats.documents}</span>
+            <p className="text-xs text-muted-foreground mt-1">files stored</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Package Photos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <span className="text-2xl font-bold text-foreground">{photoStats.packagePhotos}</span>
+            <p className="text-xs text-muted-foreground mt-1">across all parcels</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Collection Proofs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <span className="text-2xl font-bold text-foreground">{photoStats.collectionPhotos}</span>
+            <p className="text-xs text-muted-foreground mt-1">pickup confirmations</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Geotagged Deliveries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <span className="text-2xl font-bold text-foreground">{photoStats.deliveryGeos}</span>
+            <p className="text-xs text-muted-foreground mt-1">GPS verified</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Free tier warning */}
+      <Card className="border-accent/30 bg-accent/5">
+        <CardContent className="p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-semibold text-foreground">Supabase Free Tier: 1GB Storage Limit</p>
+            <p className="text-muted-foreground mt-1">
+              Use the cleanup tools below to safely remove old data. The delete function uses the Supabase Storage API
+              to remove actual files from S3 before deleting database records — preventing orphaned files.
+            </p>
+            <p className="text-destructive text-xs mt-2 font-medium">
+              ⚠ Never delete storage files using raw SQL. Always use the Storage API to avoid orphaned S3 objects.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Bulk cleanup tool */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Trash2 className="w-4 h-4" /> Safe Bulk Cleanup
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">Status filter</label>
+              <Select value={deleteFilter} onValueChange={setDeleteFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cancelled">Cancelled only</SelectItem>
+                  <SelectItem value="delivered_verified">Verified only</SelectItem>
+                  <SelectItem value="delivered">Delivered only</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">Older than (days)</label>
+              <Select value={String(deleteDaysOld)} onValueChange={(v) => setDeleteDaysOld(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 days</SelectItem>
+                  <SelectItem value="60">60 days</SelectItem>
+                  <SelectItem value="90">90 days</SelectItem>
+                  <SelectItem value="180">180 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">Mode</label>
+              <Select value={photosOnly ? "photos" : "full"} onValueChange={(v) => setPhotosOnly(v === "photos")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Delete records + photos</SelectItem>
+                  <SelectItem value="photos">Photos only (keep records)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3">
+            <div className="text-sm">
+              <span className="font-semibold text-foreground">{eligibleParcels.length}</span>
+              <span className="text-muted-foreground"> parcels match your criteria</span>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={eligibleParcels.length === 0 || isDeleting}
+              onClick={() => setConfirmOpen(true)}
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Trash2 className="w-4 h-4 mr-1" />}
+              {photosOnly ? "Clear Photos" : "Delete Permanently"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Confirmation dialog */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Confirm {photosOnly ? "Photo Cleanup" : "Permanent Deletion"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                You are about to {photosOnly ? "remove photos from" : "permanently delete"}{" "}
+                <strong>{eligibleParcels.length}</strong> parcels
+                with status "{deleteFilter === "all" ? "any" : statusConfig[deleteFilter]?.label ?? deleteFilter}"
+                older than {deleteDaysOld} days.
+              </p>
+              {!photosOnly && (
+                <p className="text-destructive font-medium">
+                  This will delete parcel records, associated matches, notifications, and all uploaded files.
+                  This action cannot be undone.
+                </p>
+              )}
+              {photosOnly && (
+                <p className="text-muted-foreground">
+                  Records will be preserved but associated photos will be permanently removed from storage.
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+              {photosOnly ? "Clear Photos" : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
