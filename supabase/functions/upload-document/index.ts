@@ -56,9 +56,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Derive profileId server-side from authenticated user
+    const { data: profileId, error: profileIdError } = await supabaseAdmin.rpc(
+      "get_profile_id",
+      { _auth_uid: user.id },
+    );
+
+    if (profileIdError || !profileId) {
+      return new Response(JSON.stringify({ error: "Profile not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const profileId = formData.get("profileId") as string | null;
     const purpose = formData.get("purpose") as string | null; // e.g. "id-document"
 
     if (!file || file.size === 0) {
@@ -68,8 +80,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!profileId || !purpose) {
-      return new Response(JSON.stringify({ error: "Missing profileId or purpose" }), {
+    if (!purpose) {
+      return new Response(JSON.stringify({ error: "Missing purpose" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

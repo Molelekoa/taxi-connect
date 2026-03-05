@@ -273,7 +273,6 @@ const TravelerDashboard = () => {
 
       const uploadForm = new FormData();
       uploadForm.append("file", deliveryPhoto);
-      uploadForm.append("profileId", profileId);
       uploadForm.append("purpose", "delivery-proof");
 
       const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
@@ -332,7 +331,6 @@ const TravelerDashboard = () => {
     try {
       const uploadForm = new FormData();
       uploadForm.append("file", collectionPhoto);
-      uploadForm.append("profileId", profileId);
       uploadForm.append("purpose", "collection-proof");
 
       const { data: uploadResult, error: uploadError } = await supabase.functions.invoke("upload-document", {
