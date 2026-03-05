@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.submit-collection-proof]
 verify_jwt = false
+
+[functions.delete-parcels]
+verify_jwt = false
