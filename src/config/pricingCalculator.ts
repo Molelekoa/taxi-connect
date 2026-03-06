@@ -148,6 +148,13 @@ export const calculateBandPrice = (
   if (effectiveDistance > LONG_DISTANCE_DISCOUNT_THRESHOLD_KM) {
     discountedPrice *= LONG_DISTANCE_DISCOUNT_FACTOR;
   }
+
+  // Cross-border light parcel incentive: 15% off for light band over 900km
+  const isCrossBorder = getDistanceCategory(originCity, destinationCity) !== "Domestic";
+  if (bandId === "light" && effectiveDistance > 900 && isCrossBorder) {
+    discountedPrice *= 0.85;
+  }
+
   const finalPrice = Math.round(discountedPrice * 100) / 100 + trackingFee;
 
   // --- Step 3: Build result using the underlying calculation for metadata ---
