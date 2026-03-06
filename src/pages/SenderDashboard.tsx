@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft, ShieldCheck, Trash2 } from "lucide-react";
+import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft, ShieldCheck, Trash2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ const SenderDashboard = () => {
   const [earlierNotifications, setEarlierNotifications] = useState<Record<string, any>>({});
   const [confirmingArrival, setConfirmingArrival] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [cancellingParcel, setCancellingParcel] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -135,6 +136,22 @@ const SenderDashboard = () => {
       toast({ title: "Failed to confirm", description: err.message, variant: "destructive" });
     } finally {
       setConfirmingArrival(null);
+    }
+  };
+
+  const handleCancelParcel = async (parcelId: string) => {
+    setCancellingParcel(parcelId);
+    try {
+      const res = await supabase.functions.invoke("cancel-parcel-by-sender", {
+        body: { parcelId, reason: "Cancelled by sender" },
+      });
+      if (res.error) throw new Error(res.error.message);
+      toast({ title: "Parcel cancelled", description: "The traveler has been notified and the parcel is back in the available pool." });
+      await fetchData();
+    } catch (err: any) {
+      toast({ title: "Failed to cancel", description: err.message, variant: "destructive" });
+    } finally {
+      setCancellingParcel(null);
     }
   };
 
@@ -285,7 +302,35 @@ const SenderDashboard = () => {
                         </div>
                       )}
 
-                      {/* Matched traveler info */}
+                      {/* Cancel assigned parcel */}
+                      {["matched", "collected", "in_transit", "in-transit"].includes(parcel.status) && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" disabled={cancellingParcel === parcel.id}>
+                              <XCircle className="w-3.5 h-3.5 mr-1.5" />
+                              {cancellingParcel === parcel.id ? "Cancelling..." : "Cancel Delivery"}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancel this delivery?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will unassign the traveler and return the parcel ({parcel.pickup_location} → {parcel.dropoff_location}) to the available pool so other travelers can claim it.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleCancelParcel(parcel.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Cancel Delivery
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+
                       {matches.length > 0 && (
                         <div className="bg-success/5 border border-success/20 rounded-lg p-3 space-y-2">
                           <p className="text-xs font-semibold text-success flex items-center gap-1">
