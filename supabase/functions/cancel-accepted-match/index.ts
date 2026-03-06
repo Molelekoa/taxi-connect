@@ -122,10 +122,38 @@ Deno.serve(async (req) => {
       await supabase.from("notifications").insert({
         user_id: match.parcels.sender_id,
         type: "delivery_cancelled",
-        content: `Your traveler has cancelled the delivery. Reason: ${reason}. We're searching for a new traveler.`,
+        content: `Your parcel #${match.parcel_id.slice(0, 8)} has been cancelled by the traveler and is now available for other travelers.`,
         related_match_id: matchId,
       });
     }
+
+    // Notify admin(s)
+    try {
+      const { data: adminRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+
+      if (adminRoles && adminRoles.length > 0) {
+        const adminNotifications = adminRoles.map((r: any) => ({
+          user_id: r.user_id,
+          type: "traveler_cancelled",
+          content: `Traveler cancelled parcel #${match.parcel_id.slice(0, 8)} (${match.parcels.pickup_location} → ${match.parcels.dropoff_location}). Reason: ${reason}. Parcel returned to available pool.`,
+          related_match_id: matchId,
+        }));
+        await supabase.from("notifications").insert(adminNotifications);
+      }
+    } catch { /* silent — best effort admin notification */ }
+
+    // Audit log
+    await supabase.from("audit_log").insert({
+      action: "cancelled_by_traveler",
+      table_name: "parcels",
+      record_id: match.parcel_id,
+      old_values: { status: match.parcels.status, traveler_id: profileId },
+      new_values: { status: "pending", traveler_id: null },
+      performed_by: profileId,
+    });
 
     // Re-trigger matching to find a replacement
     try {

@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.delete-parcels]
 verify_jwt = false
+
+[functions.cancel-parcel-by-sender]
+verify_jwt = false
