@@ -700,28 +700,16 @@ const TravelerDashboard = () => {
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : deliveredMatches.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No delivered parcels yet.</p>
+                  <p className="text-muted-foreground text-center py-8">No verified deliveries yet. Parcels move here once admin approves your delivery proof.</p>
                 ) : (
                   deliveredMatches.map(match => (
                     <div key={match.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 font-medium text-foreground">
                           <CheckCircle className="w-4 h-4 text-success" />
-                          {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
+                          {match.parcels?.pickup_location}{match.parcels?.suburb ? ` – ${match.parcels.suburb}` : ""} → {match.parcels?.dropoff_location}
                         </div>
-                        <Badge className={
-                          match.parcels?.status === "delivered_verified"
-                            ? "bg-success/10 text-success"
-                            : match.parcels?.status === "delivered"
-                              ? "bg-success/10 text-success"
-                              : "bg-warning/10 text-warning"
-                        }>
-                          {match.parcels?.status === "delivered_verified"
-                            ? "Verified ✓"
-                            : match.parcels?.status === "delivered"
-                              ? "Delivered ✓"
-                              : "Pending Verification"}
-                        </Badge>
+                        <Badge className="bg-success/10 text-success">Verified ✓</Badge>
                       </div>
                       <div className="text-xs text-muted-foreground space-y-1">
                         <p className="flex items-center gap-1"><Scale className="w-3 h-3" />Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
