@@ -606,9 +606,23 @@ const TravelerDashboard = () => {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 font-medium text-foreground">
                           <CheckCircle className="w-4 h-4 text-success" />
-                          {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
+                          {match.parcels?.pickup_location}{match.parcels?.suburb ? ` – ${match.parcels.suburb}` : ""} → {match.parcels?.dropoff_location}
                         </div>
-                        <Badge className="bg-success/10 text-success">accepted</Badge>
+                        <Badge className={
+                          match.parcels?.status === "delivered_pending_verification"
+                            ? "bg-warning/10 text-warning"
+                            : match.parcels?.status === "collected"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-success/10 text-success"
+                        }>
+                          {match.parcels?.status === "delivered_pending_verification"
+                            ? "Awaiting Verification"
+                            : match.parcels?.status === "collected"
+                              ? "Collected"
+                              : match.parcels?.status === "in_transit" || match.parcels?.status === "in-transit"
+                                ? "In Transit"
+                                : "Accepted"}
+                        </Badge>
                       </div>
                        <div className="text-xs text-muted-foreground space-y-1">
                          <p className="flex items-center gap-1"><Scale className="w-3 h-3" />Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
