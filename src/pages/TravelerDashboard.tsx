@@ -105,19 +105,18 @@ const TravelerDashboard = () => {
       .from("matches")
       .select("*, parcels(*), trips(*)")
       .eq("status", "accepted") as { data: any[] | null };
-    setAcceptedMatches((accepted || []).filter((m: any) => m.trips?.traveler_id === pid));
+    const myAccepted = (accepted || []).filter((m: any) => m.trips?.traveler_id === pid);
+    
+    // Carrying: claimed, collected, in_transit, delivered_pending_verification
+    const carryingStatuses = ["claimed", "matched", "collected", "in_transit", "in-transit", "delivered_pending_verification", "pending"];
+    setAcceptedMatches(myAccepted.filter((m: any) =>
+      carryingStatuses.includes(m.parcels?.status)
+    ));
 
-    // Fetch delivered/pending verification matches
-    const { data: delivered } = await supabase
-      .from("matches")
-      .select("*, parcels(*), trips(*)")
-      .in("status", ["accepted"]) as { data: any[] | null };
-    // Filter by traveler AND parcel status being delivered-related
-    const deliveredFiltered = (delivered || []).filter((m: any) =>
-      m.trips?.traveler_id === pid &&
-      ["delivered", "pending_confirmation", "delivered_pending_verification", "delivered_verified"].includes(m.parcels?.status)
-    );
-    setDeliveredMatches(deliveredFiltered);
+    // Delivered: only admin-verified parcels
+    setDeliveredMatches(myAccepted.filter((m: any) =>
+      m.parcels?.status === "delivered_verified"
+    ));
 
     if (tp?.status === "approved") {
       const { data: tpFull } = await supabase
@@ -493,13 +492,12 @@ const TravelerDashboard = () => {
                       <div key={parcel.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
                         <div className="flex items-start justify-between">
                           <div>
-                      <div className="flex items-center gap-2 font-medium text-foreground">
+                          <div className="flex items-center gap-2 font-medium text-foreground">
                               <Package className="w-4 h-4 text-accent" />
-                              {parcel.pickup_location} → {parcel.dropoff_location}
+                              {parcel.pickup_location}{parcel.suburb ? ` – ${parcel.suburb}` : ""} → {parcel.dropoff_location}
                             </div>
-                            {(parcel.suburb || parcel.pickup_address || parcel.delivery_address) && (
+                            {(parcel.pickup_address || parcel.delivery_address) && (
                               <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                {parcel.suburb && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />Suburb: {parcel.suburb}</span>}
                                 {parcel.pickup_address && <span>Pickup: {parcel.pickup_address}</span>}
                                 {parcel.delivery_address && <span>Drop-off: {parcel.delivery_address}</span>}
                               </div>
@@ -553,13 +551,12 @@ const TravelerDashboard = () => {
                     <div key={match.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="flex items-center gap-2 font-medium text-foreground">
+                           <div className="flex items-center gap-2 font-medium text-foreground">
                              <Package className="w-4 h-4 text-accent" />
-                             {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
+                             {match.parcels?.pickup_location}{match.parcels?.suburb ? ` – ${match.parcels.suburb}` : ""} → {match.parcels?.dropoff_location}
                            </div>
-                           {(match.parcels?.suburb || match.parcels?.pickup_address || match.parcels?.delivery_address) && (
+                           {(match.parcels?.pickup_address || match.parcels?.delivery_address) && (
                              <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
-                               {match.parcels?.suburb && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />Suburb: {match.parcels.suburb}</span>}
                                {match.parcels?.pickup_address && <span>Pickup: {match.parcels.pickup_address}</span>}
                                {match.parcels?.delivery_address && <span>Drop-off: {match.parcels.delivery_address}</span>}
                              </div>
@@ -609,9 +606,23 @@ const TravelerDashboard = () => {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 font-medium text-foreground">
                           <CheckCircle className="w-4 h-4 text-success" />
-                          {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
+                          {match.parcels?.pickup_location}{match.parcels?.suburb ? ` – ${match.parcels.suburb}` : ""} → {match.parcels?.dropoff_location}
                         </div>
-                        <Badge className="bg-success/10 text-success">accepted</Badge>
+                        <Badge className={
+                          match.parcels?.status === "delivered_pending_verification"
+                            ? "bg-warning/10 text-warning"
+                            : match.parcels?.status === "collected"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-success/10 text-success"
+                        }>
+                          {match.parcels?.status === "delivered_pending_verification"
+                            ? "Awaiting Verification"
+                            : match.parcels?.status === "collected"
+                              ? "Collected"
+                              : match.parcels?.status === "in_transit" || match.parcels?.status === "in-transit"
+                                ? "In Transit"
+                                : "Accepted"}
+                        </Badge>
                       </div>
                        <div className="text-xs text-muted-foreground space-y-1">
                          <p className="flex items-center gap-1"><Scale className="w-3 h-3" />Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
@@ -689,28 +700,16 @@ const TravelerDashboard = () => {
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : deliveredMatches.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No delivered parcels yet.</p>
+                  <p className="text-muted-foreground text-center py-8">No verified deliveries yet. Parcels move here once admin approves your delivery proof.</p>
                 ) : (
                   deliveredMatches.map(match => (
                     <div key={match.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 font-medium text-foreground">
                           <CheckCircle className="w-4 h-4 text-success" />
-                          {match.parcels?.pickup_location} → {match.parcels?.dropoff_location}
+                          {match.parcels?.pickup_location}{match.parcels?.suburb ? ` – ${match.parcels.suburb}` : ""} → {match.parcels?.dropoff_location}
                         </div>
-                        <Badge className={
-                          match.parcels?.status === "delivered_verified"
-                            ? "bg-success/10 text-success"
-                            : match.parcels?.status === "delivered"
-                              ? "bg-success/10 text-success"
-                              : "bg-warning/10 text-warning"
-                        }>
-                          {match.parcels?.status === "delivered_verified"
-                            ? "Verified ✓"
-                            : match.parcels?.status === "delivered"
-                              ? "Delivered ✓"
-                              : "Pending Verification"}
-                        </Badge>
+                        <Badge className="bg-success/10 text-success">Verified ✓</Badge>
                       </div>
                       <div className="text-xs text-muted-foreground space-y-1">
                         <p className="flex items-center gap-1"><Scale className="w-3 h-3" />Size: {getBandLabel(match.parcels?.weight_band) || `${match.parcels?.weight_kg || "?"}kg`}</p>
@@ -728,28 +727,13 @@ const TravelerDashboard = () => {
                       {match.parcels?.price && (
                         <p className="text-sm">{payoutDisplay(match.parcels.price)}</p>
                       )}
-                      {(match.parcels?.status === "delivered" || match.parcels?.status === "delivered_verified") && (
-                        <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-xs">
+                      <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-xs">
                           <p className="font-medium text-success">💰 Payment Information</p>
-                          <p className="text-foreground mt-1">
-                            {match.parcels?.status === "delivered_verified"
-                              ? "Your delivery has been verified! Payment is being processed."
-                              : (() => {
-                                  const day = new Date().getDay();
-                                  return day >= 1 && day <= 4
-                                    ? "Payment will be made within 72 hours."
-                                    : "Payment will be made on Wednesday.";
-                                })()
-                            }
-                          </p>
+                          <p className="text-foreground mt-1">Your delivery has been verified! Payment is being processed.</p>
+                          {match.parcels?.verified_at && (
+                            <p className="text-muted-foreground mt-1">Verified: {new Date(match.parcels.verified_at).toLocaleString()}</p>
+                          )}
                         </div>
-                      )}
-                      {(match.parcels?.status === "pending_confirmation" || match.parcels?.status === "delivered_pending_verification") && (
-                        <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 text-xs">
-                          <p className="font-medium text-warning">⏳ Awaiting Admin Verification</p>
-                          <p className="text-foreground mt-1">Your delivery proof has been submitted. An admin will review and verify it shortly.</p>
-                        </div>
-                      )}
                     </div>
                   ))
                 )}
