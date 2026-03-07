@@ -727,28 +727,13 @@ const TravelerDashboard = () => {
                       {match.parcels?.price && (
                         <p className="text-sm">{payoutDisplay(match.parcels.price)}</p>
                       )}
-                      {(match.parcels?.status === "delivered" || match.parcels?.status === "delivered_verified") && (
-                        <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-xs">
+                      <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-xs">
                           <p className="font-medium text-success">💰 Payment Information</p>
-                          <p className="text-foreground mt-1">
-                            {match.parcels?.status === "delivered_verified"
-                              ? "Your delivery has been verified! Payment is being processed."
-                              : (() => {
-                                  const day = new Date().getDay();
-                                  return day >= 1 && day <= 4
-                                    ? "Payment will be made within 72 hours."
-                                    : "Payment will be made on Wednesday.";
-                                })()
-                            }
-                          </p>
+                          <p className="text-foreground mt-1">Your delivery has been verified! Payment is being processed.</p>
+                          {match.parcels?.verified_at && (
+                            <p className="text-muted-foreground mt-1">Verified: {new Date(match.parcels.verified_at).toLocaleString()}</p>
+                          )}
                         </div>
-                      )}
-                      {(match.parcels?.status === "pending_confirmation" || match.parcels?.status === "delivered_pending_verification") && (
-                        <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 text-xs">
-                          <p className="font-medium text-warning">⏳ Awaiting Admin Verification</p>
-                          <p className="text-foreground mt-1">Your delivery proof has been submitted. An admin will review and verify it shortly.</p>
-                        </div>
-                      )}
                     </div>
                   ))
                 )}
