@@ -421,19 +421,11 @@ const SmallParcelBooking = () => {
         description: "We'll contact you soon to confirm pickup details.",
       });
 
-      // Belt-and-suspenders: call find-matching-trips as fallback in case trigger didn't fire
+      // Belt-and-suspenders: call find-matching-trips as fallback
       try {
-        // Get the most recent parcel for this sender to find the ID
-        const { data: recentParcel } = await supabase
-          .from("parcels")
-          .select("id")
-          .eq("sender_id", profileId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-        if (recentParcel) {
+        if (insertedParcel?.id) {
           await supabase.functions.invoke("find-matching-trips", {
-            body: { parcelId: recentParcel.id },
+            body: { parcelId: insertedParcel.id },
           });
         }
       } catch {
