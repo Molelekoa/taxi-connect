@@ -38,7 +38,7 @@ const FAQ = () => {
       faqs: [
         {
           question: "What can I send?",
-          answer: "We handle small to medium-sized parcels weighing between 1kg and 20kg—roughly anything that fits in a suitcase. This includes documents, clothing, gifts, electronics, household items, and other everyday goods. We focus on cargo that's easy to transport safely."
+          answer: "We handle parcels weighing between 1kg and 50kg. This includes documents, clothing, gifts, electronics, household items, small furniture, and other everyday goods. We focus on cargo that's easy to transport safely."
         },
         {
           question: "What can't I send?",
