@@ -1222,9 +1222,9 @@ const AdminDashboard = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredParcels.length === 0 ? (
+                          {paginatedParcels.length === 0 ? (
                             <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">No parcels found.</TableCell></TableRow>
-                          ) : filteredParcels.map((parcel) => {
+                          ) : paginatedParcels.map((parcel) => {
                             const traveler = profileById(parcel.traveler_id);
                             return (
                               <TableRow key={parcel.id} className="cursor-pointer hover:bg-secondary/50" onClick={() => setSheetParcel(parcel)}>
@@ -1296,6 +1296,22 @@ const AdminDashboard = () => {
                         </TableBody>
                       </Table>
                     </div>
+                    {/* Pagination controls */}
+                    {totalParcelPages > 1 && (
+                      <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                        <span className="text-xs text-muted-foreground">
+                          Showing {parcelsPage * PARCELS_PER_PAGE + 1}–{Math.min((parcelsPage + 1) * PARCELS_PER_PAGE, filteredParcels.length)} of {filteredParcels.length}
+                        </span>
+                        <div className="flex gap-1">
+                          <Button variant="outline" size="sm" disabled={parcelsPage === 0} onClick={() => setParcelsPage(p => p - 1)}>
+                            Previous
+                          </Button>
+                          <Button variant="outline" size="sm" disabled={parcelsPage >= totalParcelPages - 1} onClick={() => setParcelsPage(p => p + 1)}>
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

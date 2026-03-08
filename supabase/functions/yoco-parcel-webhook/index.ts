@@ -43,6 +43,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Idempotency check — skip if already paid
+    const { data: existingRecord } = await supabase
+      .from("payment_records")
+      .select("status")
+      .eq("id", payment_record_id)
+      .single();
+
+    if (existingRecord?.status === "paid") {
+      console.log("Payment already processed, skipping (idempotent):", payment_record_id);
+      return new Response(JSON.stringify({ received: true, skipped: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Update payment record
     const { error: paymentError } = await supabase
       .from("payment_records")
