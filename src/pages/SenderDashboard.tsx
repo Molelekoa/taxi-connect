@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft, ShieldCheck, Trash2, XCircle } from "lucide-react";
+import DashboardErrorState from "@/components/DashboardErrorState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,8 @@ const SenderDashboard = () => {
   const [parcels, setParcels] = useState<any[]>([]);
   const [matchesByParcel, setMatchesByParcel] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [reassigning, setReassigning] = useState<string | null>(null);
   const [earlierNotifications, setEarlierNotifications] = useState<Record<string, any>>({});
@@ -28,42 +31,55 @@ const SenderDashboard = () => {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    setFetchError(null);
 
-    const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
-    if (!pid) { setLoading(false); return; }
+    try {
+      const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
+      if (!pid) { setLoading(false); return; }
 
-    // Parallelize all three independent queries
-    const [parcelsResult, matchesResult, notifsResult] = await Promise.all([
-      supabase.from("parcels").select("*").order("created_at", { ascending: false }).then(r => r),
-      supabase.from("matches").select("*, trips(*, profiles:traveler_id(full_name, phone))").eq("status", "accepted").then(r => r),
-      supabase.from("notifications").select("*, matches:related_match_id(id, trip_id, parcel_id, trips(travel_date, profiles:traveler_id(full_name)))").eq("user_id", pid).eq("type", "earlier_traveler_available").eq("read", false).then(r => r),
-    ]);
+      const [parcelsResult, matchesResult, notifsResult] = await Promise.all([
+        supabase.from("parcels").select("*").order("created_at", { ascending: false }).then(r => r),
+        supabase.from("matches").select("*, trips(*, profiles:traveler_id(full_name, phone))").eq("status", "accepted").then(r => r),
+        supabase.from("notifications").select("*, matches:related_match_id(id, trip_id, parcel_id, trips(travel_date, profiles:traveler_id(full_name)))").eq("user_id", pid).eq("type", "earlier_traveler_available").eq("read", false).then(r => r),
+      ]);
 
-    setParcels(parcelsResult.data || []);
+      setParcels(parcelsResult.data || []);
 
-    const grouped: Record<string, any[]> = {};
-    for (const m of matchesResult.data || []) {
-      if (!grouped[m.parcel_id]) grouped[m.parcel_id] = [];
-      grouped[m.parcel_id].push(m);
-    }
-    setMatchesByParcel(grouped);
-
-    const notifsByParcel: Record<string, any> = {};
-    for (const n of notifsResult.data || []) {
-      const parcelId = n.matches?.parcel_id;
-      if (parcelId) {
-        notifsByParcel[parcelId] = n;
+      const grouped: Record<string, any[]> = {};
+      for (const m of matchesResult.data || []) {
+        if (!grouped[m.parcel_id]) grouped[m.parcel_id] = [];
+        grouped[m.parcel_id].push(m);
       }
-    }
-    setEarlierNotifications(notifsByParcel);
+      setMatchesByParcel(grouped);
 
-    setLoading(false);
-  };
+      const notifsByParcel: Record<string, any> = {};
+      for (const n of notifsResult.data || []) {
+        const parcelId = n.matches?.parcel_id;
+        if (parcelId) {
+          notifsByParcel[parcelId] = n;
+        }
+      }
+      setEarlierNotifications(notifsByParcel);
+    } catch (err: any) {
+      console.error("SenderDashboard fetchData error:", err);
+      setFetchError(err.message || "Something went wrong loading your data.");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchData();
@@ -171,7 +187,9 @@ const SenderDashboard = () => {
             </h1>
             <p className="text-sm text-muted-foreground -mt-4 mb-6">Parcels you've booked for delivery</p>
 
-            {loading ? (
+            {(isOffline || fetchError) ? (
+              <DashboardErrorState isOffline={isOffline} error={fetchError} onRetry={fetchData} />
+            ) : loading ? (
               <div className="flex justify-center py-12">
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>

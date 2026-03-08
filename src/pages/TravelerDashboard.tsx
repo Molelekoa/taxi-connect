@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, Truck, Search, ShieldAlert, XCircle, Camera, Upload } from "lucide-react";
+import DashboardErrorState from "@/components/DashboardErrorState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ const TravelerDashboard = () => {
   const [deliveredMatches, setDeliveredMatches] = useState<any[]>([]);
   const [browseParcels, setBrowseParcels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
 
@@ -72,71 +75,76 @@ const TravelerDashboard = () => {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    setFetchError(null);
 
-    const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
-    if (!pid) { setLoading(false); return; }
-    setProfileId(pid);
+    try {
+      const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
+      if (!pid) { setLoading(false); return; }
+      setProfileId(pid);
 
-    // Fetch traveler profile with id AND status in one query (eliminates duplicate)
-    const { data: tp } = await supabase
-      .from("traveler_profiles")
-      .select("id, status")
-      .eq("profile_id", pid)
-      .single() as { data: any };
-    setTravelerStatus(tp?.status || "pending");
+      const { data: tp } = await supabase
+        .from("traveler_profiles")
+        .select("id, status")
+        .eq("profile_id", pid)
+        .single() as { data: any };
+      setTravelerStatus(tp?.status || "pending");
 
-    // Parallelize independent queries
-    const [tripsResult, pendingResult, acceptedResult] = await Promise.all([
-      supabase.from("trips").select("*").order("travel_date", { ascending: true }).then(r => r),
-      supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "pending").then(r => r),
-      supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "accepted").then(r => r),
-    ]);
-
-    setTrips(tripsResult.data || []);
-    setPendingMatches((pendingResult.data || []).filter((m: any) => m.trips?.traveler_id === pid));
-
-    const myAccepted = (acceptedResult.data || []).filter((m: any) => m.trips?.traveler_id === pid);
-    
-    const carryingStatuses = ["claimed", "matched", "collected", "in_transit", "in-transit", "delivered_pending_verification", "pending"];
-    setAcceptedMatches(myAccepted.filter((m: any) =>
-      carryingStatuses.includes(m.parcels?.status)
-    ));
-
-    setDeliveredMatches(myAccepted.filter((m: any) =>
-      m.parcels?.status === "delivered_verified"
-    ));
-
-    if (tp?.status === "approved" && tp?.id) {
-      // Parallelize routes and pending parcels queries
-      const [routesResult, allPendingResult] = await Promise.all([
-        supabase.from("traveler_routes").select("route_from, route_to").eq("traveler_profile_id", tp.id).then(r => r),
-        supabase.from("parcels").select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking, suburb, pickup_address, delivery_address").eq("status", "pending").then(r => r),
+      const [tripsResult, pendingResult, acceptedResult] = await Promise.all([
+        supabase.from("trips").select("*").order("travel_date", { ascending: true }).then(r => r),
+        supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "pending").then(r => r),
+        supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "accepted").then(r => r),
       ]);
 
-      const routes = routesResult.data;
-      if (routes && routes.length > 0) {
-        const matched = (allPendingResult.data || []).filter((p: any) => {
-          const pickup = (p.pickup_location || "").toLowerCase();
-          const dropoff = (p.dropoff_location || "").toLowerCase();
-          return routes.some((r: any) => {
-            const from = (r.route_from || "").toLowerCase();
-            return pickup.includes(from) || from.includes(pickup);
-          }) && routes.some((r: any) => {
-            const to = (r.route_to || "").toLowerCase();
-            return dropoff.includes(to) || to.includes(dropoff);
-          });
-        });
-        setBrowseParcels(matched);
-      }
-    }
+      setTrips(tripsResult.data || []);
+      setPendingMatches((pendingResult.data || []).filter((m: any) => m.trips?.traveler_id === pid));
 
-    setLoading(false);
-  };
+      const myAccepted = (acceptedResult.data || []).filter((m: any) => m.trips?.traveler_id === pid);
+      const carryingStatuses = ["claimed", "matched", "collected", "in_transit", "in-transit", "delivered_pending_verification", "pending"];
+      setAcceptedMatches(myAccepted.filter((m: any) => carryingStatuses.includes(m.parcels?.status)));
+      setDeliveredMatches(myAccepted.filter((m: any) => m.parcels?.status === "delivered_verified"));
+
+      if (tp?.status === "approved" && tp?.id) {
+        const [routesResult, allPendingResult] = await Promise.all([
+          supabase.from("traveler_routes").select("route_from, route_to").eq("traveler_profile_id", tp.id).then(r => r),
+          supabase.from("parcels").select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking, suburb, pickup_address, delivery_address").eq("status", "pending").then(r => r),
+        ]);
+
+        const routes = routesResult.data;
+        if (routes && routes.length > 0) {
+          const matched = (allPendingResult.data || []).filter((p: any) => {
+            const pickup = (p.pickup_location || "").toLowerCase();
+            const dropoff = (p.dropoff_location || "").toLowerCase();
+            return routes.some((r: any) => {
+              const from = (r.route_from || "").toLowerCase();
+              return pickup.includes(from) || from.includes(pickup);
+            }) && routes.some((r: any) => {
+              const to = (r.route_to || "").toLowerCase();
+              return dropoff.includes(to) || to.includes(dropoff);
+            });
+          });
+          setBrowseParcels(matched);
+        }
+      }
+    } catch (err: any) {
+      console.error("TravelerDashboard fetchData error:", err);
+      setFetchError(err.message || "Something went wrong loading your data.");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchData();
@@ -429,7 +437,9 @@ const TravelerDashboard = () => {
                 {!isApproved && (
                   <p className="text-muted-foreground text-center py-4 text-sm">You must be approved before posting trips.</p>
                 )}
-                {loading ? (
+                {(isOffline || fetchError) ? (
+                  <DashboardErrorState isOffline={isOffline} error={fetchError} onRetry={fetchData} />
+                ) : loading ? (
                   <div className="flex justify-center py-8">
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   </div>
