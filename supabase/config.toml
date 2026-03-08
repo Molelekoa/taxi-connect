@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.yoco-parcel-webhook]
 verify_jwt = false
+
+[functions.register-yoco-webhook]
+verify_jwt = false
