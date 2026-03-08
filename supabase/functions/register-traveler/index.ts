@@ -164,7 +164,13 @@ Deno.serve(async (req) => {
     const parcelsPerTrip = formData.get("parcelsPerTrip") as string;
     const storageType = formData.get("storageType") as string;
     const cargoTypesRaw = formData.get("cargoTypes") as string;
-    const cargoTypes = cargoTypesRaw ? JSON.parse(cargoTypesRaw) : [];
+    let cargoTypes: string[] = [];
+    try { cargoTypes = cargoTypesRaw ? JSON.parse(cargoTypesRaw) : []; } catch { cargoTypes = []; }
+    if (!Array.isArray(cargoTypes) || cargoTypes.length > 20) {
+      return new Response(JSON.stringify({ error: "Invalid cargoTypes" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const emergencyContactName = formData.get("emergencyContactName") as string;
     const emergencyContactRelation = formData.get("emergencyContactRelation") as string;
     const emergencyContactPhone = formData.get("emergencyContactPhone") as string;
