@@ -152,10 +152,11 @@ const TravelerDashboard = () => {
     // Realtime subscription for traveler approval status
     if (!user) return;
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
 
     const setupRealtime = async () => {
       const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
-      if (!pid) return;
+      if (!pid || cancelled) return;
 
       channel = supabase
         .channel("traveler-status")
@@ -176,6 +177,7 @@ const TravelerDashboard = () => {
     setupRealtime();
 
     return () => {
+      cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
   }, [user]);
