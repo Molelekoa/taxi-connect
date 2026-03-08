@@ -381,7 +381,7 @@ const SmallParcelBooking = () => {
       const selectedBand = WEIGHT_BANDS.find(b => b.id === formData.weightBand);
 
       // Insert parcel into database
-      const { error: insertError } = await supabase.from('parcels').insert({
+      const { data: insertedParcel, error: insertError } = await supabase.from('parcels').insert({
         sender_id: profileId,
         pickup_location: formData.originCity,
         dropoff_location: formData.destinationCity,
@@ -393,6 +393,8 @@ const SmallParcelBooking = () => {
         weight_band: formData.weightBand,
         weight_kg: selectedBand ? (selectedBand.range[0] + selectedBand.range[1]) / 2 : null,
         price: displayPrice,
+        calculated_price: displayPrice,
+        payment_status: 'unpaid',
         include_tracking: formData.includeTracking || false,
         description: formData.description || null,
         sender_name: isVerifiedSender ? (profileData?.full_name || '') : (formData.contactName || ''),
@@ -401,12 +403,15 @@ const SmallParcelBooking = () => {
         status: 'pending',
         pickup_earliest: formData.pickupEarliest || null,
         pickup_latest: formData.pickupLatest || null,
-      } as any);
+      } as any).select('id').single();
 
       if (insertError) {
         toast({ title: "Booking failed", description: insertError.message, variant: "destructive" });
         return;
       }
+
+      setLastInsertedParcelId(insertedParcel?.id || null);
+      setLastProfileId(profileId);
 
       setShowReview(false);
       setIsSuccess(true);
