@@ -114,8 +114,8 @@ const TravelerDashboard = () => {
     if (tp?.status === "approved" && tp?.id) {
       // Parallelize routes and pending parcels queries
       const [routesResult, allPendingResult] = await Promise.all([
-        supabase.from("traveler_routes").select("route_from, route_to").eq("traveler_profile_id", tp.id) as Promise<{ data: any[] | null }>,
-        supabase.from("parcels").select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking, suburb, pickup_address, delivery_address").eq("status", "pending") as Promise<{ data: any[] | null }>,
+        supabase.from("traveler_routes").select("route_from, route_to").eq("traveler_profile_id", tp.id).then(r => r),
+        supabase.from("parcels").select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking, suburb, pickup_address, delivery_address").eq("status", "pending").then(r => r),
       ]);
 
       const routes = routesResult.data;

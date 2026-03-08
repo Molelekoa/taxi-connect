@@ -39,9 +39,9 @@ const SenderDashboard = () => {
 
     // Parallelize all three independent queries
     const [parcelsResult, matchesResult, notifsResult] = await Promise.all([
-      supabase.from("parcels").select("*").order("created_at", { ascending: false }) as Promise<{ data: any[] | null }>,
-      supabase.from("matches").select("*, trips(*, profiles:traveler_id(full_name, phone))").eq("status", "accepted") as Promise<{ data: any[] | null }>,
-      supabase.from("notifications").select("*, matches:related_match_id(id, trip_id, parcel_id, trips(travel_date, profiles:traveler_id(full_name)))").eq("user_id", pid).eq("type", "earlier_traveler_available").eq("read", false) as Promise<{ data: any[] | null }>,
+      supabase.from("parcels").select("*").order("created_at", { ascending: false }).then(r => r),
+      supabase.from("matches").select("*, trips(*, profiles:traveler_id(full_name, phone))").eq("status", "accepted").then(r => r),
+      supabase.from("notifications").select("*, matches:related_match_id(id, trip_id, parcel_id, trips(travel_date, profiles:traveler_id(full_name)))").eq("user_id", pid).eq("type", "earlier_traveler_available").eq("read", false).then(r => r),
     ]);
 
     setParcels(parcelsResult.data || []);
