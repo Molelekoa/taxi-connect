@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,6 +40,7 @@ const Auth = () => {
 
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [signupForm, setSignupForm] = useState({ fullName: "", email: "", password: "", confirmPassword: "" });
+  const [legalAccepted, setLegalAccepted] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +84,10 @@ const Auth = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!legalAccepted) {
+      setError("You must accept the Terms of Service and Privacy Policy to create an account.");
+      return;
+    }
     if (signupForm.password !== signupForm.confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -300,7 +306,22 @@ const Auth = () => {
                   </div>
                 </div>
 
-                <Button type="submit" variant="hero" className="w-full" disabled={loading}>
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="legal-consent"
+                    checked={legalAccepted}
+                    onCheckedChange={(checked) => setLegalAccepted(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="legal-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                    I agree to the{" "}
+                    <Link to="/terms-of-service" target="_blank" className="text-primary hover:underline">Terms of Service</Link>
+                    {" "}and{" "}
+                    <Link to="/privacy-policy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>
+                  </label>
+                </div>
+
+                <Button type="submit" variant="hero" className="w-full" disabled={loading || !legalAccepted}>
                   {loading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
