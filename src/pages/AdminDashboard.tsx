@@ -263,7 +263,7 @@ const ProofPhoto = ({ url, label }: { url: string | null; label: string }) => {
       </div>
       <Dialog open={fullscreen} onOpenChange={setFullscreen}>
         <DialogContent className="max-w-3xl p-2">
-          <img src={url} alt={label} className="w-full rounded-lg" />
+          <img src={url} alt={label} className="w-full rounded-lg" loading="lazy" />
         </DialogContent>
       </Dialog>
     </>
