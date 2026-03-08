@@ -127,8 +127,12 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
+  } catch (err: any) {
     console.error("reassign-parcel error:", err);
+    try {
+      const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await svc.from("error_logs").insert({ user_id: null, action: "reassign_parcel", error_message: err?.message || String(err), context: null });
+    } catch { /* silent */ }
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: corsHeaders,

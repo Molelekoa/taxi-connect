@@ -138,8 +138,9 @@ Deno.serve(async (req) => {
       JSON.stringify({ redirectUrl: yocoData.redirectUrl, checkoutId: yocoData.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("process-parcel-payment error:", error);
+    await logError("process_parcel_payment", error?.message || String(error));
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

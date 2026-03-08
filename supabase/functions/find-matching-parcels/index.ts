@@ -138,8 +138,12 @@ Deno.serve(async (req) => {
       JSON.stringify({ matches: matchResults.length, matchIds: matchResults }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
+  } catch (err: any) {
     console.error("find-matching-parcels error:", err);
+    try {
+      const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await svc.from("error_logs").insert({ user_id: null, action: "find_matching_parcels", error_message: err?.message || String(err), context: null });
+    } catch { /* silent */ }
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: corsHeaders,
