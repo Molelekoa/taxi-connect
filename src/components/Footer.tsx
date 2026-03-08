@@ -11,7 +11,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
           {/* Logo & Description */}
           <div className="md:col-span-2">
             <Link to="/" className="inline-flex items-center gap-2.5 mb-4 group">
-              <img src={parcoloLogo} alt="Parcolo" className="h-12 w-auto" />
+              <img src={parcoloLogo} alt="Parcolo" className="h-12 w-auto" loading="lazy" />
               <div className="flex flex-col leading-none">
                 <span className="font-brand font-bold text-2xl tracking-tight text-accent">
                   PARCOLO
