@@ -22,7 +22,7 @@ const PrivacyPolicy = () => {
               <section className="mb-10">
                 <h2 className="font-display text-2xl font-bold mb-4">1. Introduction</h2>
                 <p className="text-muted-foreground mb-4">
-                  Parcolo ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our community-driven delivery services and website.
+                  Parcolo ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our community-driven delivery platform and website.
                 </p>
                 <p className="text-muted-foreground">
                   By using our services, you consent to the data practices described in this policy. If you do not agree with the terms of this Privacy Policy, please do not access our website or use our services.
