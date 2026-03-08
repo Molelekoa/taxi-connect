@@ -268,7 +268,7 @@ const Auth = () => {
                     <Input
                       id="signup-password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Min. 6 characters"
+                      placeholder="Min. 8 chars, upper+lower+number"
                       className="pl-9 pr-10"
                       value={signupForm.password}
                       onChange={(e) => setSignupForm((p) => ({ ...p, password: e.target.value }))}

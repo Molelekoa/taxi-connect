@@ -128,7 +128,7 @@ const ResetPassword = () => {
                 <Input
                   id="new-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Min. 6 characters"
+                  placeholder="Min. 8 chars, upper+lower+number"
                   className="pl-9 pr-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
