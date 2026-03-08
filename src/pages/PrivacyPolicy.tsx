@@ -16,7 +16,7 @@ const PrivacyPolicy = () => {
         <main className="flex-1 py-16 md:py-24">
           <div className="container-narrow">
             <h1 className="font-display text-4xl md:text-5xl font-black mb-8">Privacy Policy</h1>
-            <p className="text-muted-foreground mb-8">Last updated: {new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p className="text-muted-foreground mb-8">Last updated: 8 March 2026</p>
             
             <div className="prose prose-lg max-w-none text-foreground">
               <section className="mb-10">
