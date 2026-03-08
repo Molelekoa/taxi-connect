@@ -847,6 +847,7 @@ const AdminDashboard = () => {
       if (error) throw error;
       return data as Parcel[];
     },
+    staleTime: 30 * 1000, // 30s — parcels change frequently
   });
 
   // Fetch all traveler profiles with routes
