@@ -185,9 +185,9 @@ export const calculateWeightPercentage = (weightKg: number): number => {
     const scale = (40 - 25) / (10 - 5); // 15% over 5kg range = 3% per kg
     return basePct + (weightKg - 5) * scale;
   } else {
-    // Base 40% at 10kg, sliding to 65% at 20kg
+    // Base 40% at 10kg, sliding to 65% at 50kg
     const basePct = 40;
-    const scale = (65 - 40) / (20 - 10); // 25% over 10kg range = 2.5% per kg
+    const scale = (65 - 40) / (50 - 10); // 25% over 40kg range = 0.625% per kg
     return Math.min(65, basePct + (weightKg - 10) * scale);
   }
 };
