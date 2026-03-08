@@ -75,7 +75,7 @@ const LocationInput = ({
       </div>
 
       {showDropdown && (
-        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto" role="listbox">
           {filtered.map((suggestion) => (
             <button
               key={suggestion.value}
