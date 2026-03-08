@@ -92,9 +92,9 @@ const TravelerDashboard = () => {
 
     // Parallelize independent queries
     const [tripsResult, pendingResult, acceptedResult] = await Promise.all([
-      supabase.from("trips").select("*").order("travel_date", { ascending: true }) as Promise<{ data: any[] | null }>,
-      supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "pending") as Promise<{ data: any[] | null }>,
-      supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "accepted") as Promise<{ data: any[] | null }>,
+      supabase.from("trips").select("*").order("travel_date", { ascending: true }).then(r => r),
+      supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "pending").then(r => r),
+      supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "accepted").then(r => r),
     ]);
 
     setTrips(tripsResult.data || []);
