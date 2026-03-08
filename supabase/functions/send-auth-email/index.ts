@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +9,7 @@ const corsHeaders = {
 const MAILEROO_API_KEY = Deno.env.get("MAILEROO_API_KEY")!;
 const MAILEROO_SENDER_EMAIL = Deno.env.get("MAILEROO_SENDER_EMAIL")!;
 const APP_URL = Deno.env.get("APP_URL") || "https://parcolo.com";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 
 // ─── Parcolo brand email templates ───────────────────────────────────
 
@@ -252,17 +252,48 @@ serve(async (req) => {
 
   try {
     const payload = await req.json();
+    console.log("Received payload:", JSON.stringify(payload, null, 2));
 
     // Support both direct calls and Supabase Auth Hook format
     const emailType =
-      payload.type || payload.email_data?.type || "signup";
+      payload.type || payload.email_data?.type || payload.email_data?.email_action_type || "signup";
     const recipientEmail =
       payload.email || payload.user?.email || payload.email_data?.email_address;
-    const actionUrl =
-      payload.action_url ||
-      payload.email_data?.confirmation_url ||
-      payload.email_data?.action_link ||
-      `${APP_URL}`;
+
+    // Build the confirmation URL from the hook payload
+    // Supabase Auth Hook provides token_hash + redirect_to, not a pre-built URL
+    let actionUrl: string;
+
+    if (payload.action_url) {
+      // Direct call with pre-built URL
+      actionUrl = payload.action_url;
+    } else if (payload.email_data?.token_hash) {
+      // Supabase Auth Hook format — construct verification URL
+      const tokenHash = payload.email_data.token_hash;
+      const redirectTo = payload.email_data.redirect_to || APP_URL;
+      const hookType = payload.email_data.email_action_type || emailType;
+
+      // Map hook email_action_type to Supabase verify type
+      const typeMap: Record<string, string> = {
+        signup: "signup",
+        confirmation: "signup",
+        recovery: "recovery",
+        reset: "recovery",
+        magiclink: "magiclink",
+        magic_link: "magiclink",
+        email_change: "email_change",
+        email_change_new: "email_change",
+        email_change_current: "email_change",
+      };
+      const verifyType = typeMap[hookType] || "signup";
+
+      actionUrl = `${SUPABASE_URL}/auth/v1/verify?token=${tokenHash}&type=${verifyType}&redirect_to=${encodeURIComponent(redirectTo)}`;
+      console.log("Constructed verification URL:", actionUrl);
+    } else if (payload.email_data?.confirmation_url || payload.email_data?.action_link) {
+      actionUrl = payload.email_data.confirmation_url || payload.email_data.action_link;
+    } else {
+      actionUrl = APP_URL;
+    }
 
     if (!recipientEmail) {
       return new Response(
