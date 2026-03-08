@@ -86,8 +86,9 @@ const Auth = () => {
       setError("Passwords do not match.");
       return;
     }
-    if (signupForm.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    const pwError = validatePassword(signupForm.password);
+    if (pwError) {
+      setError(pwError);
       return;
     }
     setLoading(true);
