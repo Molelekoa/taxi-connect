@@ -49,6 +49,8 @@ const PrivacyPolicy = () => {
                   <li>Device information and operating system</li>
                   <li>Pages visited and time spent on our website</li>
                   <li>Referring website addresses</li>
+                  <li>Geolocation data (for delivery/collection proof verification, with your consent)</li>
+                  <li>Photographs of parcels at collection and delivery (for proof of handover)</li>
                 </ul>
               </section>
 
