@@ -45,7 +45,7 @@ const Index = () => {
       <Navbar />
 
       {/* Hero — Map + Booking Form */}
-      <section className="relative pt-14 h-screen flex flex-col">
+      <section id="main-content" className="relative pt-14 h-screen flex flex-col" aria-label="Send a parcel">
         {/* Map background */}
         <div className="absolute inset-0 pt-14">
           <RouteMap
