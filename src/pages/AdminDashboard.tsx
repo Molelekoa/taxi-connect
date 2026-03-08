@@ -1956,6 +1956,7 @@ const StorageManagerTab = ({ parcels }: { parcels: Parcel[] }) => {
       if (error) return [];
       return data ?? [];
     },
+    staleTime: 5 * 60 * 1000, // storage rarely changes
   });
 
   // Count photos across parcels
