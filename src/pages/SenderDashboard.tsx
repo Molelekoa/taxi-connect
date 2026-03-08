@@ -20,6 +20,8 @@ const SenderDashboard = () => {
   const [parcels, setParcels] = useState<any[]>([]);
   const [matchesByParcel, setMatchesByParcel] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [retrying, setRetrying] = useState<string | null>(null);
   const [reassigning, setReassigning] = useState<string | null>(null);
   const [earlierNotifications, setEarlierNotifications] = useState<Record<string, any>>({});
