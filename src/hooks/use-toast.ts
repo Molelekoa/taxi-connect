@@ -174,7 +174,7 @@ function useToast() {
         listeners.splice(index, 1);
       }
     };
-  }, [state]);
+  }, []); // Empty deps — setState is stable, no need to re-register on state change
 
   return {
     ...state,
