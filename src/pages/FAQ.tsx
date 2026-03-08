@@ -42,7 +42,7 @@ const FAQ = () => {
         },
         {
           question: "What can't I send?",
-          answer: "We don't accept large or heavy packages (over 20kg), temperature-sensitive goods requiring refrigeration, hazardous materials, illegal items, or anything prohibited by law. Our service is designed for everyday parcels, not specialized freight."
+          answer: "We don't accept packages over 50kg, temperature-sensitive goods requiring refrigeration, hazardous materials, illegal items, or anything prohibited by law. Our service is designed for everyday parcels, not specialized freight."
         },
         {
           question: "Do you offer temperature-controlled shipping?",
