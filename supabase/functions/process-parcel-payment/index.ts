@@ -6,6 +6,24 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url, options);
+
+    if (response.status === 429 || (response.status >= 500 && response.status < 600)) {
+      const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
+      console.warn(`Yoco API returned ${response.status}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      continue;
+    }
+
+    return response;
+  }
+
+  // Final attempt without retry
+  return fetch(url, options);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -66,9 +84,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const APP_URL = "https://parcolo.lovable.app";
+    const APP_URL = Deno.env.get("APP_URL") || "https://parcolo.lovable.app";
 
-    const yocoResponse = await fetch("https://payments.yoco.com/api/checkouts", {
+    const yocoResponse = await fetchWithRetry("https://payments.yoco.com/api/checkouts", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${YOCO_SECRET_KEY}`,
