@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +9,7 @@ const corsHeaders = {
 const MAILEROO_API_KEY = Deno.env.get("MAILEROO_API_KEY")!;
 const MAILEROO_SENDER_EMAIL = Deno.env.get("MAILEROO_SENDER_EMAIL")!;
 const APP_URL = Deno.env.get("APP_URL") || "https://parcolo.com";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 
 // ─── Parcolo brand email templates ───────────────────────────────────
 
