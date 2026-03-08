@@ -502,11 +502,16 @@ const SmallParcelBooking = () => {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <Button variant="hero" className="flex-1" onClick={() => {
-                      toast({ title: "Payment feature coming soon", description: "Online payments will be available shortly." });
-                      setShowPayNowPrompt(false);
+                    <Button variant="hero" className="flex-1" disabled={isPaymentProcessing} onClick={() => {
+                      if (lastInsertedParcelId && lastProfileId && displayPrice) {
+                        initiatePayment({
+                          parcelId: lastInsertedParcelId,
+                          amount: Math.round(displayPrice * 0.9 * 100) / 100,
+                          profileId: lastProfileId,
+                        });
+                      }
                     }}>
-                      Pay Now — R{Math.round(displayPrice * 0.9)}
+                      {isPaymentProcessing ? "Redirecting to payment..." : `Pay Now — R${Math.round(displayPrice * 0.9)}`}
                     </Button>
                     <Button variant="outline" onClick={() => setShowPayNowPrompt(false)}>
                       Pay Later
