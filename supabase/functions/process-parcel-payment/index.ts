@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const APP_URL = Deno.env.get("APP_URL") || "https://parcolo.lovable.app";
+    const APP_URL = Deno.env.get("APP_URL") || "https://parcolo.com";
 
     const yocoResponse = await fetchWithRetry("https://payments.yoco.com/api/checkouts", {
       method: "POST",
