@@ -26,13 +26,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const { matchId, photoUrl, lat, lng } = await req.json();
+    if (!matchId || !UUID_RE.test(matchId)) {
+      return new Response(JSON.stringify({ error: "Valid matchId (UUID) required" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
     const hasPhoto = !!photoUrl;
     const hasGeo = lat != null && lng != null;
-    if (!matchId || !hasPhoto || !hasGeo) {
+    if (!hasPhoto || !hasGeo) {
       return new Response(JSON.stringify({ error: "matchId, photoUrl, and lat+lng are all required for delivery proof" }), {
-        status: 400,
-        headers: corsHeaders,
+        status: 400, headers: corsHeaders,
+      });
+    }
+    if (typeof photoUrl !== "string" || photoUrl.length > 2048) {
+      return new Response(JSON.stringify({ error: "photoUrl must be a string (max 2048 chars)" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+    if (typeof lat !== "number" || typeof lng !== "number" || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return new Response(JSON.stringify({ error: "Valid lat (-90 to 90) and lng (-180 to 180) required" }), {
+        status: 400, headers: corsHeaders,
       });
     }
 

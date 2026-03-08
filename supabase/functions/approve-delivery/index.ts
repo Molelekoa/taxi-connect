@@ -12,8 +12,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const { parcelId } = await req.json();
-    if (!parcelId) {
+    if (!parcelId || !UUID_RE.test(parcelId)) {
       return new Response(JSON.stringify({ error: "parcelId required" }), {
         status: 400,
         headers: corsHeaders,

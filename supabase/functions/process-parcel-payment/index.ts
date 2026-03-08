@@ -60,9 +60,16 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { amount, currency, parcelId, paymentRecordId } = body;
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!amount || !currency || !parcelId || !paymentRecordId) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: amount, currency, parcelId, paymentRecordId" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!UUID_RE.test(parcelId) || !UUID_RE.test(paymentRecordId)) {
+      return new Response(
+        JSON.stringify({ error: "parcelId and paymentRecordId must be valid UUIDs" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

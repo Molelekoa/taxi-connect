@@ -20,11 +20,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const { matchId, photoUrl, lat, lng } = await req.json();
-    if (!matchId || !photoUrl || lat == null || lng == null) {
-      return new Response(JSON.stringify({ error: "matchId, photoUrl, lat, and lng are all required" }), {
-        status: 400,
-        headers: corsHeaders,
+    if (!matchId || !UUID_RE.test(matchId)) {
+      return new Response(JSON.stringify({ error: "Valid matchId (UUID) required" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+    if (!photoUrl || typeof photoUrl !== "string" || photoUrl.length > 2048) {
+      return new Response(JSON.stringify({ error: "Valid photoUrl required (max 2048 chars)" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+    if (lat == null || lng == null || typeof lat !== "number" || typeof lng !== "number" || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return new Response(JSON.stringify({ error: "Valid lat (-90 to 90) and lng (-180 to 180) required" }), {
+        status: 400, headers: corsHeaders,
       });
     }
 

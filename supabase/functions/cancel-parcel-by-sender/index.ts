@@ -25,9 +25,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const { parcelId, reason } = await req.json();
-    if (!parcelId) {
-      return new Response(JSON.stringify({ error: "parcelId is required" }), {
+    if (!parcelId || !UUID_RE.test(parcelId)) {
+      return new Response(JSON.stringify({ error: "Valid parcelId (UUID) required" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+    if (reason && (typeof reason !== "string" || reason.length > 500)) {
+      return new Response(JSON.stringify({ error: "Reason must be a string (max 500 chars)" }), {
         status: 400, headers: corsHeaders,
       });
     }
