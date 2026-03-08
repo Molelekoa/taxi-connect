@@ -15,7 +15,7 @@ const Navbar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card" aria-label="Main navigation">
       <div className="container-narrow flex items-center justify-between h-14">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">

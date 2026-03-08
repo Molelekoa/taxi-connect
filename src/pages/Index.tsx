@@ -45,7 +45,7 @@ const Index = () => {
       <Navbar />
 
       {/* Hero — Map + Booking Form */}
-      <section className="relative pt-14 h-screen flex flex-col">
+      <section id="main-content" className="relative pt-14 h-screen flex flex-col" aria-label="Send a parcel">
         {/* Map background */}
         <div className="absolute inset-0 pt-14">
           <RouteMap
@@ -63,6 +63,8 @@ const Index = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
+            role="form"
+            aria-label="Get a delivery quote"
           >
             <h1 className="font-display font-bold text-xl text-foreground">
               Where are you sending?
@@ -107,20 +109,20 @@ const Index = () => {
       </section>
 
       {/* Quick stats strip */}
-      <section className="py-6 border-b border-border bg-card">
+      <section className="py-6 border-b border-border bg-card" aria-label="Key statistics">
         <div className="container-narrow flex items-center justify-center gap-8 flex-wrap text-sm">
           <div className="flex items-center gap-2">
-            <Banknote className="w-4 h-4 text-accent" />
+            <Banknote className="w-4 h-4 text-accent" aria-hidden="true" />
             <span className="font-semibold text-foreground">60% cheaper</span>
           </div>
-          <div className="w-px h-4 bg-border hidden sm:block" />
+          <div className="w-px h-4 bg-border hidden sm:block" aria-hidden="true" />
           <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-primary" />
+            <Globe className="w-4 h-4 text-primary" aria-hidden="true" />
             <span className="font-semibold text-foreground">3 countries</span>
           </div>
-          <div className="w-px h-4 bg-border hidden sm:block" />
+          <div className="w-px h-4 bg-border hidden sm:block" aria-hidden="true" />
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-success" />
+            <Zap className="w-4 h-4 text-success" aria-hidden="true" />
             <span className="font-semibold text-foreground">Daily departures</span>
           </div>
         </div>

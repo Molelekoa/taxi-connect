@@ -117,6 +117,22 @@
     scroll-behavior: smooth;
   }
 
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     -webkit-font-smoothing: antialiased;
@@ -127,9 +143,15 @@
     @apply font-display font-semibold tracking-tight;
   }
 
-  /* Focus states */
+  /* Focus states — visible for keyboard, hidden for mouse */
   *:focus-visible {
     @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+
+  /* Skip to content link */
+  .skip-to-content {
+    @apply absolute left-4 -top-12 z-[100] px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm;
+    @apply focus:top-4 transition-all;
   }
 }
 
