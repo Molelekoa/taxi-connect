@@ -5,7 +5,7 @@ import parcoloLogo from "@/assets/parcolo-logo.png";
 
 const Footer = forwardRef<HTMLElement>((_, ref) => {
   return (
-    <footer ref={ref} className="py-16 border-t border-border bg-card">
+    <footer ref={ref} className="py-16 border-t border-border bg-card" role="contentinfo">
       <div className="container-narrow">
         <div className="grid md:grid-cols-4 gap-12">
           {/* Logo & Description */}
