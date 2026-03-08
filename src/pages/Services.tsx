@@ -36,8 +36,8 @@ const services = [
   {
     id: "large",
     number: "03",
-    title: "Large Parcels (10-20 kg)",
-    description: "Suitcase-sized cargo for heavier shipments.",
+    title: "Large Parcels (15-50 kg)",
+    description: "Heavy cargo for bigger shipments.",
     features: [
       "Essential supplies",
       "Bulk goods",
