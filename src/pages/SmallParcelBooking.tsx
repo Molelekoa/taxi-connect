@@ -102,6 +102,9 @@ const SmallParcelBooking = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { initiatePayment, isProcessing: isPaymentProcessing } = useParcelPaymentHandler();
+  const [lastInsertedParcelId, setLastInsertedParcelId] = useState<string | null>(null);
+  const [lastProfileId, setLastProfileId] = useState<string | null>(null);
 
   // Profile state for verified senders
   const [isVerifiedSender, setIsVerifiedSender] = useState(false);
