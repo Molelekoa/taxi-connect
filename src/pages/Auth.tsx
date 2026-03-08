@@ -306,7 +306,22 @@ const Auth = () => {
                   </div>
                 </div>
 
-                <Button type="submit" variant="hero" className="w-full" disabled={loading}>
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="legal-consent"
+                    checked={legalAccepted}
+                    onCheckedChange={(checked) => setLegalAccepted(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="legal-consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                    I agree to the{" "}
+                    <Link to="/terms-of-service" target="_blank" className="text-primary hover:underline">Terms of Service</Link>
+                    {" "}and{" "}
+                    <Link to="/privacy-policy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>
+                  </label>
+                </div>
+
+                <Button type="submit" variant="hero" className="w-full" disabled={loading || !legalAccepted}>
                   {loading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
