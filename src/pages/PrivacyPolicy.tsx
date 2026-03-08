@@ -58,14 +58,16 @@ const PrivacyPolicy = () => {
                 <h2 className="font-display text-2xl font-bold mb-4">3. How We Use Your Information</h2>
                 <p className="text-muted-foreground mb-4">We use the information we collect to:</p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li>Provide, operate, and maintain our freight brokerage services</li>
-                  <li>Process quotes, bookings, and transactions</li>
-                  <li>Communicate with you regarding shipments, updates, and customer service</li>
-                  <li>Connect shippers with appropriate carriers</li>
+                  <li>Provide, operate, and maintain our community-driven delivery platform</li>
+                  <li>Process parcel bookings, matching, and payment transactions</li>
+                  <li>Verify your identity for safety and legal compliance</li>
+                  <li>Communicate with you regarding deliveries, updates, and customer service</li>
+                  <li>Connect Senders with appropriate Travelers</li>
+                  <li>Generate delivery and collection proof records</li>
                   <li>Improve and personalize your experience</li>
                   <li>Comply with legal obligations and industry regulations</li>
                   <li>Send promotional communications (with your consent)</li>
-                  <li>Prevent fraud and ensure security</li>
+                  <li>Prevent fraud and ensure platform security</li>
                 </ul>
               </section>
 
