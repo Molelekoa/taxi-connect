@@ -48,9 +48,9 @@ const LocationInput = ({
   }, []);
 
   return (
-    <div ref={wrapperRef} className="relative">
+    <div ref={wrapperRef} className="relative" role="combobox" aria-expanded={showDropdown} aria-haspopup="listbox">
       <div className="relative">
-        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
         <Input
           id={id}
           value={value}
@@ -69,6 +69,8 @@ const LocationInput = ({
           placeholder={placeholder}
           className={cn("pl-9", error && "border-destructive", className)}
           autoComplete="off"
+          aria-label={placeholder}
+          aria-autocomplete="list"
         />
       </div>
 
