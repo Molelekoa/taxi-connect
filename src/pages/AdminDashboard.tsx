@@ -858,6 +858,7 @@ const AdminDashboard = () => {
       if (error) throw error;
       return (data ?? []) as TravelerProfile[];
     },
+    staleTime: 2 * 60 * 1000,
   });
 
   // Mutations
