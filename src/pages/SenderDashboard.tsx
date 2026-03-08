@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft, ShieldCheck, Trash2, XCircle } from "lucide-react";
+import DashboardErrorState from "@/components/DashboardErrorState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
