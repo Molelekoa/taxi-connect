@@ -961,6 +961,12 @@ const AdminDashboard = () => {
     return result;
   }, [parcels, statusFilter, searchQuery]);
 
+  // Reset page when filters change
+  useEffect(() => { setParcelsPage(0); }, [statusFilter, searchQuery]);
+
+  const totalParcelPages = Math.ceil(filteredParcels.length / PARCELS_PER_PAGE);
+  const paginatedParcels = filteredParcels.slice(parcelsPage * PARCELS_PER_PAGE, (parcelsPage + 1) * PARCELS_PER_PAGE);
+
   const loading = profilesLoading || parcelsLoading || travelersLoading;
 
   return (
