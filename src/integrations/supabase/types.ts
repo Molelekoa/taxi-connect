@@ -285,6 +285,7 @@ export type Database = {
       }
       parcels: {
         Row: {
+          calculated_price: number | null
           cancel_reason: string | null
           cancelled_at: string | null
           collected_at: string | null
@@ -302,6 +303,8 @@ export type Database = {
           dropoff_location: string | null
           id: string
           include_tracking: boolean | null
+          payment_record_id: string | null
+          payment_status: string | null
           photo_url: string | null
           pickup_address: string | null
           pickup_earliest: string | null
@@ -324,6 +327,7 @@ export type Database = {
           weight_kg: number | null
         }
         Insert: {
+          calculated_price?: number | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           collected_at?: string | null
@@ -341,6 +345,8 @@ export type Database = {
           dropoff_location?: string | null
           id?: string
           include_tracking?: boolean | null
+          payment_record_id?: string | null
+          payment_status?: string | null
           photo_url?: string | null
           pickup_address?: string | null
           pickup_earliest?: string | null
@@ -363,6 +369,7 @@ export type Database = {
           weight_kg?: number | null
         }
         Update: {
+          calculated_price?: number | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           collected_at?: string | null
@@ -380,6 +387,8 @@ export type Database = {
           dropoff_location?: string | null
           id?: string
           include_tracking?: boolean | null
+          payment_record_id?: string | null
+          payment_status?: string | null
           photo_url?: string | null
           pickup_address?: string | null
           pickup_earliest?: string | null
@@ -403,6 +412,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "parcels_payment_record_id_fkey"
+            columns: ["payment_record_id"]
+            isOneToOne: false
+            referencedRelation: "payment_records"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "parcels_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
@@ -412,6 +428,60 @@ export type Database = {
           {
             foreignKeyName: "parcels_traveler_id_fkey"
             columns: ["traveler_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_records: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          parcel_id: string | null
+          payment_type: string
+          status: string
+          updated_at: string
+          user_id: string
+          yoco_checkout_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          parcel_id?: string | null
+          payment_type?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          yoco_checkout_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          parcel_id?: string | null
+          payment_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          yoco_checkout_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_records_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_records_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

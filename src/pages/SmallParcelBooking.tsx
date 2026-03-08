@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { format } from "date-fns";
+import { useParcelPaymentHandler } from "@/hooks/useParcelPaymentHandler";
 import { motion } from "framer-motion";
 import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X, ShieldCheck, ExternalLink, CalendarIcon } from "lucide-react";
 import LocationInput from "@/components/LocationInput";
@@ -101,6 +102,9 @@ const SmallParcelBooking = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { initiatePayment, isProcessing: isPaymentProcessing } = useParcelPaymentHandler();
+  const [lastInsertedParcelId, setLastInsertedParcelId] = useState<string | null>(null);
+  const [lastProfileId, setLastProfileId] = useState<string | null>(null);
 
   // Profile state for verified senders
   const [isVerifiedSender, setIsVerifiedSender] = useState(false);
@@ -377,7 +381,7 @@ const SmallParcelBooking = () => {
       const selectedBand = WEIGHT_BANDS.find(b => b.id === formData.weightBand);
 
       // Insert parcel into database
-      const { error: insertError } = await supabase.from('parcels').insert({
+      const { data: insertedParcel, error: insertError } = await supabase.from('parcels').insert({
         sender_id: profileId,
         pickup_location: formData.originCity,
         dropoff_location: formData.destinationCity,
@@ -389,6 +393,8 @@ const SmallParcelBooking = () => {
         weight_band: formData.weightBand,
         weight_kg: selectedBand ? (selectedBand.range[0] + selectedBand.range[1]) / 2 : null,
         price: displayPrice,
+        calculated_price: displayPrice,
+        payment_status: 'unpaid',
         include_tracking: formData.includeTracking || false,
         description: formData.description || null,
         sender_name: isVerifiedSender ? (profileData?.full_name || '') : (formData.contactName || ''),
@@ -397,12 +403,15 @@ const SmallParcelBooking = () => {
         status: 'pending',
         pickup_earliest: formData.pickupEarliest || null,
         pickup_latest: formData.pickupLatest || null,
-      } as any);
+      } as any).select('id').single();
 
       if (insertError) {
         toast({ title: "Booking failed", description: insertError.message, variant: "destructive" });
         return;
       }
+
+      setLastInsertedParcelId(insertedParcel?.id || null);
+      setLastProfileId(profileId);
 
       setShowReview(false);
       setIsSuccess(true);
@@ -412,19 +421,11 @@ const SmallParcelBooking = () => {
         description: "We'll contact you soon to confirm pickup details.",
       });
 
-      // Belt-and-suspenders: call find-matching-trips as fallback in case trigger didn't fire
+      // Belt-and-suspenders: call find-matching-trips as fallback
       try {
-        // Get the most recent parcel for this sender to find the ID
-        const { data: recentParcel } = await supabase
-          .from("parcels")
-          .select("id")
-          .eq("sender_id", profileId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-        if (recentParcel) {
+        if (insertedParcel?.id) {
           await supabase.functions.invoke("find-matching-trips", {
-            body: { parcelId: recentParcel.id },
+            body: { parcelId: insertedParcel.id },
           });
         }
       } catch {
@@ -501,11 +502,16 @@ const SmallParcelBooking = () => {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <Button variant="hero" className="flex-1" onClick={() => {
-                      toast({ title: "Payment feature coming soon", description: "Online payments will be available shortly." });
-                      setShowPayNowPrompt(false);
+                    <Button variant="hero" className="flex-1" disabled={isPaymentProcessing} onClick={() => {
+                      if (lastInsertedParcelId && lastProfileId && displayPrice) {
+                        initiatePayment({
+                          parcelId: lastInsertedParcelId,
+                          amount: Math.round(displayPrice * 0.9 * 100) / 100,
+                          profileId: lastProfileId,
+                        });
+                      }
                     }}>
-                      Pay Now — R{Math.round(displayPrice * 0.9)}
+                      {isPaymentProcessing ? "Redirecting to payment..." : `Pay Now — R${Math.round(displayPrice * 0.9)}`}
                     </Button>
                     <Button variant="outline" onClick={() => setShowPayNowPrompt(false)}>
                       Pay Later

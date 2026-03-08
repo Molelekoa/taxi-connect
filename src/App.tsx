@@ -22,6 +22,8 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import TravelerDashboard from "./pages/TravelerDashboard";
 import SenderDashboard from "./pages/SenderDashboard";
+import ParcelPaymentSuccess from "./pages/ParcelPaymentSuccess";
+import ParcelPaymentCancelled from "./pages/ParcelPaymentCancelled";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +65,16 @@ const App = () => (
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/parcel-payment-success" element={
+              <ProtectedRoute>
+                <ParcelPaymentSuccess />
+              </ProtectedRoute>
+            } />
+            <Route path="/parcel-payment-cancelled" element={
+              <ProtectedRoute>
+                <ParcelPaymentCancelled />
+              </ProtectedRoute>
+            } />
             <Route path="/admin" element={
               <AdminRoute>
                 <AdminDashboard />
