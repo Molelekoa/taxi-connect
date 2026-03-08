@@ -12,17 +12,30 @@ import { useToast } from "@/hooks/use-toast";
 
 const getAppUrl = () => import.meta.env.VITE_APP_URL || window.location.origin;
 
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const validatePassword = (pw: string): string | null => {
+  if (pw.length < PASSWORD_MIN_LENGTH) return `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
+  if (!PASSWORD_REGEX.test(pw)) return "Password must include uppercase, lowercase, and a number.";
+  return null;
+};
+
+// Client-side brute-force mitigation
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 60_000; // 1 minute
+
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
-  // If redirected from ProtectedRoute, capture return path and state
   const returnTo = (location.state as any)?.returnTo || "/";
   const returnState = (location.state as any)?.returnState || null;
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
 
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [signupForm, setSignupForm] = useState({ fullName: "", email: "", password: "", confirmPassword: "" });
