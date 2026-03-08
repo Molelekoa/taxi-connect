@@ -35,10 +35,11 @@ const PrivacyPolicy = () => {
                 <p className="text-muted-foreground mb-4">We may collect the following personal information:</p>
                 <ul className="list-disc pl-6 text-muted-foreground mb-4 space-y-2">
                   <li>Name and contact details (email address, phone number, physical address)</li>
-                  <li>Company name and business registration details</li>
-                  <li>VAT registration number</li>
-                  <li>Shipping and delivery addresses</li>
-                  <li>Payment and billing information</li>
+                  <li>Government-issued identity document (ID or passport) for verification and traceability</li>
+                  <li>Driver's license information (for Travelers)</li>
+                  <li>Vehicle details (for Travelers)</li>
+                  <li>Pickup and delivery addresses</li>
+                  <li>Payment and billing information (processed by Yoco; we do not store card details)</li>
                   <li>Communication records and correspondence</li>
                 </ul>
                 
