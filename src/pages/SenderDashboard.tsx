@@ -37,33 +37,24 @@ const SenderDashboard = () => {
     const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
     if (!pid) { setLoading(false); return; }
 
-    const { data: parcelsData } = await supabase
-      .from("parcels")
-      .select("*")
-      .order("created_at", { ascending: false }) as { data: any[] | null };
-    setParcels(parcelsData || []);
+    // Parallelize all three independent queries
+    const [parcelsResult, matchesResult, notifsResult] = await Promise.all([
+      supabase.from("parcels").select("*").order("created_at", { ascending: false }).then(r => r),
+      supabase.from("matches").select("*, trips(*, profiles:traveler_id(full_name, phone))").eq("status", "accepted").then(r => r),
+      supabase.from("notifications").select("*, matches:related_match_id(id, trip_id, parcel_id, trips(travel_date, profiles:traveler_id(full_name)))").eq("user_id", pid).eq("type", "earlier_traveler_available").eq("read", false).then(r => r),
+    ]);
 
-    const { data: matchesData } = await supabase
-      .from("matches")
-      .select("*, trips(*, profiles:traveler_id(full_name, phone))")
-      .eq("status", "accepted") as { data: any[] | null };
+    setParcels(parcelsResult.data || []);
 
     const grouped: Record<string, any[]> = {};
-    for (const m of matchesData || []) {
+    for (const m of matchesResult.data || []) {
       if (!grouped[m.parcel_id]) grouped[m.parcel_id] = [];
       grouped[m.parcel_id].push(m);
     }
     setMatchesByParcel(grouped);
 
-    const { data: notifs } = await supabase
-      .from("notifications")
-      .select("*, matches:related_match_id(id, trip_id, parcel_id, trips(travel_date, profiles:traveler_id(full_name)))")
-      .eq("user_id", pid)
-      .eq("type", "earlier_traveler_available")
-      .eq("read", false) as { data: any[] | null };
-
     const notifsByParcel: Record<string, any> = {};
-    for (const n of notifs || []) {
+    for (const n of notifsResult.data || []) {
       const parcelId = n.matches?.parcel_id;
       if (parcelId) {
         notifsByParcel[parcelId] = n;

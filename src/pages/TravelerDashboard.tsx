@@ -82,74 +82,56 @@ const TravelerDashboard = () => {
     if (!pid) { setLoading(false); return; }
     setProfileId(pid);
 
+    // Fetch traveler profile with id AND status in one query (eliminates duplicate)
     const { data: tp } = await supabase
       .from("traveler_profiles")
-      .select("status")
+      .select("id, status")
       .eq("profile_id", pid)
       .single() as { data: any };
     setTravelerStatus(tp?.status || "pending");
 
-    const { data: tripsData } = await supabase
-      .from("trips")
-      .select("*")
-      .order("travel_date", { ascending: true }) as { data: any[] | null };
-    setTrips(tripsData || []);
+    // Parallelize independent queries
+    const [tripsResult, pendingResult, acceptedResult] = await Promise.all([
+      supabase.from("trips").select("*").order("travel_date", { ascending: true }).then(r => r),
+      supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "pending").then(r => r),
+      supabase.from("matches").select("*, parcels(*), trips(*)").eq("status", "accepted").then(r => r),
+    ]);
 
-    const { data: pending } = await supabase
-      .from("matches")
-      .select("*, parcels(*), trips(*)")
-      .eq("status", "pending") as { data: any[] | null };
-    setPendingMatches((pending || []).filter((m: any) => m.trips?.traveler_id === pid));
+    setTrips(tripsResult.data || []);
+    setPendingMatches((pendingResult.data || []).filter((m: any) => m.trips?.traveler_id === pid));
 
-    const { data: accepted } = await supabase
-      .from("matches")
-      .select("*, parcels(*), trips(*)")
-      .eq("status", "accepted") as { data: any[] | null };
-    const myAccepted = (accepted || []).filter((m: any) => m.trips?.traveler_id === pid);
+    const myAccepted = (acceptedResult.data || []).filter((m: any) => m.trips?.traveler_id === pid);
     
-    // Carrying: claimed, collected, in_transit, delivered_pending_verification
     const carryingStatuses = ["claimed", "matched", "collected", "in_transit", "in-transit", "delivered_pending_verification", "pending"];
     setAcceptedMatches(myAccepted.filter((m: any) =>
       carryingStatuses.includes(m.parcels?.status)
     ));
 
-    // Delivered: only admin-verified parcels
     setDeliveredMatches(myAccepted.filter((m: any) =>
       m.parcels?.status === "delivered_verified"
     ));
 
-    if (tp?.status === "approved") {
-      const { data: tpFull } = await supabase
-        .from("traveler_profiles")
-        .select("id")
-        .eq("profile_id", pid)
-        .single();
+    if (tp?.status === "approved" && tp?.id) {
+      // Parallelize routes and pending parcels queries
+      const [routesResult, allPendingResult] = await Promise.all([
+        supabase.from("traveler_routes").select("route_from, route_to").eq("traveler_profile_id", tp.id).then(r => r),
+        supabase.from("parcels").select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking, suburb, pickup_address, delivery_address").eq("status", "pending").then(r => r),
+      ]);
 
-      if (tpFull) {
-        const { data: routes } = await supabase
-          .from("traveler_routes")
-          .select("route_from, route_to")
-          .eq("traveler_profile_id", tpFull.id) as { data: any[] | null };
-
-        if (routes && routes.length > 0) {
-          const { data: allPending } = await supabase
-            .from("parcels")
-            .select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking, suburb, pickup_address, delivery_address")
-            .eq("status", "pending") as { data: any[] | null };
-
-          const matched = (allPending || []).filter((p: any) => {
-            const pickup = (p.pickup_location || "").toLowerCase();
-            const dropoff = (p.dropoff_location || "").toLowerCase();
-            return routes.some((r: any) => {
-              const from = (r.route_from || "").toLowerCase();
-              return pickup.includes(from) || from.includes(pickup);
-            }) && routes.some((r: any) => {
-              const to = (r.route_to || "").toLowerCase();
-              return dropoff.includes(to) || to.includes(dropoff);
-            });
+      const routes = routesResult.data;
+      if (routes && routes.length > 0) {
+        const matched = (allPendingResult.data || []).filter((p: any) => {
+          const pickup = (p.pickup_location || "").toLowerCase();
+          const dropoff = (p.dropoff_location || "").toLowerCase();
+          return routes.some((r: any) => {
+            const from = (r.route_from || "").toLowerCase();
+            return pickup.includes(from) || from.includes(pickup);
+          }) && routes.some((r: any) => {
+            const to = (r.route_to || "").toLowerCase();
+            return dropoff.includes(to) || to.includes(dropoff);
           });
-          setBrowseParcels(matched);
-        }
+        });
+        setBrowseParcels(matched);
       }
     }
 

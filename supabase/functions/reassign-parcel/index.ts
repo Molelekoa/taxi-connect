@@ -52,12 +52,29 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get the new match and its trip
-    const { data: newMatch } = await supabase
-      .from("matches")
-      .select("*, trips(traveler_id, travel_date)")
-      .eq("id", newMatchId)
-      .single();
+    // Parallelize all three independent reads
+    const [newMatchResult, oldMatchResult, parcelResult] = await Promise.all([
+      supabase
+        .from("matches")
+        .select("*, trips(traveler_id, travel_date)")
+        .eq("id", newMatchId)
+        .single(),
+      supabase
+        .from("matches")
+        .select("*, trips(traveler_id)")
+        .eq("parcel_id", parcelId)
+        .eq("status", "accepted")
+        .single(),
+      supabase
+        .from("parcels")
+        .select("sender_id")
+        .eq("id", parcelId)
+        .single(),
+    ]);
+
+    const newMatch = newMatchResult.data;
+    const oldMatch = oldMatchResult.data;
+    const parcel = parcelResult.data;
 
     if (!newMatch) {
       return new Response(JSON.stringify({ error: "New match not found" }), {
@@ -66,14 +83,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get old accepted match
-    const { data: oldMatch } = await supabase
-      .from("matches")
-      .select("*, trips(traveler_id)")
-      .eq("parcel_id", parcelId)
-      .eq("status", "accepted")
-      .single();
-
     if (!oldMatch) {
       return new Response(JSON.stringify({ error: "No existing accepted match" }), {
         status: 404,
@@ -81,53 +90,37 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get parcel for sender_id
-    const { data: parcel } = await supabase
-      .from("parcels")
-      .select("sender_id")
-      .eq("id", parcelId)
-      .single();
-
-    // Set old match to reassigned
-    await supabase
-      .from("matches")
-      .update({ status: "reassigned" })
-      .eq("id", oldMatch.id);
-
-    // Set new match to accepted
-    await supabase
-      .from("matches")
-      .update({ status: "accepted", accepted_at: new Date().toISOString() })
-      .eq("id", newMatchId);
-
-    // Update parcel's traveler_id
+    // Parallelize all three independent updates
     const newTravelerId = newMatch.trips?.traveler_id;
-    if (newTravelerId) {
-      await supabase
-        .from("parcels")
-        .update({ traveler_id: newTravelerId })
-        .eq("id", parcelId);
-    }
+    await Promise.all([
+      supabase.from("matches").update({ status: "reassigned" }).eq("id", oldMatch.id),
+      supabase.from("matches").update({ status: "accepted", accepted_at: new Date().toISOString() }).eq("id", newMatchId),
+      ...(newTravelerId
+        ? [supabase.from("parcels").update({ traveler_id: newTravelerId }).eq("id", parcelId)]
+        : []),
+    ]);
 
-    // Notify old traveler
+    // Batch insert notifications
+    const notifications: Array<{ user_id: string; type: string; content: string; related_match_id: string }> = [];
     const oldTravelerId = oldMatch.trips?.traveler_id;
     if (oldTravelerId) {
-      await supabase.from("notifications").insert({
+      notifications.push({
         user_id: oldTravelerId,
         type: "parcel_reassigned",
         content: "A parcel you were carrying has been reassigned to an earlier traveler.",
         related_match_id: oldMatch.id,
       });
     }
-
-    // Notify sender
     if (parcel?.sender_id) {
-      await supabase.from("notifications").insert({
+      notifications.push({
         user_id: parcel.sender_id,
         type: "reassignment_complete",
         content: "Your parcel has been reassigned to an earlier traveler successfully.",
         related_match_id: newMatchId,
       });
+    }
+    if (notifications.length > 0) {
+      await supabase.from("notifications").insert(notifications);
     }
 
     return new Response(
