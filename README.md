@@ -50,24 +50,23 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## What technologies are used for this project?
+## Tech Stack
 
-This project is built with:
+- **Frontend**: React 18, Vite, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (Postgres, Edge Functions, Auth, Storage)
+- **Payments**: Yoco
+- **Maps**: Mapbox GL JS
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Environment Setup
 
-## How can I deploy this project?
+Copy `.env.example` to `.env` and fill in values. See [DEPLOYMENT.md](./DEPLOYMENT.md) for full details.
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Deployment
 
-## Can I connect a custom domain to my Lovable project?
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment, testing, and operations documentation.
 
-Yes, you can!
+**Quick deploy via Lovable**: Click Publish → Update in the editor.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Custom Domain
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Navigate to Project > Settings > Domains. See [docs](https://docs.lovable.dev/features/custom-domain#custom-domain).
