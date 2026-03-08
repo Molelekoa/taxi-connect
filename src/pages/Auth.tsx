@@ -43,13 +43,34 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Check lockout
+    if (lockedUntil && Date.now() < lockedUntil) {
+      const secsLeft = Math.ceil((lockedUntil - Date.now()) / 1000);
+      setError(`Too many attempts. Try again in ${secsLeft}s.`);
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: loginForm.email,
         password: loginForm.password,
       });
-      if (error) throw error;
+      if (error) {
+        const attempts = loginAttempts + 1;
+        setLoginAttempts(attempts);
+        if (attempts >= MAX_LOGIN_ATTEMPTS) {
+          setLockedUntil(Date.now() + LOCKOUT_DURATION_MS);
+          setLoginAttempts(0);
+          setError("Too many failed attempts. Account locked for 1 minute.");
+        } else {
+          setError(error.message);
+        }
+        return;
+      }
+      setLoginAttempts(0);
+      setLockedUntil(null);
       navigate(returnTo, { state: returnState });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed. Please try again.");
