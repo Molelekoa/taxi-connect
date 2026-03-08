@@ -43,6 +43,8 @@ const TravelerDashboard = () => {
   const [deliveredMatches, setDeliveredMatches] = useState<any[]>([]);
   const [browseParcels, setBrowseParcels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
 
