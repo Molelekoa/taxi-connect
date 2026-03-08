@@ -836,6 +836,7 @@ const AdminDashboard = () => {
       if (error) throw error;
       return data as Profile[];
     },
+    staleTime: 2 * 60 * 1000, // 2 min — admin can manually refresh
   });
 
   // Fetch all parcels
@@ -846,6 +847,7 @@ const AdminDashboard = () => {
       if (error) throw error;
       return data as Parcel[];
     },
+    staleTime: 30 * 1000, // 30s — parcels change frequently
   });
 
   // Fetch all traveler profiles with routes
@@ -856,6 +858,7 @@ const AdminDashboard = () => {
       if (error) throw error;
       return (data ?? []) as TravelerProfile[];
     },
+    staleTime: 2 * 60 * 1000,
   });
 
   // Mutations
@@ -1718,6 +1721,7 @@ const AuditLogTab = () => {
       if (error) throw error;
       return (data ?? []) as AuditEntry[];
     },
+    staleTime: 60 * 1000, // 1 min
   });
 
   if (isLoading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -1789,6 +1793,7 @@ const ErrorLogsTab = ({ profiles }: { profiles: Profile[] }) => {
       if (error) throw error;
       return (data ?? []) as ErrorLogEntry[];
     },
+    staleTime: 60 * 1000,
   });
 
   const profileById = (id: string | null) => id ? profiles.find(p => p.id === id) : undefined;
@@ -1855,6 +1860,7 @@ const MetricsTab = () => {
       if (error) throw error;
       return (data ?? []) as MetricRow[];
     },
+    staleTime: 2 * 60 * 1000,
   });
 
   const totals = useMemo(() => {
@@ -1950,6 +1956,7 @@ const StorageManagerTab = ({ parcels }: { parcels: Parcel[] }) => {
       if (error) return [];
       return data ?? [];
     },
+    staleTime: 5 * 60 * 1000, // storage rarely changes
   });
 
   // Count photos across parcels

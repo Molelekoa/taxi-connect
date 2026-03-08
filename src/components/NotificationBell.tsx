@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfileId } from "@/hooks/useProfileId";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
@@ -17,28 +19,25 @@ interface Notification {
 
 const NotificationBell = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [open, setOpen] = useState(false);
+  const { profileId } = useProfileId();
+  const queryClient = useQueryClient();
 
-  const fetchNotifications = async () => {
-    if (!user) return;
-    const { data: profileId } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
-    if (!profileId) return;
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications", profileId],
+    queryFn: async () => {
+      if (!profileId) return [];
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20) as { data: Notification[] | null };
+      return data ?? [];
+    },
+    enabled: !!profileId,
+    staleTime: 30 * 1000, // 30s — realtime subscription handles instant updates
+  });
 
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(20) as { data: Notification[] | null };
-
-    if (data) setNotifications(data);
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [user]);
-
-  // Real-time subscription
+  // Real-time subscription — invalidate cache on new notifications
   useEffect(() => {
     if (!user) return;
 
@@ -47,31 +46,35 @@ const NotificationBell = () => {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications" },
-        () => fetchNotifications()
+        () => queryClient.invalidateQueries({ queryKey: ["notifications"] })
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, queryClient]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = async (id: string) => {
     await supabase.from("notifications").update({ read: true } as any).eq("id", id);
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    queryClient.setQueryData(["notifications", profileId], (old: Notification[] | undefined) =>
+      (old ?? []).map(n => n.id === id ? { ...n, read: true } : n)
+    );
   };
 
   const markAllRead = async () => {
     const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
     if (unreadIds.length === 0) return;
     await supabase.from("notifications").update({ read: true } as any).in("id", unreadIds);
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    queryClient.setQueryData(["notifications", profileId], (old: Notification[] | undefined) =>
+      (old ?? []).map(n => ({ ...n, read: true }))
+    );
   };
 
   if (!user) return null;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover>
       <PopoverTrigger asChild>
         <button className="relative p-2 rounded-full text-foreground hover:bg-secondary transition-colors" aria-label="Notifications">
           <Bell className="w-5 h-5" />
