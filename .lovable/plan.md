@@ -1,43 +1,34 @@
-# Plan: Fix Traveler Dashboard Display & Admin Notification Issues
 
-## Problems Identified
 
-1. **Traveler Dashboard cards lack detail** — the screenshots confirm parcels show minimal info. The Browse and Matched tabs need prominent suburb, addresses, and pickup dates. Sender/recipient details and weight band must be hidden until after acceptance.
-2. **Admin status notifications silently fail** — The `notifications` table RLS policy "Admins can insert notifications" is **RESTRICTIVE** (not PERMISSIVE). PostgreSQL requires at least one PERMISSIVE policy to pass for a given command. With only a RESTRICTIVE INSERT policy and no PERMISSIVE one, all inserts are denied. The admin dashboard code doesn't throw on notification insert failure, so the status update succeeds but the notification is silently swallowed.
+# Register Yoco Webhook Programmatically
 
-## Changes
+## Context
 
-### 1. Database Migration — Fix notifications INSERT RLS
+Yoco requires webhook URLs to be registered via their API (`POST https://payments.yoco.com/api/webhooks`), not through a settings page. We need to create an Edge Function that registers our webhook endpoint with Yoco.
 
-Drop the existing RESTRICTIVE admin insert policy and recreate it as **PERMISSIVE**. This allows admin-role users to actually insert notifications.
+## Plan
 
-### 2. TravelerDashboard.tsx — Restructure parcel cards
+### 1. Create Edge Function: `register-yoco-webhook`
 
-**Browse & Matched tabs (pre-acceptance):** Show:
+**File:** `supabase/functions/register-yoco-webhook/index.ts`
 
-- Route (pickup_location → dropoff_location)
-- Suburb
-- Pickup address & delivery address
-- Pickup window (earliest – latest)
-- Payout estimate
-- Description/dimensions  
-Weight Band
+- Admin-only utility function (called once to register, or on-demand)
+- Makes a `POST` request to `https://payments.yoco.com/api/webhooks` with:
+  - `Authorization: Bearer ${YOCO_SECRET_KEY}`
+  - Body: `{ "name": "parcolo-parcel-payments", "url": "https://jlhyoqfsyadxvuhfesmc.supabase.co/functions/v1/yoco-parcel-webhook" }`
+- Returns the Yoco response (webhook ID, status)
 
-Hide: sender name/phone, recipient name/phone.
+### 2. Update `supabase/config.toml`
 
-**Carrying tab (accepted):** Show all of the above PLUS:
+- Add `[functions.register-yoco-webhook]` with `verify_jwt = false` (so it can be invoked easily, though we'll protect it with a check inside)
 
-- Sender name & phone
-- Recipient name & phone
+### 3. Invoke the function
 
-**Delivered tab (accepted):** Same as Carrying — full details visible.
+After deployment, I will use the `supabase--curl_edge_functions` tool to call the function once, which will register the webhook URL with Yoco. This is a one-time setup step.
 
-### 3. AdminDashboard.tsx — Handle notification insert errors
+## Notes
 
-Add error checking on the notification insert so failures are surfaced rather than swallowed silently.
+- The `YOCO_SECRET_KEY` is already configured as a Supabase secret
+- The webhook endpoint `yoco-parcel-webhook` is already deployed and ready to receive events
+- This registration only needs to happen once — after that, Yoco will send events to our endpoint automatically
 
-## Files Modified
-
-- New migration SQL — fix notifications INSERT RLS policy
-- `src/pages/TravelerDashboard.tsx` — restructure all four tab card layouts
-- `src/pages/AdminDashboard.tsx` — add error handling on notification insert
