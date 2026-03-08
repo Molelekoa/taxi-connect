@@ -6,6 +6,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const logError = async (action: string, errorMessage: string, context?: Record<string, any>) => {
+  try {
+    const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    await svc.from("error_logs").insert({ user_id: null, action, error_message: errorMessage, context: context ?? null });
+  } catch { /* silent */ }
+};
+
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const response = await fetch(url, options);
@@ -138,8 +145,9 @@ Deno.serve(async (req) => {
       JSON.stringify({ redirectUrl: yocoData.redirectUrl, checkoutId: yocoData.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("process-parcel-payment error:", error);
+    await logError("process_parcel_payment", error?.message || String(error));
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
