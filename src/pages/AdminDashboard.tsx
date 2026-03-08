@@ -1793,6 +1793,7 @@ const ErrorLogsTab = ({ profiles }: { profiles: Profile[] }) => {
       if (error) throw error;
       return (data ?? []) as ErrorLogEntry[];
     },
+    staleTime: 60 * 1000,
   });
 
   const profileById = (id: string | null) => id ? profiles.find(p => p.id === id) : undefined;
