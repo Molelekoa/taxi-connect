@@ -169,7 +169,7 @@ export const calculateBandPrice = (
  * 
  * 1-5kg:  5% to 25% (linear scale)
  * 5-10kg: 25% to 40% (linear scale)
- * 10-20kg: 40% to 65% (linear scale)
+ * 10-50kg: 40% to 65% (linear scale)
  */
 export const calculateWeightPercentage = (weightKg: number): number => {
   if (weightKg <= 1) return 5;
