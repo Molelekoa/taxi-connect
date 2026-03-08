@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const APP_URL = "https://parcolo.com";
+    const APP_URL = "https://parcolo.lovable.app";
 
     const yocoResponse = await fetch("https://payments.yoco.com/api/checkouts", {
       method: "POST",
