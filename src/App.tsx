@@ -22,6 +22,8 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import TravelerDashboard from "./pages/TravelerDashboard";
 import SenderDashboard from "./pages/SenderDashboard";
+import ParcelPaymentSuccess from "./pages/ParcelPaymentSuccess";
+import ParcelPaymentCancelled from "./pages/ParcelPaymentCancelled";
 
 const queryClient = new QueryClient();
 
