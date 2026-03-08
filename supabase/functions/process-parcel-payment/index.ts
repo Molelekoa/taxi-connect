@@ -77,8 +77,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         amount,
         currency: currency || "ZAR",
-        successUrl: `${APP_URL}/parcel-payment-success?payment_id={checkoutId}`,
-        cancelUrl: `${APP_URL}/parcel-payment-cancelled`,
+        successUrl: `${APP_URL}/parcel-payment-success?payment_id=${paymentRecordId}`,
+        cancelUrl: `${APP_URL}/parcel-payment-cancelled?payment_id=${paymentRecordId}`,
         metadata: {
           user_id: userId,
           parcel_id: parcelId,
