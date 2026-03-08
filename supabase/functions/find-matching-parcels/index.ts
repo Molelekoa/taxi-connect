@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     if (token !== serviceRoleKey) {
-      // Verify as user JWT
       const authClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -87,18 +86,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    const matchResults = [];
+    if (!parcels || parcels.length === 0) {
+      return new Response(
+        JSON.stringify({ matches: 0, matchIds: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    for (const parcel of parcels || []) {
-      // Check for existing match
-      const { data: existing } = await supabase
-        .from("matches")
-        .select("id")
-        .eq("parcel_id", parcel.id)
-        .eq("trip_id", tripId)
-        .maybeSingle();
+    // Batch existence check — single query instead of N queries
+    const parcelIds = parcels.map(p => p.id);
+    const { data: existingMatches } = await supabase
+      .from("matches")
+      .select("parcel_id")
+      .eq("trip_id", tripId)
+      .in("parcel_id", parcelIds);
 
-      if (existing) continue;
+    const existingParcelIds = new Set((existingMatches || []).map(m => m.parcel_id));
+
+    const matchResults: string[] = [];
+    const notificationsToInsert: Array<{ user_id: string; type: string; content: string; related_match_id: string }> = [];
+
+    for (const parcel of parcels) {
+      if (existingParcelIds.has(parcel.id)) continue;
 
       const { data: match, error: mErr } = await supabase
         .from("matches")
@@ -106,11 +115,10 @@ Deno.serve(async (req) => {
         .select("id")
         .single();
 
-      if (mErr) continue;
+      if (mErr || !match) continue;
 
-      // Notify sender
       if (parcel.sender_id) {
-        await supabase.from("notifications").insert({
+        notificationsToInsert.push({
           user_id: parcel.sender_id,
           type: "new_match",
           content: `A traveler is available for your ${parcel.pickup_location} → ${parcel.dropoff_location} parcel on ${trip.travel_date}`,
@@ -119,6 +127,11 @@ Deno.serve(async (req) => {
       }
 
       matchResults.push(match.id);
+    }
+
+    // Batch insert all notifications in one query
+    if (notificationsToInsert.length > 0) {
+      await supabase.from("notifications").insert(notificationsToInsert);
     }
 
     return new Response(

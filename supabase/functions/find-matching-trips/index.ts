@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     if (token !== serviceRoleKey) {
-      // Verify as user JWT
       const authClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -96,30 +95,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    const matchResults = [];
+    if (!trips || trips.length === 0) {
+      return new Response(
+        JSON.stringify({ matches: 0, matchIds: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    for (const trip of trips || []) {
-      // Check if match already exists
-      const { data: existing } = await supabase
-        .from("matches")
-        .select("id")
-        .eq("parcel_id", parcelId)
-        .eq("trip_id", trip.id)
-        .maybeSingle();
+    // Batch existence check — single query instead of N queries
+    const tripIds = trips.map(t => t.id);
+    const { data: existingMatches } = await supabase
+      .from("matches")
+      .select("trip_id")
+      .eq("parcel_id", parcelId)
+      .in("trip_id", tripIds);
 
-      if (existing) continue;
+    const existingTripIds = new Set((existingMatches || []).map(m => m.trip_id));
 
-      // Insert match
+    const matchResults: string[] = [];
+    const notificationsToInsert: Array<{ user_id: string; type: string; content: string; related_match_id: string }> = [];
+
+    for (const trip of trips) {
+      if (existingTripIds.has(trip.id)) continue;
+
       const { data: match, error: mErr } = await supabase
         .from("matches")
         .insert({ parcel_id: parcelId, trip_id: trip.id })
         .select("id")
         .single();
 
-      if (mErr) continue;
+      if (mErr || !match) continue;
 
-      // Notify traveler about route match
-      await supabase.from("notifications").insert({
+      notificationsToInsert.push({
         user_id: trip.traveler_id,
         type: "new_match",
         content: `New parcel matches your ${trip.origin_city} → ${trip.destination_city} route: ${parcel.weight_kg || "?"}kg, pickup ${parcel.pickup_earliest || "TBD"} – ${parcel.pickup_latest || "TBD"}`,
@@ -127,6 +134,11 @@ Deno.serve(async (req) => {
       });
 
       matchResults.push(match.id);
+    }
+
+    // Batch insert all notifications in one query
+    if (notificationsToInsert.length > 0) {
+      await supabase.from("notifications").insert(notificationsToInsert);
     }
 
     return new Response(
