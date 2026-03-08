@@ -152,7 +152,13 @@ Deno.serve(async (req) => {
     const travelFrequency = formData.get("travelFrequency") as string;
     const scheduleType = formData.get("scheduleType") as string;
     const availableDaysRaw = formData.get("availableDays") as string;
-    const availableDays = availableDaysRaw ? JSON.parse(availableDaysRaw) : [];
+    let availableDays: string[] = [];
+    try { availableDays = availableDaysRaw ? JSON.parse(availableDaysRaw) : []; } catch { availableDays = []; }
+    if (!Array.isArray(availableDays) || availableDays.length > 7) {
+      return new Response(JSON.stringify({ error: "Invalid availableDays" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const departureTime = formData.get("departureTime") as string;
     const advanceNotice = formData.get("advanceNotice") as string;
     const parcelsPerTrip = formData.get("parcelsPerTrip") as string;
