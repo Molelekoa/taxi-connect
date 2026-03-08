@@ -26,11 +26,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const { matchId, reason } = await req.json();
-    if (!matchId || !reason) {
-      return new Response(JSON.stringify({ error: "matchId and reason required" }), {
-        status: 400,
-        headers: corsHeaders,
+    if (!matchId || !UUID_RE.test(matchId)) {
+      return new Response(JSON.stringify({ error: "Valid matchId (UUID) required" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+    if (!reason || typeof reason !== "string" || reason.length > 500) {
+      return new Response(JSON.stringify({ error: "Reason required (max 500 chars)" }), {
+        status: 400, headers: corsHeaders,
       });
     }
 

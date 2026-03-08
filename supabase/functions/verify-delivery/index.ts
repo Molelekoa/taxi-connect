@@ -12,8 +12,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const { matchId, action } = await req.json();
-    if (!matchId || !["approve", "reject"].includes(action)) {
+    if (!matchId || !UUID_RE.test(matchId) || !["approve", "reject"].includes(action)) {
       return new Response(JSON.stringify({ error: "matchId and action ('approve' or 'reject') required" }), {
         status: 400,
         headers: corsHeaders,

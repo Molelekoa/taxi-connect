@@ -63,6 +63,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (parcelIds.length > 200 || parcelIds.some((id: any) => typeof id !== "string" || !UUID_RE.test(id))) {
+      return new Response(JSON.stringify({ error: "Invalid parcel IDs (must be valid UUIDs, max 200)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let deletedFiles = 0;
     let deletedParcels = 0;
 

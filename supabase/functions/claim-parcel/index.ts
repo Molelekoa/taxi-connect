@@ -12,6 +12,8 @@ const logError = async (supabase: any, userId: string | null, action: string, er
   } catch { /* silent */ }
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -73,8 +75,14 @@ Deno.serve(async (req) => {
     }
 
     const { parcelId, tripId } = await req.json();
-    if (!parcelId) {
-      return new Response(JSON.stringify({ error: "parcelId required" }), {
+    if (!parcelId || !UUID_RE.test(parcelId)) {
+      return new Response(JSON.stringify({ error: "Valid parcelId (UUID) required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (tripId && !UUID_RE.test(tripId)) {
+      return new Response(JSON.stringify({ error: "tripId must be a valid UUID" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

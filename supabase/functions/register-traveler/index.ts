@@ -152,13 +152,25 @@ Deno.serve(async (req) => {
     const travelFrequency = formData.get("travelFrequency") as string;
     const scheduleType = formData.get("scheduleType") as string;
     const availableDaysRaw = formData.get("availableDays") as string;
-    const availableDays = availableDaysRaw ? JSON.parse(availableDaysRaw) : [];
+    let availableDays: string[] = [];
+    try { availableDays = availableDaysRaw ? JSON.parse(availableDaysRaw) : []; } catch { availableDays = []; }
+    if (!Array.isArray(availableDays) || availableDays.length > 7) {
+      return new Response(JSON.stringify({ error: "Invalid availableDays" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const departureTime = formData.get("departureTime") as string;
     const advanceNotice = formData.get("advanceNotice") as string;
     const parcelsPerTrip = formData.get("parcelsPerTrip") as string;
     const storageType = formData.get("storageType") as string;
     const cargoTypesRaw = formData.get("cargoTypes") as string;
-    const cargoTypes = cargoTypesRaw ? JSON.parse(cargoTypesRaw) : [];
+    let cargoTypes: string[] = [];
+    try { cargoTypes = cargoTypesRaw ? JSON.parse(cargoTypesRaw) : []; } catch { cargoTypes = []; }
+    if (!Array.isArray(cargoTypes) || cargoTypes.length > 20) {
+      return new Response(JSON.stringify({ error: "Invalid cargoTypes" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const emergencyContactName = formData.get("emergencyContactName") as string;
     const emergencyContactRelation = formData.get("emergencyContactRelation") as string;
     const emergencyContactPhone = formData.get("emergencyContactPhone") as string;
@@ -169,7 +181,13 @@ Deno.serve(async (req) => {
     const routeToPrimary = formData.get("routeToPrimary") as string;
     const returnTrip = formData.get("returnTrip") as string;
     const additionalRoutesRaw = formData.get("additionalRoutes") as string;
-    const additionalRoutes = additionalRoutesRaw ? JSON.parse(additionalRoutesRaw) : [];
+    let additionalRoutes: Array<{ from: string; to: string; returnTrip: string }> = [];
+    try { additionalRoutes = additionalRoutesRaw ? JSON.parse(additionalRoutesRaw) : []; } catch { additionalRoutes = []; }
+    if (!Array.isArray(additionalRoutes) || additionalRoutes.length > 10) {
+      return new Response(JSON.stringify({ error: "Invalid additionalRoutes (max 10)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Files — validate and upload with server-side checks
     const idCopyFile = formData.get("idCopy") as File | null;

@@ -26,9 +26,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const { matchId } = await req.json();
-    if (!matchId) {
-      return new Response(JSON.stringify({ error: "matchId required" }), {
+    if (!matchId || !UUID_RE.test(matchId)) {
+      return new Response(JSON.stringify({ error: "Valid matchId (UUID) required" }), {
         status: 400,
         headers: corsHeaders,
       });
