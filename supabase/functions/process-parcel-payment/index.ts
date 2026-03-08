@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const APP_URL = "https://parcolo.com";
+    const APP_URL = "https://parcolo.lovable.app";
 
     const yocoResponse = await fetch("https://payments.yoco.com/api/checkouts", {
       method: "POST",
@@ -77,8 +77,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         amount,
         currency: currency || "ZAR",
-        successUrl: `${APP_URL}/parcel-payment-success?payment_id={checkoutId}`,
-        cancelUrl: `${APP_URL}/parcel-payment-cancelled`,
+        successUrl: `${APP_URL}/parcel-payment-success?payment_id=${paymentRecordId}`,
+        cancelUrl: `${APP_URL}/parcel-payment-cancelled?payment_id=${paymentRecordId}`,
         metadata: {
           user_id: userId,
           parcel_id: parcelId,
