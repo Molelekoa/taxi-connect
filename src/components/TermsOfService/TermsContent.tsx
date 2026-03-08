@@ -151,6 +151,30 @@ const TermsContent = () => {
         </P>
       </Section>
 
+      <Section title="8A. Payment Terms and Refund Policy">
+        <P>
+          <strong className="text-foreground">8A.1 Electronic Payment Only.</strong> All payments on the Platform are processed electronically through our payment partner, Yoco. We accept card payments and EFT transfers. Cash payments are strictly prohibited for all parcel booking transactions.
+        </P>
+        <P>
+          <strong className="text-foreground">8A.2 Payment Timing.</strong> Payment is collected from the Sender at the time of booking. Funds are held by Parcolo and released to the Traveler only after the delivery has been administratively verified, following a 72-hour processing period or the next Wednesday payout cycle, whichever comes first.
+        </P>
+        <P>
+          <strong className="text-foreground">8A.3 Refund Policy.</strong> Refunds are available under the following circumstances:
+        </P>
+        <UL items={[
+          "Cancellation by the Sender before a Traveler has accepted the parcel: full refund minus any payment processing fees",
+          "Cancellation by the Sender after a Traveler has accepted: refund at Parcolo's discretion, subject to any costs already incurred",
+          "Non-delivery confirmed by Parcolo: full refund of the delivery fee",
+          "Traveler cancellation or no-show: full refund of the delivery fee",
+        ]} />
+        <P className="mt-4">
+          <strong className="text-foreground">8A.4 Refund Processing.</strong> Approved refunds are processed within 5–10 business days via the original payment method. Parcolo is not responsible for delays caused by your bank or payment provider.
+        </P>
+        <P>
+          <strong className="text-foreground">8A.5 No Card Storage.</strong> Parcolo does not store your credit card or banking details. All payment information is processed and secured by Yoco in compliance with PCI-DSS standards.
+        </P>
+      </Section>
+
       <Section title="9. User Conduct">
         <P><strong className="text-foreground">9.1 Sender Obligations.</strong> Senders agree to:</P>
         <UL items={[

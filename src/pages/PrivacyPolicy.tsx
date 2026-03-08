@@ -16,13 +16,13 @@ const PrivacyPolicy = () => {
         <main className="flex-1 py-16 md:py-24">
           <div className="container-narrow">
             <h1 className="font-display text-4xl md:text-5xl font-black mb-8">Privacy Policy</h1>
-            <p className="text-muted-foreground mb-8">Last updated: {new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p className="text-muted-foreground mb-8">Last updated: 8 March 2026</p>
             
             <div className="prose prose-lg max-w-none text-foreground">
               <section className="mb-10">
                 <h2 className="font-display text-2xl font-bold mb-4">1. Introduction</h2>
                 <p className="text-muted-foreground mb-4">
-                  Parcolo ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our community-driven delivery services and website.
+                  Parcolo ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our community-driven delivery platform and website.
                 </p>
                 <p className="text-muted-foreground">
                   By using our services, you consent to the data practices described in this policy. If you do not agree with the terms of this Privacy Policy, please do not access our website or use our services.
@@ -35,10 +35,11 @@ const PrivacyPolicy = () => {
                 <p className="text-muted-foreground mb-4">We may collect the following personal information:</p>
                 <ul className="list-disc pl-6 text-muted-foreground mb-4 space-y-2">
                   <li>Name and contact details (email address, phone number, physical address)</li>
-                  <li>Company name and business registration details</li>
-                  <li>VAT registration number</li>
-                  <li>Shipping and delivery addresses</li>
-                  <li>Payment and billing information</li>
+                  <li>Government-issued identity document (ID or passport) for verification and traceability</li>
+                  <li>Driver's license information (for Travelers)</li>
+                  <li>Vehicle details (for Travelers)</li>
+                  <li>Pickup and delivery addresses</li>
+                  <li>Payment and billing information (processed by Yoco; we do not store card details)</li>
                   <li>Communication records and correspondence</li>
                 </ul>
                 
@@ -49,6 +50,8 @@ const PrivacyPolicy = () => {
                   <li>Device information and operating system</li>
                   <li>Pages visited and time spent on our website</li>
                   <li>Referring website addresses</li>
+                  <li>Geolocation data (for delivery/collection proof verification, with your consent)</li>
+                  <li>Photographs of parcels at collection and delivery (for proof of handover)</li>
                 </ul>
               </section>
 
@@ -56,14 +59,16 @@ const PrivacyPolicy = () => {
                 <h2 className="font-display text-2xl font-bold mb-4">3. How We Use Your Information</h2>
                 <p className="text-muted-foreground mb-4">We use the information we collect to:</p>
                 <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                  <li>Provide, operate, and maintain our freight brokerage services</li>
-                  <li>Process quotes, bookings, and transactions</li>
-                  <li>Communicate with you regarding shipments, updates, and customer service</li>
-                  <li>Connect shippers with appropriate carriers</li>
+                  <li>Provide, operate, and maintain our community-driven delivery platform</li>
+                  <li>Process parcel bookings, matching, and payment transactions</li>
+                  <li>Verify your identity for safety and legal compliance</li>
+                  <li>Communicate with you regarding deliveries, updates, and customer service</li>
+                  <li>Connect Senders with appropriate Travelers</li>
+                  <li>Generate delivery and collection proof records</li>
                   <li>Improve and personalize your experience</li>
                   <li>Comply with legal obligations and industry regulations</li>
                   <li>Send promotional communications (with your consent)</li>
-                  <li>Prevent fraud and ensure security</li>
+                  <li>Prevent fraud and ensure platform security</li>
                 </ul>
               </section>
 
