@@ -790,6 +790,8 @@ const AdminDashboard = () => {
   // Filter state for parcels tab
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [parcelsPage, setParcelsPage] = useState(0);
+  const PARCELS_PER_PAGE = 50;
 
   // Helper: navigate to parcels tab with a specific status filter
   const goToParcelsByStatus = (status: string) => {
