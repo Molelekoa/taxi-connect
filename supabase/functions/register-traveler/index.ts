@@ -181,7 +181,13 @@ Deno.serve(async (req) => {
     const routeToPrimary = formData.get("routeToPrimary") as string;
     const returnTrip = formData.get("returnTrip") as string;
     const additionalRoutesRaw = formData.get("additionalRoutes") as string;
-    const additionalRoutes = additionalRoutesRaw ? JSON.parse(additionalRoutesRaw) : [];
+    let additionalRoutes: Array<{ from: string; to: string; returnTrip: string }> = [];
+    try { additionalRoutes = additionalRoutesRaw ? JSON.parse(additionalRoutesRaw) : []; } catch { additionalRoutes = []; }
+    if (!Array.isArray(additionalRoutes) || additionalRoutes.length > 10) {
+      return new Response(JSON.stringify({ error: "Invalid additionalRoutes (max 10)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Files — validate and upload with server-side checks
     const idCopyFile = formData.get("idCopy") as File | null;
