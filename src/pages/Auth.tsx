@@ -12,17 +12,30 @@ import { useToast } from "@/hooks/use-toast";
 
 const getAppUrl = () => import.meta.env.VITE_APP_URL || window.location.origin;
 
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const validatePassword = (pw: string): string | null => {
+  if (pw.length < PASSWORD_MIN_LENGTH) return `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
+  if (!PASSWORD_REGEX.test(pw)) return "Password must include uppercase, lowercase, and a number.";
+  return null;
+};
+
+// Client-side brute-force mitigation
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 60_000; // 1 minute
+
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
-  // If redirected from ProtectedRoute, capture return path and state
   const returnTo = (location.state as any)?.returnTo || "/";
   const returnState = (location.state as any)?.returnState || null;
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
 
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [signupForm, setSignupForm] = useState({ fullName: "", email: "", password: "", confirmPassword: "" });
@@ -30,13 +43,34 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Check lockout
+    if (lockedUntil && Date.now() < lockedUntil) {
+      const secsLeft = Math.ceil((lockedUntil - Date.now()) / 1000);
+      setError(`Too many attempts. Try again in ${secsLeft}s.`);
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: loginForm.email,
         password: loginForm.password,
       });
-      if (error) throw error;
+      if (error) {
+        const attempts = loginAttempts + 1;
+        setLoginAttempts(attempts);
+        if (attempts >= MAX_LOGIN_ATTEMPTS) {
+          setLockedUntil(Date.now() + LOCKOUT_DURATION_MS);
+          setLoginAttempts(0);
+          setError("Too many failed attempts. Account locked for 1 minute.");
+        } else {
+          setError(error.message);
+        }
+        return;
+      }
+      setLoginAttempts(0);
+      setLockedUntil(null);
       navigate(returnTo, { state: returnState });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed. Please try again.");
@@ -52,8 +86,9 @@ const Auth = () => {
       setError("Passwords do not match.");
       return;
     }
-    if (signupForm.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    const pwError = validatePassword(signupForm.password);
+    if (pwError) {
+      setError(pwError);
       return;
     }
     setLoading(true);
@@ -233,7 +268,7 @@ const Auth = () => {
                     <Input
                       id="signup-password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Min. 6 characters"
+                      placeholder="Min. 8 chars, upper+lower+number"
                       className="pl-9 pr-10"
                       value={signupForm.password}
                       onChange={(e) => setSignupForm((p) => ({ ...p, password: e.target.value }))}
