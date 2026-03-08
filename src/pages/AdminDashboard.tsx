@@ -1721,6 +1721,7 @@ const AuditLogTab = () => {
       if (error) throw error;
       return (data ?? []) as AuditEntry[];
     },
+    staleTime: 60 * 1000, // 1 min
   });
 
   if (isLoading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
