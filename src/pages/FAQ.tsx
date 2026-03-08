@@ -38,11 +38,11 @@ const FAQ = () => {
       faqs: [
         {
           question: "What can I send?",
-          answer: "We handle small to medium-sized parcels weighing between 1kg and 20kg—roughly anything that fits in a suitcase. This includes documents, clothing, gifts, electronics, household items, and other everyday goods. We focus on cargo that's easy to transport safely."
+          answer: "We handle parcels weighing between 1kg and 50kg. This includes documents, clothing, gifts, electronics, household items, small furniture, and other everyday goods. We focus on cargo that's easy to transport safely."
         },
         {
           question: "What can't I send?",
-          answer: "We don't accept large or heavy packages (over 20kg), temperature-sensitive goods requiring refrigeration, hazardous materials, illegal items, or anything prohibited by law. Our service is designed for everyday parcels, not specialized freight."
+          answer: "We don't accept packages over 50kg, temperature-sensitive goods requiring refrigeration, hazardous materials, illegal items, or anything prohibited by law. Our service is designed for everyday parcels, not specialized freight."
         },
         {
           question: "Do you offer temperature-controlled shipping?",
@@ -50,7 +50,7 @@ const FAQ = () => {
         },
         {
           question: "Can I send large or heavy items?",
-          answer: "Our service is limited to parcels under 20kg that can fit comfortably in a car boot or passenger space. We don't handle large furniture, heavy equipment, or freight-sized cargo. For larger shipments, you'll need a traditional freight service."
+          answer: "Our service handles parcels up to 50kg. We don't handle oversized furniture, heavy industrial equipment, or freight-sized cargo. For shipments exceeding 50kg, you'll need a traditional freight service."
         },
         {
           question: "How do I book a delivery?",

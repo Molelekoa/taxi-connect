@@ -149,7 +149,7 @@ const ParcelEstimator = () => {
                 Parcolo Pricing
               </h1>
               <p className="text-primary-foreground/80">
-                Get instant pricing for parcels 1–20 kg. Our optimized routes mean lower costs for you.
+                Get instant pricing for parcels 1–50 kg. Our optimized routes mean lower costs for you.
               </p>
             </div>
 

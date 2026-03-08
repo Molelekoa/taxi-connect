@@ -213,7 +213,7 @@ const Step3Vehicle = ({ formData, updateFormData, errors }: Step3Props) => {
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          For Parcolo parcels, typical range is 1kg to 20kg
+          For Parcolo parcels, typical range is 1kg to 50kg
         </p>
       </div>
 
