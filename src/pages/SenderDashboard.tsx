@@ -187,7 +187,9 @@ const SenderDashboard = () => {
             </h1>
             <p className="text-sm text-muted-foreground -mt-4 mb-6">Parcels you've booked for delivery</p>
 
-            {loading ? (
+            {(isOffline || fetchError) ? (
+              <DashboardErrorState isOffline={isOffline} error={fetchError} onRetry={fetchData} />
+            ) : loading ? (
               <div className="flex justify-center py-12">
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>

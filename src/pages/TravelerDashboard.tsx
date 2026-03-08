@@ -437,7 +437,9 @@ const TravelerDashboard = () => {
                 {!isApproved && (
                   <p className="text-muted-foreground text-center py-4 text-sm">You must be approved before posting trips.</p>
                 )}
-                {loading ? (
+                {(isOffline || fetchError) ? (
+                  <DashboardErrorState isOffline={isOffline} error={fetchError} onRetry={fetchData} />
+                ) : loading ? (
                   <div className="flex justify-center py-8">
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   </div>
