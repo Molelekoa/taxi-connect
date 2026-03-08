@@ -836,6 +836,7 @@ const AdminDashboard = () => {
       if (error) throw error;
       return data as Profile[];
     },
+    staleTime: 2 * 60 * 1000, // 2 min — admin can manually refresh
   });
 
   // Fetch all parcels
