@@ -84,6 +84,10 @@ const Auth = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!legalAccepted) {
+      setError("You must accept the Terms of Service and Privacy Policy to create an account.");
+      return;
+    }
     if (signupForm.password !== signupForm.confirmPassword) {
       setError("Passwords do not match.");
       return;
