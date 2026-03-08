@@ -76,7 +76,7 @@ const Services = () => {
               Our <span className="text-gradient">Services</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              From small documents to larger packages, Parcolo handles parcels up to 20kg 
+              From small documents to larger packages, Parcolo handles parcels up to 50kg 
               across South Africa, Lesotho, and Zimbabwe using our community network.
             </p>
           </div>

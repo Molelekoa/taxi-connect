@@ -263,7 +263,7 @@ export interface PriceBreakdown {
  * 
  * @param originCity - Origin city name
  * @param destinationCity - Destination city name
- * @param weightKg - Parcel weight in kilograms (1-20kg)
+ * @param weightKg - Parcel weight in kilograms (1-50kg)
  * @param distanceKm - Optional distance in km for fallback calculation
  * @param includeTracking - Whether to include parcel tracking add-on
  * @returns Price breakdown object

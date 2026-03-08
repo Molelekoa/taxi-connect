@@ -50,7 +50,7 @@ const FAQ = () => {
         },
         {
           question: "Can I send large or heavy items?",
-          answer: "Our service is limited to parcels under 20kg that can fit comfortably in a car boot or passenger space. We don't handle large furniture, heavy equipment, or freight-sized cargo. For larger shipments, you'll need a traditional freight service."
+          answer: "Our service handles parcels up to 50kg. We don't handle oversized furniture, heavy industrial equipment, or freight-sized cargo. For shipments exceeding 50kg, you'll need a traditional freight service."
         },
         {
           question: "How do I book a delivery?",
