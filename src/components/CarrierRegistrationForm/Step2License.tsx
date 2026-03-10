@@ -15,9 +15,10 @@ interface Step2Props {
   formData: CarrierFormData;
   updateFormData: (data: Partial<CarrierFormData>) => void;
   errors: Record<string, string>;
+  setFile?: (key: string, file: File | null) => void;
 }
 
-const Step2License = ({ formData, updateFormData, errors }: Step2Props) => {
+const Step2License = ({ formData, updateFormData, errors, setFile }: Step2Props) => {
   const [idFile, setIdFile] = useState<File | null>(null);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
