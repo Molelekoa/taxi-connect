@@ -136,6 +136,9 @@ export const initialFormData: CarrierFormData = {
   minLoadCapacity: "",
   maxLoadCapacity: "",
   hasValidInsurance: false,
+  vehiclePhotoUploaded: "",
+  licenseDiskUploaded: "",
+  proofOfResidenceUploaded: "",
   // Step 4 - Operations & Routes
   primaryRouteFrom: "",
   primaryRouteTo: "",
