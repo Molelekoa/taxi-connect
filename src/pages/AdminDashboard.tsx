@@ -111,6 +111,9 @@ type TravelerProfile = {
   emergency_contact_relation: string | null;
   id_copy_url: string | null;
   license_copy_url: string | null;
+  vehicle_photo_url: string | null;
+  license_disk_url: string | null;
+  proof_of_residence_url: string | null;
   traveler_routes: TravelerRoute[];
 };
 
