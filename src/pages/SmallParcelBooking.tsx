@@ -416,6 +416,24 @@ const SmallParcelBooking = () => {
         }
       }
 
+      // Upload parcel photo via edge function
+      let parcelPhotoUrl: string | null = null;
+      if (parcelPhotoFile) {
+        const photoForm = new FormData();
+        photoForm.append("file", parcelPhotoFile);
+        photoForm.append("purpose", "parcel-photo");
+
+        const { data: photoResult, error: photoError } = await supabase.functions.invoke("upload-document", {
+          body: photoForm,
+        });
+
+        if (photoError || !photoResult?.success) {
+          toast({ title: "Failed to upload parcel photo", description: photoError?.message || "Upload failed", variant: "destructive" });
+          return;
+        }
+        parcelPhotoUrl = photoResult.path || null;
+      }
+
       // Get selected band info for weight midpoint
       const selectedBand = WEIGHT_BANDS.find(b => b.id === formData.weightBand);
 
@@ -436,6 +454,7 @@ const SmallParcelBooking = () => {
         payment_status: 'unpaid',
         include_tracking: formData.includeTracking || false,
         description: formData.description || null,
+        photo_url: parcelPhotoUrl,
         sender_name: isVerifiedSender ? (profileData?.full_name || '') : (formData.contactName || ''),
         sender_email: isVerifiedSender ? (profileData?.email || '') : (formData.email || ''),
         sender_phone: isVerifiedSender ? (profileData?.phone || '') : (formData.phone || ''),
