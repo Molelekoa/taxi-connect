@@ -64,6 +64,7 @@ const parcelBookingSchema = z.object({
   legalDeclarationAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the legal declaration to proceed" }),
   }),
+  parcelPhotoName: z.string().min(1, "Please upload a photo of your parcel"),
 });
 
 // Lighter schema for verified senders — no contact details or ID/legal required
@@ -93,6 +94,7 @@ const verifiedSenderSchema = z.object({
   }),
   idDocumentName: z.string().optional(),
   legalDeclarationAccepted: z.boolean().optional(),
+  parcelPhotoName: z.string().min(1, "Please upload a photo of your parcel"),
 });
 
 type FormData = z.infer<typeof parcelBookingSchema>;
