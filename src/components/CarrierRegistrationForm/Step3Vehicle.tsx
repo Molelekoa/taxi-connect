@@ -17,6 +17,7 @@ interface Step3Props {
   formData: CarrierFormData;
   updateFormData: (data: Partial<CarrierFormData>) => void;
   errors: Record<string, string>;
+  setFile?: (key: string, file: File | null) => void;
 }
 
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
@@ -24,7 +25,7 @@ const MAX_SIZE = 5 * 1024 * 1024;
 
 type UploadKey = "vehiclePhoto" | "licenseDisk" | "proofOfResidence";
 
-const Step3Vehicle = ({ formData, updateFormData, errors }: Step3Props) => {
+const Step3Vehicle = ({ formData, updateFormData, errors, setFile }: Step3Props) => {
   const [files, setFiles] = useState<Record<UploadKey, File | null>>({
     vehiclePhoto: null,
     licenseDisk: null,
