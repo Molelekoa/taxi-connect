@@ -1066,7 +1066,62 @@ const SmallParcelBooking = () => {
                     </p>
                   </div>
 
-                  {/* Contents Declaration */}
+                  {/* Parcel Photo Upload */}
+                  <div className="space-y-2">
+                    <Label>Parcel Photo *</Label>
+                    <div
+                      className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                        parcelPhotoFile
+                          ? 'border-primary bg-primary/5'
+                          : errors.parcelPhotoName
+                            ? 'border-destructive bg-destructive/5'
+                            : 'border-border hover:border-primary/50'
+                      }`}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) handleParcelPhotoUpload(file); }}
+                    >
+                      <input
+                        ref={parcelPhotoInputRef}
+                        type="file"
+                        accept=".jpg,.jpeg,.png"
+                        onChange={(e) => { const file = e.target.files?.[0]; if (file) handleParcelPhotoUpload(file); }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      {parcelPhotoFile ? (
+                        <div className="flex items-center justify-center gap-3">
+                          <FileCheck className="w-8 h-8 text-primary" />
+                          <div className="text-left">
+                            <p className="font-medium text-foreground">{parcelPhotoFile.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(parcelPhotoFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-2"
+                            onClick={(e) => { e.stopPropagation(); removeParcelPhoto(); }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Camera className="w-8 h-8 mx-auto text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-foreground">Upload a photo of your parcel</p>
+                            <p className="text-xs text-muted-foreground">
+                              JPEG or PNG up to 5MB — this helps verify contents and condition
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {(errors.parcelPhotoName || parcelPhotoError) && (
+                      <p className="text-destructive text-xs">{parcelPhotoError || errors.parcelPhotoName}</p>
+                    )}
+                  </div>
                   <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                     <div className="flex gap-3">
                       <Checkbox
