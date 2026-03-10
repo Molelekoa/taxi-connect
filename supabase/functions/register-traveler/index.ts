@@ -192,30 +192,36 @@ Deno.serve(async (req) => {
     // Files — validate and upload with server-side checks
     const idCopyFile = formData.get("idCopy") as File | null;
     const licenseCopyFile = formData.get("licenseCopy") as File | null;
+    const vehiclePhotoFile = formData.get("vehiclePhoto") as File | null;
+    const licenseDiskFile = formData.get("licenseDisk") as File | null;
+    const proofOfResidenceFile = formData.get("proofOfResidence") as File | null;
 
     let idCopyUrl: string | null = null;
     let licenseCopyUrl: string | null = null;
+    let vehiclePhotoUrl: string | null = null;
+    let licenseDiskUrl: string | null = null;
+    let proofOfResidenceUrl: string | null = null;
 
-    if (idCopyFile && idCopyFile.size > 0) {
-      const result = await validateAndUploadFile(supabaseAdmin, idCopyFile, user.id, "id-copy");
-      if (result.error) {
-        return new Response(JSON.stringify({ error: result.error }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      idCopyUrl = result.path;
-    }
+    // Upload all files
+    const fileUploads: Array<{ file: File | null; prefix: string; setter: (v: string | null) => void }> = [
+      { file: idCopyFile, prefix: "id-copy", setter: (v) => { idCopyUrl = v; } },
+      { file: licenseCopyFile, prefix: "license-copy", setter: (v) => { licenseCopyUrl = v; } },
+      { file: vehiclePhotoFile, prefix: "vehicle-photo", setter: (v) => { vehiclePhotoUrl = v; } },
+      { file: licenseDiskFile, prefix: "license-disk", setter: (v) => { licenseDiskUrl = v; } },
+      { file: proofOfResidenceFile, prefix: "proof-of-residence", setter: (v) => { proofOfResidenceUrl = v; } },
+    ];
 
-    if (licenseCopyFile && licenseCopyFile.size > 0) {
-      const result = await validateAndUploadFile(supabaseAdmin, licenseCopyFile, user.id, "license-copy");
-      if (result.error) {
-        return new Response(JSON.stringify({ error: result.error }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    for (const { file, prefix, setter } of fileUploads) {
+      if (file && file.size > 0) {
+        const result = await validateAndUploadFile(supabaseAdmin, file, user.id, prefix);
+        if (result.error) {
+          return new Response(JSON.stringify({ error: result.error }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        setter(result.path);
       }
-      licenseCopyUrl = result.path;
     }
 
     // Update profile
@@ -251,6 +257,9 @@ Deno.serve(async (req) => {
         no_criminal_record: noCriminalRecord,
         id_copy_url: idCopyUrl,
         license_copy_url: licenseCopyUrl,
+        vehicle_photo_url: vehiclePhotoUrl,
+        license_disk_url: licenseDiskUrl,
+        proof_of_residence_url: proofOfResidenceUrl,
         vehicle_ownership: vehicleOwnership,
         vehicle_type: vehicleType,
         vehicle_registration: vehicleRegistration,

@@ -78,6 +78,7 @@ const Step3Vehicle = ({ formData, updateFormData, errors, setFile }: Step3Props)
         proofOfResidence: "proofOfResidenceUploaded",
       };
       updateFormData({ [fieldMap[key]]: file.name });
+      setFile?.(key, file);
     }
     setUploadErrors(newErrors);
   };
