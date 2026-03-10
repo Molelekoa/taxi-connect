@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CarrierFormData } from "./types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Car, Shield, Scale } from "lucide-react";
+import { Car, Shield, Scale, Upload, FileCheck, AlertCircle, Camera, Home } from "lucide-react";
 
 interface Step3Props {
   formData: CarrierFormData;
@@ -18,7 +19,19 @@ interface Step3Props {
   errors: Record<string, string>;
 }
 
+const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+const MAX_SIZE = 5 * 1024 * 1024;
+
+type UploadKey = "vehiclePhoto" | "licenseDisk" | "proofOfResidence";
+
 const Step3Vehicle = ({ formData, updateFormData, errors }: Step3Props) => {
+  const [files, setFiles] = useState<Record<UploadKey, File | null>>({
+    vehiclePhoto: null,
+    licenseDisk: null,
+    proofOfResidence: null,
+  });
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
+
   const vehicleTypes = [
     { value: "motorcycle", label: "Motorcycle/Scooter" },
     { value: "hatchback", label: "Hatchback" },
@@ -39,6 +52,95 @@ const Step3Vehicle = ({ formData, updateFormData, errors }: Step3Props) => {
 
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 25 }, (_, i) => currentYear - i);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, key: UploadKey) => {
+    const file = e.target.files?.[0];
+    const newErrors = { ...uploadErrors };
+    delete newErrors[key];
+
+    if (file) {
+      if (file.size > MAX_SIZE) {
+        newErrors[key] = "File size must be less than 5MB";
+        setUploadErrors(newErrors);
+        return;
+      }
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        newErrors[key] = "Only PDF, JPEG, and PNG files are allowed";
+        setUploadErrors(newErrors);
+        return;
+      }
+
+      setFiles(prev => ({ ...prev, [key]: file }));
+      const fieldMap: Record<UploadKey, keyof CarrierFormData> = {
+        vehiclePhoto: "vehiclePhotoUploaded",
+        licenseDisk: "licenseDiskUploaded",
+        proofOfResidence: "proofOfResidenceUploaded",
+      };
+      updateFormData({ [fieldMap[key]]: file.name });
+    }
+    setUploadErrors(newErrors);
+  };
+
+  const renderUploadBox = (
+    key: UploadKey,
+    label: string,
+    hint: string,
+    icon: React.ReactNode,
+    errorKey: string,
+  ) => {
+    const file = files[key];
+    const hasError = errors[errorKey] || uploadErrors[key];
+
+    return (
+      <div>
+        <Label className="mb-2 block flex items-center gap-2">
+          {icon}
+          {label} *
+        </Label>
+        <div
+          className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all ${
+            file
+              ? "border-primary bg-primary/5"
+              : hasError
+              ? "border-destructive bg-destructive/5"
+              : "border-border hover:border-primary/50"
+          }`}
+        >
+          <input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={(e) => handleFileUpload(e, key)}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+          {file ? (
+            <div className="flex items-center justify-center gap-3">
+              <FileCheck className="w-8 h-8 text-primary" />
+              <div className="text-left">
+                <p className="font-medium text-foreground">{file.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <Upload className="w-8 h-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                <span className="text-primary font-medium">Click to upload</span> or drag and drop
+              </p>
+              <p className="text-xs text-muted-foreground">{hint}</p>
+            </div>
+          )}
+        </div>
+        {(errors[errorKey] || uploadErrors[key]) && (
+          <div className="flex items-center gap-2 mt-2 text-destructive">
+            <AlertCircle className="w-4 h-4" />
+            <p className="text-sm">{errors[errorKey] || uploadErrors[key]}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -244,6 +346,41 @@ const Step3Vehicle = ({ formData, updateFormData, errors }: Step3Props) => {
         </div>
         {errors.hasValidInsurance && (
           <p className="text-sm text-destructive mt-2">{errors.hasValidInsurance}</p>
+        )}
+      </div>
+
+      {/* Document Uploads */}
+      <div className="space-y-4">
+        <h3 className="font-display font-semibold text-lg text-foreground border-b border-border pb-2 flex items-center gap-2">
+          <Camera className="w-5 h-5 text-primary" />
+          Vehicle Verification Documents
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Upload the following documents so our team can verify your vehicle and identity.
+        </p>
+
+        {renderUploadBox(
+          "vehiclePhoto",
+          "Vehicle Photo",
+          "Upload a clear photo of your vehicle (JPEG or PNG, max 5MB)",
+          <Camera className="w-4 h-4 text-muted-foreground" />,
+          "vehiclePhotoUploaded",
+        )}
+
+        {renderUploadBox(
+          "licenseDisk",
+          "License Disk on Windscreen",
+          "Photo of the license disk visible on the windscreen (JPEG or PNG, max 5MB)",
+          <Car className="w-4 h-4 text-muted-foreground" />,
+          "licenseDiskUploaded",
+        )}
+
+        {renderUploadBox(
+          "proofOfResidence",
+          "Proof of Residence",
+          "Utility bill, bank statement, or similar (PDF, JPEG, or PNG, max 5MB)",
+          <Home className="w-4 h-4 text-muted-foreground" />,
+          "proofOfResidenceUploaded",
         )}
       </div>
     </div>

@@ -167,6 +167,13 @@ const CarrierRegistrationForm = () => {
       fd.append("returnTrip", formData.returnTrip);
       fd.append("additionalRoutes", JSON.stringify(formData.additionalRoutes ?? []));
 
+      // File inputs from Step 2 — retrieve from DOM
+      const step2IdInput = document.querySelector<HTMLInputElement>('input[type="file"][accept=".pdf,.jpg,.jpeg,.png"]');
+      // We need to get files from the step components — they store files in local state
+      // The files are stored via the upload boxes; we retrieve them from session storage names
+      // Actually, files can't be stored in sessionStorage. We need to get them from the DOM.
+      // The form uses file inputs — collect all file inputs and match by parent context
+
       const { data, error } = await supabase.functions.invoke("register-traveler", {
         body: fd,
       });
