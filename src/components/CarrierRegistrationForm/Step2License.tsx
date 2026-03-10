@@ -68,9 +68,11 @@ const Step2License = ({ formData, updateFormData, errors, setFile }: Step2Props)
       if (type === "id") {
         setIdFile(file);
         updateFormData({ idCopyUploaded: file.name });
+        setFile?.("idCopy", file);
       } else {
         setLicenseFile(file);
         updateFormData({ licenseCopyUploaded: file.name });
+        setFile?.("licenseCopy", file);
       }
     }
 
