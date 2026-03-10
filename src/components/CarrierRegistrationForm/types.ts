@@ -42,6 +42,9 @@ export const step3Schema = z.object({
   hasValidInsurance: z.boolean().refine((val) => val === true, {
     message: "You must confirm valid vehicle insurance",
   }),
+  vehiclePhotoUploaded: z.string().min(1, "Vehicle photo is required"),
+  licenseDiskUploaded: z.string().min(1, "License disk photo is required"),
+  proofOfResidenceUploaded: z.string().min(1, "Proof of residence is required"),
 });
 
 // Step 4: Operations & Preferences
