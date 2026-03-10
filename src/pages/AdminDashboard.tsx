@@ -111,6 +111,9 @@ type TravelerProfile = {
   emergency_contact_relation: string | null;
   id_copy_url: string | null;
   license_copy_url: string | null;
+  vehicle_photo_url: string | null;
+  license_disk_url: string | null;
+  proof_of_residence_url: string | null;
   traveler_routes: TravelerRoute[];
 };
 
@@ -335,6 +338,9 @@ const TravelerSheet = ({ traveler, profile, open, onClose }: { traveler: Travele
           <Section title="Documents">
             <DocumentLink storagePath={traveler.id_copy_url} label="ID Copy" />
             <DocumentLink storagePath={traveler.license_copy_url} label="License Copy" />
+            <DocumentLink storagePath={traveler.vehicle_photo_url ?? null} label="Vehicle Photo" />
+            <DocumentLink storagePath={traveler.license_disk_url ?? null} label="License Disk" />
+            <DocumentLink storagePath={traveler.proof_of_residence_url ?? null} label="Proof of Residence" />
           </Section>
         </div>
       )}
@@ -903,6 +909,24 @@ const AdminDashboard = () => {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from("traveler_profiles").update({ status } as any).eq("id", id);
       if (error) throw error;
+
+      // Send notification on approval or rejection
+      if (status === "approved" || status === "rejected") {
+        const tp = travelerProfiles.find(t => t.id === id);
+        if (tp) {
+          const content = status === "approved"
+            ? "Your traveler application has been approved! You can now view and claim parcels matching your routes."
+            : "Your traveler application has been reviewed and was not approved at this time. Please contact support for more information.";
+          const { error: notifError } = await supabase.from("notifications").insert({
+            user_id: tp.profile_id,
+            type: status === "approved" ? "traveler_approved" : "traveler_rejected",
+            content,
+          } as any);
+          if (notifError) {
+            console.error("Failed to insert notification:", notifError);
+          }
+        }
+      }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-traveler-profiles"] }); toast({ title: "Traveler status updated" }); },
     onError: () => toast({ title: "Failed to update traveler status", variant: "destructive" }),

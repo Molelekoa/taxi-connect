@@ -3,7 +3,7 @@ import { useLocation, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { useParcelPaymentHandler } from "@/hooks/useParcelPaymentHandler";
 import { motion } from "framer-motion";
-import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X, ShieldCheck, ExternalLink, CalendarIcon } from "lucide-react";
+import { Package, CheckCircle, MapPin, Radio, AlertTriangle, ArrowLeft, User, Truck, Upload, FileCheck, Scale, X, ShieldCheck, ExternalLink, CalendarIcon, Camera } from "lucide-react";
 import LocationInput from "@/components/LocationInput";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -64,6 +64,7 @@ const parcelBookingSchema = z.object({
   legalDeclarationAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the legal declaration to proceed" }),
   }),
+  parcelPhotoName: z.string().min(1, "Please upload a photo of your parcel"),
 });
 
 // Lighter schema for verified senders — no contact details or ID/legal required
@@ -93,6 +94,7 @@ const verifiedSenderSchema = z.object({
   }),
   idDocumentName: z.string().optional(),
   legalDeclarationAccepted: z.boolean().optional(),
+  parcelPhotoName: z.string().min(1, "Please upload a photo of your parcel"),
 });
 
 type FormData = z.infer<typeof parcelBookingSchema>;
@@ -178,6 +180,7 @@ const SmallParcelBooking = () => {
     contentsDeclarationAccepted: false,
     idDocumentName: "",
     legalDeclarationAccepted: false,
+    parcelPhotoName: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -213,6 +216,11 @@ const SmallParcelBooking = () => {
   const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
   const [idUploadError, setIdUploadError] = useState<string>("");
   const idInputRef = useRef<HTMLInputElement>(null);
+
+  // Parcel Photo upload state
+  const [parcelPhotoFile, setParcelPhotoFile] = useState<File | null>(null);
+  const [parcelPhotoError, setParcelPhotoError] = useState<string>("");
+  const parcelPhotoInputRef = useRef<HTMLInputElement>(null);
   
   // Track if we should use the pre-calculated price from the estimator
   const [usePrefilledPrice, setUsePrefilledPrice] = useState(
@@ -340,6 +348,37 @@ const SmallParcelBooking = () => {
     }
   };
 
+  // Parcel Photo upload handler
+  const handleParcelPhotoUpload = (file: File | null) => {
+    setParcelPhotoError("");
+    if (!file) {
+      setParcelPhotoFile(null);
+      setFormData(prev => ({ ...prev, parcelPhotoName: "" }));
+      return;
+    }
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setParcelPhotoError("Please upload a JPEG or PNG image");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setParcelPhotoError("File size must be less than 5MB");
+      return;
+    }
+    setParcelPhotoFile(file);
+    setFormData(prev => ({ ...prev, parcelPhotoName: file.name }));
+    if (errors.parcelPhotoName) {
+      setErrors(prev => ({ ...prev, parcelPhotoName: "" }));
+    }
+  };
+
+  const removeParcelPhoto = () => {
+    setParcelPhotoFile(null);
+    setFormData(prev => ({ ...prev, parcelPhotoName: "" }));
+    if (parcelPhotoInputRef.current) {
+      parcelPhotoInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsSubmitting(true);
@@ -377,6 +416,24 @@ const SmallParcelBooking = () => {
         }
       }
 
+      // Upload parcel photo via edge function
+      let parcelPhotoUrl: string | null = null;
+      if (parcelPhotoFile) {
+        const photoForm = new FormData();
+        photoForm.append("file", parcelPhotoFile);
+        photoForm.append("purpose", "parcel-photo");
+
+        const { data: photoResult, error: photoError } = await supabase.functions.invoke("upload-document", {
+          body: photoForm,
+        });
+
+        if (photoError || !photoResult?.success) {
+          toast({ title: "Failed to upload parcel photo", description: photoError?.message || "Upload failed", variant: "destructive" });
+          return;
+        }
+        parcelPhotoUrl = photoResult.filePath || null;
+      }
+
       // Get selected band info for weight midpoint
       const selectedBand = WEIGHT_BANDS.find(b => b.id === formData.weightBand);
 
@@ -397,6 +454,7 @@ const SmallParcelBooking = () => {
         payment_status: 'unpaid',
         include_tracking: formData.includeTracking || false,
         description: formData.description || null,
+        photo_url: parcelPhotoUrl,
         sender_name: isVerifiedSender ? (profileData?.full_name || '') : (formData.contactName || ''),
         sender_email: isVerifiedSender ? (profileData?.email || '') : (formData.email || ''),
         sender_phone: isVerifiedSender ? (profileData?.phone || '') : (formData.phone || ''),
@@ -1027,7 +1085,62 @@ const SmallParcelBooking = () => {
                     </p>
                   </div>
 
-                  {/* Contents Declaration */}
+                  {/* Parcel Photo Upload */}
+                  <div className="space-y-2">
+                    <Label>Parcel Photo *</Label>
+                    <div
+                      className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                        parcelPhotoFile
+                          ? 'border-primary bg-primary/5'
+                          : errors.parcelPhotoName
+                            ? 'border-destructive bg-destructive/5'
+                            : 'border-border hover:border-primary/50'
+                      }`}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) handleParcelPhotoUpload(file); }}
+                    >
+                      <input
+                        ref={parcelPhotoInputRef}
+                        type="file"
+                        accept=".jpg,.jpeg,.png"
+                        onChange={(e) => { const file = e.target.files?.[0]; if (file) handleParcelPhotoUpload(file); }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      {parcelPhotoFile ? (
+                        <div className="flex items-center justify-center gap-3">
+                          <FileCheck className="w-8 h-8 text-primary" />
+                          <div className="text-left">
+                            <p className="font-medium text-foreground">{parcelPhotoFile.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(parcelPhotoFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-2"
+                            onClick={(e) => { e.stopPropagation(); removeParcelPhoto(); }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Camera className="w-8 h-8 mx-auto text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-foreground">Upload a photo of your parcel</p>
+                            <p className="text-xs text-muted-foreground">
+                              JPEG or PNG up to 5MB — this helps verify contents and condition
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {(errors.parcelPhotoName || parcelPhotoError) && (
+                      <p className="text-destructive text-xs">{parcelPhotoError || errors.parcelPhotoName}</p>
+                    )}
+                  </div>
                   <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                     <div className="flex gap-3">
                       <Checkbox

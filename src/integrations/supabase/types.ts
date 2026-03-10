@@ -547,12 +547,14 @@ export type Database = {
           id: string
           id_copy_url: string | null
           license_copy_url: string | null
+          license_disk_url: string | null
           license_type: string | null
           max_load_capacity: string | null
           min_load_capacity: string | null
           no_criminal_record: boolean | null
           parcels_per_trip: string | null
           profile_id: string
+          proof_of_residence_url: string | null
           referral_source: string | null
           schedule_type: string | null
           status: string
@@ -561,6 +563,7 @@ export type Database = {
           vehicle_colour: string | null
           vehicle_model: string | null
           vehicle_ownership: string | null
+          vehicle_photo_url: string | null
           vehicle_registration: string | null
           vehicle_type: string | null
           vehicle_year: string | null
@@ -579,12 +582,14 @@ export type Database = {
           id?: string
           id_copy_url?: string | null
           license_copy_url?: string | null
+          license_disk_url?: string | null
           license_type?: string | null
           max_load_capacity?: string | null
           min_load_capacity?: string | null
           no_criminal_record?: boolean | null
           parcels_per_trip?: string | null
           profile_id: string
+          proof_of_residence_url?: string | null
           referral_source?: string | null
           schedule_type?: string | null
           status?: string
@@ -593,6 +598,7 @@ export type Database = {
           vehicle_colour?: string | null
           vehicle_model?: string | null
           vehicle_ownership?: string | null
+          vehicle_photo_url?: string | null
           vehicle_registration?: string | null
           vehicle_type?: string | null
           vehicle_year?: string | null
@@ -611,12 +617,14 @@ export type Database = {
           id?: string
           id_copy_url?: string | null
           license_copy_url?: string | null
+          license_disk_url?: string | null
           license_type?: string | null
           max_load_capacity?: string | null
           min_load_capacity?: string | null
           no_criminal_record?: boolean | null
           parcels_per_trip?: string | null
           profile_id?: string
+          proof_of_residence_url?: string | null
           referral_source?: string | null
           schedule_type?: string | null
           status?: string
@@ -625,6 +633,7 @@ export type Database = {
           vehicle_colour?: string | null
           vehicle_model?: string | null
           vehicle_ownership?: string | null
+          vehicle_photo_url?: string | null
           vehicle_registration?: string | null
           vehicle_type?: string | null
           vehicle_year?: string | null

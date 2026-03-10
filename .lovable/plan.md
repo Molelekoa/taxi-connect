@@ -1,127 +1,43 @@
+# Plan: Fix Traveler Dashboard Display & Admin Notification Issues
 
+## Problems Identified
 
-# Plan: Enhanced Traveler Verification, Parcel Photo Upload, and Approval Notifications
+1. **Traveler Dashboard cards lack detail** — the screenshots confirm parcels show minimal info. The Browse and Matched tabs need prominent suburb, addresses, and pickup dates. Sender/recipient details and weight band must be hidden until after acceptance.
+2. **Admin status notifications silently fail** — The `notifications` table RLS policy "Admins can insert notifications" is **RESTRICTIVE** (not PERMISSIVE). PostgreSQL requires at least one PERMISSIVE policy to pass for a given command. With only a RESTRICTIVE INSERT policy and no PERMISSIVE one, all inserts are denied. The admin dashboard code doesn't throw on notification insert failure, so the status update succeeds but the notification is silently swallowed.
 
-## Summary
+## Changes
 
-This plan addresses four requirements:
-1. **New traveler document uploads**: vehicle photo, license disk photo, proof of residence
-2. **Admin document viewing**: all uploaded docs visible in admin traveler review
-3. **Traveler approval notification**: when admin approves, send in-app notification so traveler knows they can view parcels
-4. **Sender parcel photo**: require senders to upload a photo of their parcel before booking
+### 1. Database Migration — Fix notifications INSERT RLS
 
----
+Drop the existing RESTRICTIVE admin insert policy and recreate it as **PERMISSIVE**. This allows admin-role users to actually insert notifications.
 
-## 1. Database Migration
+### 2. TravelerDashboard.tsx — Restructure parcel cards
 
-Add three new columns to `traveler_profiles`:
+**Browse & Matched tabs (pre-acceptance):** Show:
 
-```sql
-ALTER TABLE traveler_profiles
-  ADD COLUMN vehicle_photo_url text,
-  ADD COLUMN license_disk_url text,
-  ADD COLUMN proof_of_residence_url text;
-```
+- Route (pickup_location → dropoff_location)
+- Suburb
+- Pickup address & delivery address
+- Pickup window (earliest – latest)
+- Payout estimate
+- Description/dimensions  
+Weight Band
 
-Add `parcel_photo_url` column to `parcels` (already has a `photo_url` column but it's unused — we'll use that existing column instead if it exists, which it does).
+Hide: sender name/phone, recipient name/phone.
 
-**Decision**: The `parcels` table already has a `photo_url` column. We'll use that for the parcel photo upload. No parcels migration needed.
+**Carrying tab (accepted):** Show all of the above PLUS:
 
----
+- Sender name & phone
+- Recipient name & phone
 
-## 2. Traveler Registration Form Changes
+**Delivered tab (accepted):** Same as Carrying — full details visible.
 
-### `types.ts`
-Add three new fields to the form schema and initial data:
-- `vehiclePhotoUploaded: z.string().min(1, "Vehicle photo is required")`
-- `licenseDiskUploaded: z.string().min(1, "License disk photo is required")`
-- `proofOfResidenceUploaded: z.string().min(1, "Proof of residence is required")`
+### 3. AdminDashboard.tsx — Handle notification insert errors
 
-### `Step3Vehicle.tsx`
-Add three new upload boxes (reusing the same upload pattern from Step2License):
-- **Vehicle Photo** — "Upload a clear photo of your vehicle"
-- **License Disk on Window** — "Upload a photo of the license disk visible on the windscreen"
-- **Proof of Residence** — "Upload a utility bill, bank statement, or similar document"
-
-### `index.tsx` (CarrierRegistrationForm)
-Append the three new files to the FormData before invoking `register-traveler`:
-```
-fd.append("vehiclePhoto", vehiclePhotoFile)
-fd.append("licenseDisk", licenseDiskFile)
-fd.append("proofOfResidence", proofOfResidenceFile)
-```
-
-### `register-traveler/index.ts` (Edge Function)
-- Accept and validate the three new file uploads using `validateAndUploadFile`
-- Store resulting paths in the new `traveler_profiles` columns
-
----
-
-## 3. Admin Dashboard — View New Documents
-
-### `AdminDashboard.tsx`
-
-**TravelerProfile type**: Add `vehicle_photo_url`, `license_disk_url`, `proof_of_residence_url`.
-
-**TravelerSheet component**: Add three new `DocumentLink` entries in the Documents section:
-- Vehicle Photo
-- License Disk
-- Proof of Residence
-
----
-
-## 4. Traveler Approval Notification
-
-### `AdminDashboard.tsx` — `updateTravelerStatus` mutation
-
-When status changes to `"approved"`, insert a notification for the traveler:
-```typescript
-// After successful status update, insert notification
-const tp = travelerProfiles.find(t => t.id === id);
-if (tp && status === "approved") {
-  await supabase.from("notifications").insert({
-    user_id: tp.profile_id,
-    type: "traveler_approved",
-    content: "Your traveler application has been approved! You can now view and claim parcels matching your routes."
-  });
-}
-```
-
-**Note**: The existing `notifications` INSERT RLS policy is RESTRICTIVE with no PERMISSIVE policy, so inserts will fail. A migration is needed to fix this (drop restrictive, add permissive):
-
-```sql
-DROP POLICY "Admins can insert notifications" ON notifications;
-CREATE POLICY "Admins can insert notifications" ON notifications
-  FOR INSERT TO authenticated
-  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
-```
-
-Similarly add a notification for rejection with appropriate messaging.
-
----
-
-## 5. Sender Parcel Photo Upload
-
-### `SmallParcelBooking.tsx`
-
-Add a mandatory **"Parcel Photo"** upload field to the booking form:
-- File input accepting JPEG/PNG (max 5MB)
-- Required validation: `parcelPhotoName: z.string().min(1, "Please upload a photo of your parcel")`
-- On submission, upload the file via the existing `upload-document` edge function or directly to storage, then store the URL in the `photo_url` column of the `parcels` table insert
-
-The photo will be stored in the existing `documents` storage bucket under `{userId}/parcel-photo-{timestamp}.{ext}`.
-
----
+Add error checking on the notification insert so failures are surfaced rather than swallowed silently.
 
 ## Files Modified
 
-| File | Change |
-|---|---|
-| New migration SQL | Add 3 columns to `traveler_profiles`; fix notifications INSERT RLS |
-| `src/components/CarrierRegistrationForm/types.ts` | Add 3 new upload fields |
-| `src/components/CarrierRegistrationForm/Step3Vehicle.tsx` | Add 3 upload boxes |
-| `src/components/CarrierRegistrationForm/index.tsx` | Append 3 files to FormData |
-| `supabase/functions/register-traveler/index.ts` | Handle 3 new file uploads |
-| `src/pages/AdminDashboard.tsx` | Show new docs in TravelerSheet; send notification on approval |
-| `src/pages/SmallParcelBooking.tsx` | Add mandatory parcel photo upload |
-
+- New migration SQL — fix notifications INSERT RLS policy
+- `src/pages/TravelerDashboard.tsx` — restructure all four tab card layouts
+- `src/pages/AdminDashboard.tsx` — add error handling on notification insert
