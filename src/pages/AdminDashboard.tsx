@@ -338,6 +338,9 @@ const TravelerSheet = ({ traveler, profile, open, onClose }: { traveler: Travele
           <Section title="Documents">
             <DocumentLink storagePath={traveler.id_copy_url} label="ID Copy" />
             <DocumentLink storagePath={traveler.license_copy_url} label="License Copy" />
+            <DocumentLink storagePath={traveler.vehicle_photo_url ?? null} label="Vehicle Photo" />
+            <DocumentLink storagePath={traveler.license_disk_url ?? null} label="License Disk" />
+            <DocumentLink storagePath={traveler.proof_of_residence_url ?? null} label="Proof of Residence" />
           </Section>
         </div>
       )}
