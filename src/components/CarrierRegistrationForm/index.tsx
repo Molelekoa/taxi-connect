@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -32,6 +32,19 @@ const CarrierRegistrationForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+
+  // File refs — stored here so they survive step transitions
+  const filesRef = useRef<Record<string, File | null>>({
+    idCopy: null,
+    licenseCopy: null,
+    vehiclePhoto: null,
+    licenseDisk: null,
+    proofOfResidence: null,
+  });
+
+  const setFile = useCallback((key: string, file: File | null) => {
+    filesRef.current[key] = file;
+  }, []);
 
   // Scroll to top of form when step changes
   useEffect(() => {
@@ -167,12 +180,14 @@ const CarrierRegistrationForm = () => {
       fd.append("returnTrip", formData.returnTrip);
       fd.append("additionalRoutes", JSON.stringify(formData.additionalRoutes ?? []));
 
-      // File inputs from Step 2 — retrieve from DOM
-      const step2IdInput = document.querySelector<HTMLInputElement>('input[type="file"][accept=".pdf,.jpg,.jpeg,.png"]');
-      // We need to get files from the step components — they store files in local state
-      // The files are stored via the upload boxes; we retrieve them from session storage names
-      // Actually, files can't be stored in sessionStorage. We need to get them from the DOM.
-      // The form uses file inputs — collect all file inputs and match by parent context
+      // Append files
+      const fileKeys = ["idCopy", "licenseCopy", "vehiclePhoto", "licenseDisk", "proofOfResidence"];
+      for (const key of fileKeys) {
+        const file = filesRef.current[key];
+        if (file) {
+          fd.append(key, file);
+        }
+      }
 
       const { data, error } = await supabase.functions.invoke("register-traveler", {
         body: fd,
@@ -204,9 +219,9 @@ const CarrierRegistrationForm = () => {
       case 1:
         return <Step1Personal {...stepProps} />;
       case 2:
-        return <Step2License {...stepProps} />;
+        return <Step2License {...stepProps} setFile={setFile} />;
       case 3:
-        return <Step3Vehicle {...stepProps} />;
+        return <Step3Vehicle {...stepProps} setFile={setFile} />;
       case 4:
         return <Step4Operations {...stepProps} />;
       case 5:
