@@ -348,6 +348,37 @@ const SmallParcelBooking = () => {
     }
   };
 
+  // Parcel Photo upload handler
+  const handleParcelPhotoUpload = (file: File | null) => {
+    setParcelPhotoError("");
+    if (!file) {
+      setParcelPhotoFile(null);
+      setFormData(prev => ({ ...prev, parcelPhotoName: "" }));
+      return;
+    }
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setParcelPhotoError("Please upload a JPEG or PNG image");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setParcelPhotoError("File size must be less than 5MB");
+      return;
+    }
+    setParcelPhotoFile(file);
+    setFormData(prev => ({ ...prev, parcelPhotoName: file.name }));
+    if (errors.parcelPhotoName) {
+      setErrors(prev => ({ ...prev, parcelPhotoName: "" }));
+    }
+  };
+
+  const removeParcelPhoto = () => {
+    setParcelPhotoFile(null);
+    setFormData(prev => ({ ...prev, parcelPhotoName: "" }));
+    if (parcelPhotoInputRef.current) {
+      parcelPhotoInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsSubmitting(true);
