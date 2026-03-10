@@ -216,6 +216,11 @@ const SmallParcelBooking = () => {
   const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
   const [idUploadError, setIdUploadError] = useState<string>("");
   const idInputRef = useRef<HTMLInputElement>(null);
+
+  // Parcel Photo upload state
+  const [parcelPhotoFile, setParcelPhotoFile] = useState<File | null>(null);
+  const [parcelPhotoError, setParcelPhotoError] = useState<string>("");
+  const parcelPhotoInputRef = useRef<HTMLInputElement>(null);
   
   // Track if we should use the pre-calculated price from the estimator
   const [usePrefilledPrice, setUsePrefilledPrice] = useState(
