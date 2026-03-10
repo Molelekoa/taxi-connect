@@ -180,6 +180,7 @@ const SmallParcelBooking = () => {
     contentsDeclarationAccepted: false,
     idDocumentName: "",
     legalDeclarationAccepted: false,
+    parcelPhotoName: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
