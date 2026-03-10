@@ -431,7 +431,7 @@ const SmallParcelBooking = () => {
           toast({ title: "Failed to upload parcel photo", description: photoError?.message || "Upload failed", variant: "destructive" });
           return;
         }
-        parcelPhotoUrl = photoResult.path || null;
+        parcelPhotoUrl = photoResult.filePath || null;
       }
 
       // Get selected band info for weight midpoint
