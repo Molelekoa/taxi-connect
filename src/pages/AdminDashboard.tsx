@@ -176,7 +176,7 @@ const CopyButton = ({ text }: { text: string | null }) => {
 const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; label: string }) => {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
 
   const isPdf = storagePath?.toLowerCase().endsWith(".pdf");
@@ -188,15 +188,22 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
       return;
     }
     setLoading(true);
-    setError(false);
-    const { data, error: err } = await supabase.storage
-      .from("documents")
-      .createSignedUrl(storagePath, 3600);
-    setLoading(false);
-    if (err || !data?.signedUrl) {
-      setError(true);
-    } else {
-      setSignedUrl(data.signedUrl);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(storagePath, 3600);
+      if (err || !data?.signedUrl) {
+        console.error(`[DocumentPhoto] Failed to sign "${storagePath}":`, err);
+        setError(err?.message ?? "Could not generate signed URL");
+      } else {
+        setSignedUrl(data.signedUrl);
+      }
+    } catch (e) {
+      console.error(`[DocumentPhoto] Unexpected error for "${storagePath}":`, e);
+      setError("Unexpected error");
+    } finally {
+      setLoading(false);
     }
   }, [storagePath]);
 
@@ -234,31 +241,44 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
         <p className="text-xs font-medium text-foreground flex items-center gap-1">
           <FileText className="w-3 h-3" /> {label}
         </p>
-        <button onClick={generateUrl} className="text-xs text-destructive hover:underline">
-          Failed to load — retry
+        <p className="text-xs text-destructive">{error}</p>
+        <button onClick={generateUrl} className="text-xs text-primary hover:underline">
+          Retry
         </button>
       </div>
     );
   }
 
-  // PDF — show as a link
+  // PDF — inline preview in dialog
   if (isPdf) {
     return (
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-foreground flex items-center gap-1">
-          <FileText className="w-3 h-3" /> {label}
-        </p>
-        <a
-          href={signedUrl ?? "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-primary hover:underline text-xs"
-        >
-          <FileText className="w-3 h-3" />
-          View Document
-          <ExternalLink className="w-3 h-3" />
-        </a>
-      </div>
+      <>
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-foreground flex items-center gap-1">
+            <FileText className="w-3 h-3" /> {label}
+          </p>
+          <button
+            onClick={() => setFullscreen(true)}
+            className="flex items-center gap-1 text-primary hover:underline text-xs cursor-pointer"
+          >
+            <Eye className="w-3 h-3" />
+            View PDF
+          </button>
+        </div>
+        <Dialog open={fullscreen} onOpenChange={setFullscreen}>
+          <DialogContent className="max-w-4xl h-[80vh] p-2">
+            <DialogHeader>
+              <DialogTitle>{label}</DialogTitle>
+              <DialogDescription className="sr-only">Preview of {label}</DialogDescription>
+            </DialogHeader>
+            <iframe
+              src={signedUrl ?? ""}
+              title={label}
+              className="w-full h-full rounded-lg border-0"
+            />
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
@@ -281,6 +301,7 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
         <DialogContent className="max-w-3xl p-2">
           <DialogHeader>
             <DialogTitle>{label}</DialogTitle>
+            <DialogDescription className="sr-only">Full-size view of {label}</DialogDescription>
           </DialogHeader>
           <img src={signedUrl ?? ""} alt={label} className="w-full rounded-lg" loading="lazy" />
         </DialogContent>
