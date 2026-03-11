@@ -313,7 +313,7 @@ const TravelerDashboard = () => {
         setCollectionGeoLoading(false);
       },
       (err) => {
-        setCollectionGeoError(err.message || "Failed to get location.");
+        setCollectionGeoError(getLocationErrorMessage(err));
         setCollectionGeoLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
