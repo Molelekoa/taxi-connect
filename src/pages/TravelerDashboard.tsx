@@ -233,6 +233,13 @@ const TravelerDashboard = () => {
     }
   };
 
+  const getLocationErrorMessage = (err: GeolocationPositionError) => {
+    if (err.code === 1) {
+      return "Location access denied. On iPhone: go to Settings → Safari → Location → set to \"Allow\". Then reload this page.";
+    }
+    return err.message || "Failed to get location.";
+  };
+
   const handleTagLocation = () => {
     if (!navigator.geolocation) {
       setGeoError("Geolocation is not supported by your browser.");
@@ -246,7 +253,7 @@ const TravelerDashboard = () => {
         setGeoLoading(false);
       },
       (err) => {
-        setGeoError(err.message || "Failed to get location.");
+        setGeoError(getLocationErrorMessage(err));
         setGeoLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
