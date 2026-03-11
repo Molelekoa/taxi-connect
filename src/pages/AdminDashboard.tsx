@@ -380,11 +380,13 @@ const TravelerSheet = ({ traveler, profile, open, onClose }: { traveler: Travele
             <Row label="Phone"><CopyButton text={traveler.emergency_contact_phone ?? null} /></Row>
           </Section>
           <Section title="Documents">
-            <DocumentLink storagePath={traveler.id_copy_url} label="ID Copy" />
-            <DocumentLink storagePath={traveler.license_copy_url} label="License Copy" />
-            <DocumentLink storagePath={traveler.vehicle_photo_url ?? null} label="Vehicle Photo" />
-            <DocumentLink storagePath={traveler.license_disk_url ?? null} label="License Disk" />
-            <DocumentLink storagePath={traveler.proof_of_residence_url ?? null} label="Proof of Residence" />
+            <div className="grid grid-cols-2 gap-3">
+              <DocumentPhoto storagePath={traveler.id_copy_url} label="ID Copy" />
+              <DocumentPhoto storagePath={traveler.license_copy_url} label="License Copy" />
+              <DocumentPhoto storagePath={traveler.vehicle_photo_url ?? null} label="Vehicle Photo" />
+              <DocumentPhoto storagePath={traveler.license_disk_url ?? null} label="License Disk" />
+              <DocumentPhoto storagePath={traveler.proof_of_residence_url ?? null} label="Proof of Residence" />
+            </div>
           </Section>
         </div>
       )}
