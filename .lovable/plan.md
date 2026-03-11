@@ -1,43 +1,44 @@
-# Plan: Fix Traveler Dashboard Display & Admin Notification Issues
 
-## Problems Identified
 
-1. **Traveler Dashboard cards lack detail** — the screenshots confirm parcels show minimal info. The Browse and Matched tabs need prominent suburb, addresses, and pickup dates. Sender/recipient details and weight band must be hidden until after acceptance.
-2. **Admin status notifications silently fail** — The `notifications` table RLS policy "Admins can insert notifications" is **RESTRICTIVE** (not PERMISSIVE). PostgreSQL requires at least one PERMISSIVE policy to pass for a given command. With only a RESTRICTIVE INSERT policy and no PERMISSIVE one, all inserts are denied. The admin dashboard code doesn't throw on notification insert failure, so the status update succeeds but the notification is silently swallowed.
+# Plan: Inline Document Viewer for Admin + iPhone Geolocation Help
+
+## Problem 1: Traveler documents not visually viewable
+
+The `DocumentLink` component renders documents as plain text links ("View Document → external tab"). For image-based documents (vehicle photo, license disk, proof of residence, ID copy, license copy), the admin wants to see inline thumbnails with click-to-fullscreen — the same pattern used by `ProofPhoto` for collection/delivery proof photos.
+
+## Problem 2: iPhone geolocation permission confusion
+
+When `getCurrentPosition` fails on iOS Safari, the error message is a generic string. Users need guidance on how to enable location access in iOS Settings.
+
+---
 
 ## Changes
 
-### 1. Database Migration — Fix notifications INSERT RLS
+### 1. Replace `DocumentLink` with `DocumentPhoto` in TravelerSheet
 
-Drop the existing RESTRICTIVE admin insert policy and recreate it as **PERMISSIVE**. This allows admin-role users to actually insert notifications.
+Create a new `DocumentPhoto` component that:
+- Takes a `storagePath` and `label`
+- Generates a signed URL from the `documents` bucket (same as `DocumentLink`)
+- Renders an inline thumbnail image with click-to-fullscreen dialog (same pattern as `ProofPhoto`)
+- Falls back to "View Document" link for PDFs (detected by `.pdf` extension)
+- Shows "Not uploaded" when path is null
 
-### 2. TravelerDashboard.tsx — Restructure parcel cards
+Replace the Documents section in `TravelerSheet` to use `DocumentPhoto` for all 5 document fields. This gives admins the same visual experience as the Evidence Gallery for collection/delivery proofs.
 
-**Browse & Matched tabs (pre-acceptance):** Show:
+### 2. Add iOS location settings help to geolocation error handling
 
-- Route (pickup_location → dropoff_location)
-- Suburb
-- Pickup address & delivery address
-- Pickup window (earliest – latest)
-- Payout estimate
-- Description/dimensions  
-Weight Band
+In `TravelerDashboard.tsx`, enhance both `handleTagLocation` and `handleTagCollectionLocation` error callbacks:
+- When the error code is `1` (PERMISSION_DENIED), show a detailed help message with iOS-specific instructions: "On iPhone: Settings → Safari → Location → Allow. Then reload this page."
+- Add a persistent info tooltip/note near the "Tag Location" buttons explaining that location access must be enabled in browser settings, specifically mentioning the iOS Safari path.
 
-Hide: sender name/phone, recipient name/phone.
+Import `Tooltip` components and add a small info icon (ℹ️) next to each geotag button that shows the iOS settings path on hover/tap.
 
-**Carrying tab (accepted):** Show all of the above PLUS:
-
-- Sender name & phone
-- Recipient name & phone
-
-**Delivered tab (accepted):** Same as Carrying — full details visible.
-
-### 3. AdminDashboard.tsx — Handle notification insert errors
-
-Add error checking on the notification insert so failures are surfaced rather than swallowed silently.
+---
 
 ## Files Modified
 
-- New migration SQL — fix notifications INSERT RLS policy
-- `src/pages/TravelerDashboard.tsx` — restructure all four tab card layouts
-- `src/pages/AdminDashboard.tsx` — add error handling on notification insert
+| File | Change |
+|---|---|
+| `src/pages/AdminDashboard.tsx` | Add `DocumentPhoto` component; replace `DocumentLink` usage in TravelerSheet Documents section with `DocumentPhoto` for image docs, keep `DocumentLink` for PDFs |
+| `src/pages/TravelerDashboard.tsx` | Enhance geolocation error messages with iOS-specific instructions; add info tooltip near geotag buttons |
+
