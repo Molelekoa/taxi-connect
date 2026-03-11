@@ -816,6 +816,10 @@ const TravelerDashboard = () => {
               <MapPin className="w-4 h-4 text-primary" />
               Tag My Location <span className="text-destructive">*</span>
             </p>
+            <p className="text-xs text-muted-foreground flex items-start gap-1">
+              <Info className="w-3 h-3 shrink-0 mt-0.5" />
+              Ensure location is enabled. On iPhone: Settings → Safari → Location → Allow.
+            </p>
             {geoCoords ? (
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-success shrink-0" />
