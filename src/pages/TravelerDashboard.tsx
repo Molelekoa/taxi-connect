@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, Truck, Search, ShieldAlert, XCircle, Camera, Upload } from "lucide-react";
+import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, Truck, Search, ShieldAlert, XCircle, Camera, Upload, Info } from "lucide-react";
 import DashboardErrorState from "@/components/DashboardErrorState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -233,6 +233,13 @@ const TravelerDashboard = () => {
     }
   };
 
+  const getLocationErrorMessage = (err: GeolocationPositionError) => {
+    if (err.code === 1) {
+      return "Location access denied. On iPhone: go to Settings → Safari → Location → set to \"Allow\". Then reload this page.";
+    }
+    return err.message || "Failed to get location.";
+  };
+
   const handleTagLocation = () => {
     if (!navigator.geolocation) {
       setGeoError("Geolocation is not supported by your browser.");
@@ -246,7 +253,7 @@ const TravelerDashboard = () => {
         setGeoLoading(false);
       },
       (err) => {
-        setGeoError(err.message || "Failed to get location.");
+        setGeoError(getLocationErrorMessage(err));
         setGeoLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -306,7 +313,7 @@ const TravelerDashboard = () => {
         setCollectionGeoLoading(false);
       },
       (err) => {
-        setCollectionGeoError(err.message || "Failed to get location.");
+        setCollectionGeoError(getLocationErrorMessage(err));
         setCollectionGeoLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -809,6 +816,10 @@ const TravelerDashboard = () => {
               <MapPin className="w-4 h-4 text-primary" />
               Tag My Location <span className="text-destructive">*</span>
             </p>
+            <p className="text-xs text-muted-foreground flex items-start gap-1">
+              <Info className="w-3 h-3 shrink-0 mt-0.5" />
+              Ensure location is enabled. On iPhone: Settings → Safari → Location → Allow.
+            </p>
             {geoCoords ? (
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-success shrink-0" />
@@ -882,6 +893,10 @@ const TravelerDashboard = () => {
             <p className="text-sm font-medium text-foreground flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
               Tag Pickup Location <span className="text-destructive">*</span>
+            </p>
+            <p className="text-xs text-muted-foreground flex items-start gap-1">
+              <Info className="w-3 h-3 shrink-0 mt-0.5" />
+              Ensure location is enabled. On iPhone: Settings → Safari → Location → Allow.
             </p>
             {collectionGeoCoords ? (
               <div className="flex items-center gap-2">

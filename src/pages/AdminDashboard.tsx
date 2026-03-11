@@ -171,12 +171,15 @@ const CopyButton = ({ text }: { text: string | null }) => {
   );
 };
 
-// ── Document link with signed URL ──────────────────────────────────────────────
+// ── Document viewer with inline thumbnail + fullscreen ─────────────────────────
 
-const DocumentLink = ({ storagePath, label }: { storagePath: string | null; label: string }) => {
+const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; label: string }) => {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  const isPdf = storagePath?.toLowerCase().endsWith(".pdf");
 
   const generateUrl = useCallback(async () => {
     if (!storagePath) return;
@@ -203,45 +206,86 @@ const DocumentLink = ({ storagePath, label }: { storagePath: string | null; labe
 
   if (!storagePath) {
     return (
-      <Row label={label}>
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-foreground flex items-center gap-1">
+          <FileText className="w-3 h-3" /> {label}
+        </p>
         <span className="text-muted-foreground text-xs">Not uploaded</span>
-      </Row>
+      </div>
     );
   }
 
   if (loading) {
     return (
-      <Row label={label}>
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-foreground flex items-center gap-1">
+          <FileText className="w-3 h-3" /> {label}
+        </p>
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <Loader2 className="w-3 h-3 animate-spin" /> Loading…
         </span>
-      </Row>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Row label={label}>
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-foreground flex items-center gap-1">
+          <FileText className="w-3 h-3" /> {label}
+        </p>
         <button onClick={generateUrl} className="text-xs text-destructive hover:underline">
           Failed to load — retry
         </button>
-      </Row>
+      </div>
     );
   }
 
+  // PDF — show as a link
+  if (isPdf) {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-foreground flex items-center gap-1">
+          <FileText className="w-3 h-3" /> {label}
+        </p>
+        <a
+          href={signedUrl ?? "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-primary hover:underline text-xs"
+        >
+          <FileText className="w-3 h-3" />
+          View Document
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
+    );
+  }
+
+  // Image — inline thumbnail with click-to-fullscreen
   return (
-    <Row label={label}>
-      <a
-        href={signedUrl ?? "#"}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-1 text-primary hover:underline text-xs"
-      >
-        <FileText className="w-3 h-3" />
-        View Document
-        <ExternalLink className="w-3 h-3" />
-      </a>
-    </Row>
+    <>
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-foreground flex items-center gap-1">
+          <Camera className="w-3 h-3" /> {label}
+        </p>
+        <img
+          src={signedUrl ?? ""}
+          alt={label}
+          className="rounded-lg border border-border max-h-40 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+          loading="lazy"
+          onClick={() => setFullscreen(true)}
+        />
+      </div>
+      <Dialog open={fullscreen} onOpenChange={setFullscreen}>
+        <DialogContent className="max-w-3xl p-2">
+          <DialogHeader>
+            <DialogTitle>{label}</DialogTitle>
+          </DialogHeader>
+          <img src={signedUrl ?? ""} alt={label} className="w-full rounded-lg" loading="lazy" />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -336,11 +380,13 @@ const TravelerSheet = ({ traveler, profile, open, onClose }: { traveler: Travele
             <Row label="Phone"><CopyButton text={traveler.emergency_contact_phone ?? null} /></Row>
           </Section>
           <Section title="Documents">
-            <DocumentLink storagePath={traveler.id_copy_url} label="ID Copy" />
-            <DocumentLink storagePath={traveler.license_copy_url} label="License Copy" />
-            <DocumentLink storagePath={traveler.vehicle_photo_url ?? null} label="Vehicle Photo" />
-            <DocumentLink storagePath={traveler.license_disk_url ?? null} label="License Disk" />
-            <DocumentLink storagePath={traveler.proof_of_residence_url ?? null} label="Proof of Residence" />
+            <div className="grid grid-cols-2 gap-3">
+              <DocumentPhoto storagePath={traveler.id_copy_url} label="ID Copy" />
+              <DocumentPhoto storagePath={traveler.license_copy_url} label="License Copy" />
+              <DocumentPhoto storagePath={traveler.vehicle_photo_url ?? null} label="Vehicle Photo" />
+              <DocumentPhoto storagePath={traveler.license_disk_url ?? null} label="License Disk" />
+              <DocumentPhoto storagePath={traveler.proof_of_residence_url ?? null} label="Proof of Residence" />
+            </div>
           </Section>
         </div>
       )}
