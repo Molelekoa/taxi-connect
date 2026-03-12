@@ -249,36 +249,23 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
     );
   }
 
-  // PDF — inline preview in dialog
+  // PDF — open in new tab (Chrome blocks cross-origin PDFs in iframes)
   if (isPdf) {
     return (
-      <>
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-foreground flex items-center gap-1">
-            <FileText className="w-3 h-3" /> {label}
-          </p>
-          <button
-            onClick={() => setFullscreen(true)}
-            className="flex items-center gap-1 text-primary hover:underline text-xs cursor-pointer"
-          >
-            <Eye className="w-3 h-3" />
-            View PDF
-          </button>
-        </div>
-        <Dialog open={fullscreen} onOpenChange={setFullscreen}>
-          <DialogContent className="max-w-4xl h-[80vh] p-2">
-            <DialogHeader>
-              <DialogTitle>{label}</DialogTitle>
-              <DialogDescription className="sr-only">Preview of {label}</DialogDescription>
-            </DialogHeader>
-            <iframe
-              src={signedUrl ?? ""}
-              title={label}
-              className="w-full h-full rounded-lg border-0"
-            />
-          </DialogContent>
-        </Dialog>
-      </>
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-foreground flex items-center gap-1">
+          <FileText className="w-3 h-3" /> {label}
+        </p>
+        <a
+          href={signedUrl ?? "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-primary hover:underline text-xs"
+        >
+          <Eye className="w-3 h-3" />
+          View PDF ↗
+        </a>
+      </div>
     );
   }
 
