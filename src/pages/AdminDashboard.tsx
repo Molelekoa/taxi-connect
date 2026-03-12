@@ -190,12 +190,12 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
     setLoading(true);
     setError(null);
     try {
-      const { data, error: err } = await supabase.storage
-        .from("documents")
-        .createSignedUrl(storagePath, 3600);
+      const { data, error: err } = await supabase.functions.invoke("get-signed-url", {
+        body: { storagePath, bucket: "documents" },
+      });
       if (err || !data?.signedUrl) {
         console.error(`[DocumentPhoto] Failed to sign "${storagePath}":`, err);
-        setError(err?.message ?? "Could not generate signed URL");
+        setError(typeof err === "object" ? (err as any)?.message ?? "Could not generate signed URL" : "Could not generate signed URL");
       } else {
         setSignedUrl(data.signedUrl);
       }
