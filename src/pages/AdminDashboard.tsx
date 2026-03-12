@@ -174,87 +174,65 @@ const CopyButton = ({ text }: { text: string | null }) => {
 // ── Document viewer with inline thumbnail + fullscreen ─────────────────────────
 
 const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; label: string }) => {
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
-  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const isPdf = storagePath?.toLowerCase().endsWith(".pdf");
 
-  const generateUrl = useCallback(async () => {
+  const loadDocument = useCallback(async () => {
     if (!storagePath) return;
-    if (storagePath.startsWith("http")) {
-      setSignedUrl(storagePath);
-      return;
-    }
 
     setLoading(true);
     setError(null);
 
     try {
-      const { data, error: err } = await supabase.functions.invoke("get-signed-url", {
-        body: { storagePath, bucket: "documents" },
-      });
+      // If it's already a full URL (e.g. a signed URL stored in DB), fetch directly
+      let fetchUrl = storagePath;
 
-      if (err || !data?.signedUrl) {
-        console.error(`[DocumentPhoto] Failed to sign "${storagePath}":`, err);
-        const message =
-          err && typeof err === "object" && "message" in err
-            ? String((err as { message?: unknown }).message ?? "Could not generate signed URL")
-            : "Could not generate signed URL";
-        setError(message);
-      } else {
-        setSignedUrl(data.signedUrl);
+      if (!storagePath.startsWith("http")) {
+        // Get a signed URL from the edge function first
+        const { data, error: err } = await supabase.functions.invoke("get-signed-url", {
+          body: { storagePath, bucket: "documents" },
+        });
+
+        if (err || !data?.signedUrl) {
+          console.error(`[DocumentPhoto] Failed to sign "${storagePath}":`, err);
+          setError("Could not load document");
+          return;
+        }
+        fetchUrl = data.signedUrl;
       }
+
+      // Fetch the actual file as a blob (avoids browser blocks on external URLs)
+      const response = await fetch(fetchUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      setBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return objectUrl;
+      });
     } catch (e) {
-      console.error(`[DocumentPhoto] Unexpected error for "${storagePath}":`, e);
-      setError("Unexpected error");
+      console.error(`[DocumentPhoto] Failed to load "${storagePath}":`, e);
+      setError("Could not load document");
     } finally {
       setLoading(false);
     }
   }, [storagePath]);
 
-  const openPdfPreview = useCallback(async () => {
-    if (!signedUrl) return;
-
-    setPdfLoading(true);
-    setPdfError(null);
-
-    try {
-      const response = await fetch(signedUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to load PDF (${response.status})`);
-      }
-
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-
-      setPdfBlobUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return objectUrl;
-      });
-
-      setFullscreen(true);
-    } catch (e) {
-      console.error(`[DocumentPhoto] PDF preview failed for "${storagePath}":`, e);
-      setPdfError("Could not open PDF preview. Please try again.");
-    } finally {
-      setPdfLoading(false);
-    }
-  }, [signedUrl, storagePath]);
-
   useEffect(() => {
-    if (storagePath) generateUrl();
-  }, [storagePath, generateUrl]);
+    if (storagePath) loadDocument();
+  }, [storagePath, loadDocument]);
 
   useEffect(() => {
     return () => {
-      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
-  }, [pdfBlobUrl]);
+  }, [blobUrl]);
 
   if (!storagePath) {
     return (
@@ -287,14 +265,14 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
           <FileText className="w-3 h-3" /> {label}
         </p>
         <p className="text-xs text-destructive">{error}</p>
-        <button onClick={generateUrl} className="text-xs text-primary hover:underline">
+        <button onClick={loadDocument} className="text-xs text-primary hover:underline">
           Retry
         </button>
       </div>
     );
   }
 
-  // PDF — fetch into a blob and preview in-app (avoids direct blocked tab navigation)
+  // PDF — blob rendered in iframe inside dialog
   if (isPdf) {
     return (
       <>
@@ -307,17 +285,12 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
             variant="link"
             size="sm"
             className="h-auto p-0 text-xs"
-            onClick={openPdfPreview}
-            disabled={!signedUrl || pdfLoading}
+            onClick={() => setFullscreen(true)}
+            disabled={!blobUrl}
           >
-            {pdfLoading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <Eye className="w-3 h-3" />
-            )}
-            {pdfLoading ? "Preparing PDF…" : "View PDF"}
+            <Eye className="w-3 h-3" />
+            View PDF
           </Button>
-          {pdfError && <p className="text-xs text-destructive">{pdfError}</p>}
         </div>
 
         <Dialog open={fullscreen} onOpenChange={setFullscreen}>
@@ -326,9 +299,9 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
               <DialogTitle>{label}</DialogTitle>
               <DialogDescription className="sr-only">PDF preview of {label}</DialogDescription>
             </DialogHeader>
-            {pdfBlobUrl ? (
+            {blobUrl ? (
               <iframe
-                src={pdfBlobUrl}
+                src={blobUrl}
                 title={label}
                 className="w-full h-[72vh] rounded-lg border border-border"
               />
@@ -341,20 +314,21 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
     );
   }
 
-  // Image — inline thumbnail with click-to-fullscreen
+  // Image — inline thumbnail with click-to-fullscreen (using blob URL, same as ProofPhoto)
   return (
     <>
       <div className="space-y-1">
         <p className="text-xs font-medium text-foreground flex items-center gap-1">
           <Camera className="w-3 h-3" /> {label}
         </p>
-        <img
-          src={signedUrl ?? ""}
-          alt={label}
-          className="rounded-lg border border-border max-h-40 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-          loading="lazy"
-          onClick={() => setFullscreen(true)}
-        />
+        {blobUrl && (
+          <img
+            src={blobUrl}
+            alt={label}
+            className="rounded-lg border border-border max-h-40 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => setFullscreen(true)}
+          />
+        )}
       </div>
       <Dialog open={fullscreen} onOpenChange={setFullscreen}>
         <DialogContent className="max-w-3xl p-2">
@@ -362,7 +336,7 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
             <DialogTitle>{label}</DialogTitle>
             <DialogDescription className="sr-only">Full-size view of {label}</DialogDescription>
           </DialogHeader>
-          <img src={signedUrl ?? ""} alt={label} className="w-full rounded-lg" loading="lazy" />
+          {blobUrl && <img src={blobUrl} alt={label} className="w-full rounded-lg" />}
         </DialogContent>
       </Dialog>
     </>
