@@ -266,7 +266,6 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
           View PDF ↗
         </a>
       </div>
-      </>
     );
   }
 
