@@ -178,6 +178,9 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const isPdf = storagePath?.toLowerCase().endsWith(".pdf");
 
@@ -187,15 +190,22 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
       setSignedUrl(storagePath);
       return;
     }
+
     setLoading(true);
     setError(null);
+
     try {
       const { data, error: err } = await supabase.functions.invoke("get-signed-url", {
         body: { storagePath, bucket: "documents" },
       });
+
       if (err || !data?.signedUrl) {
         console.error(`[DocumentPhoto] Failed to sign "${storagePath}":`, err);
-        setError(typeof err === "object" ? (err as any)?.message ?? "Could not generate signed URL" : "Could not generate signed URL");
+        const message =
+          err && typeof err === "object" && "message" in err
+            ? String((err as { message?: unknown }).message ?? "Could not generate signed URL")
+            : "Could not generate signed URL";
+        setError(message);
       } else {
         setSignedUrl(data.signedUrl);
       }
@@ -207,9 +217,44 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
     }
   }, [storagePath]);
 
+  const openPdfPreview = useCallback(async () => {
+    if (!signedUrl) return;
+
+    setPdfLoading(true);
+    setPdfError(null);
+
+    try {
+      const response = await fetch(signedUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to load PDF (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      setPdfBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return objectUrl;
+      });
+
+      setFullscreen(true);
+    } catch (e) {
+      console.error(`[DocumentPhoto] PDF preview failed for "${storagePath}":`, e);
+      setPdfError("Could not open PDF preview. Please try again.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [signedUrl, storagePath]);
+
   useEffect(() => {
     if (storagePath) generateUrl();
   }, [storagePath, generateUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+    };
+  }, [pdfBlobUrl]);
 
   if (!storagePath) {
     return (
@@ -249,23 +294,50 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
     );
   }
 
-  // PDF — open in new tab (Chrome blocks cross-origin PDFs in iframes)
+  // PDF — fetch into a blob and preview in-app (avoids direct blocked tab navigation)
   if (isPdf) {
     return (
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-foreground flex items-center gap-1">
-          <FileText className="w-3 h-3" /> {label}
-        </p>
-        <a
-          href={signedUrl ?? "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-primary hover:underline text-xs"
-        >
-          <Eye className="w-3 h-3" />
-          View PDF ↗
-        </a>
-      </div>
+      <>
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-foreground flex items-center gap-1">
+            <FileText className="w-3 h-3" /> {label}
+          </p>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs"
+            onClick={openPdfPreview}
+            disabled={!signedUrl || pdfLoading}
+          >
+            {pdfLoading ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Eye className="w-3 h-3" />
+            )}
+            {pdfLoading ? "Preparing PDF…" : "View PDF"}
+          </Button>
+          {pdfError && <p className="text-xs text-destructive">{pdfError}</p>}
+        </div>
+
+        <Dialog open={fullscreen} onOpenChange={setFullscreen}>
+          <DialogContent className="max-w-4xl h-[85vh] p-2">
+            <DialogHeader>
+              <DialogTitle>{label}</DialogTitle>
+              <DialogDescription className="sr-only">PDF preview of {label}</DialogDescription>
+            </DialogHeader>
+            {pdfBlobUrl ? (
+              <iframe
+                src={pdfBlobUrl}
+                title={label}
+                className="w-full h-[72vh] rounded-lg border border-border"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">Preview not available.</p>
+            )}
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
