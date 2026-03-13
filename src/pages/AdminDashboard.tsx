@@ -300,11 +300,7 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
               <DialogDescription className="sr-only">PDF preview of {label}</DialogDescription>
             </DialogHeader>
             {blobUrl ? (
-              <iframe
-                src={blobUrl}
-                title={label}
-                className="w-full h-[72vh] rounded-lg border border-border"
-              />
+              <PdfViewer signedUrl={blobUrl} />
             ) : (
               <p className="text-sm text-muted-foreground">Preview not available.</p>
             )}
