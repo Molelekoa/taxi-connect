@@ -193,8 +193,8 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
 
       if (!storagePath.startsWith("http")) {
         // Get a signed URL from the edge function first
-        const { data, error: err } = await supabase.functions.invoke("get-signed-url", {
-          body: { storagePath, bucket: "documents" },
+        const { data, error: err } = await supabase.functions.invoke("get-document-url", {
+          body: { bucket: "documents", path: storagePath },
         });
 
         if (err || !data?.signedUrl) {
