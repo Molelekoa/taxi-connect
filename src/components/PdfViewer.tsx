@@ -3,7 +3,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 interface PdfViewerProps {
   signedUrl: string;
@@ -18,40 +18,89 @@ const PdfViewer = ({ signedUrl }: PdfViewerProps) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    let loadingTask: pdfjsLib.PDFDocumentLoadingTask | null = null;
+
     const loadPdf = async () => {
       try {
         setLoading(true);
         setError(null);
-        const loadingTask = pdfjsLib.getDocument(signedUrl);
+
+        if (signedUrl.startsWith("blob:")) {
+          const response = await fetch(signedUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch PDF blob (HTTP ${response.status})`);
+          }
+          const data = new Uint8Array(await response.arrayBuffer());
+          loadingTask = pdfjsLib.getDocument({ data });
+        } else {
+          loadingTask = pdfjsLib.getDocument({ url: signedUrl });
+        }
+
         const pdfDoc = await loadingTask.promise;
-        setPdf(pdfDoc);
+
+        if (cancelled) {
+          await pdfDoc.destroy();
+          return;
+        }
+
+        setPdf((prev) => {
+          void prev?.destroy();
+          return pdfDoc;
+        });
         setTotalPages(pdfDoc.numPages);
         setCurrentPage(1);
       } catch (err: unknown) {
+        if (cancelled) return;
         const message = err instanceof Error ? err.message : "Failed to load PDF";
         setError(message);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    loadPdf();
+    void loadPdf();
+
+    return () => {
+      cancelled = true;
+      void loadingTask?.destroy();
+    };
   }, [signedUrl]);
 
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
 
+    let cancelled = false;
+
     const renderPage = async () => {
-      const page = await pdf.getPage(currentPage);
-      const viewport = page.getViewport({ scale: 1.5 });
-      const canvas = canvasRef.current!;
-      const context = canvas.getContext("2d")!;
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      await page.render({ canvasContext: context, viewport }).promise;
+      try {
+        const page = await pdf.getPage(currentPage);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const context = canvas.getContext("2d");
+        if (!context) {
+          throw new Error("Failed to initialize PDF canvas");
+        }
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const renderTask = page.render({ canvasContext: context, viewport });
+        await renderTask.promise;
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : "Failed to render PDF page";
+        setError(message);
+      }
     };
 
-    renderPage();
+    void renderPage();
+
+    return () => {
+      cancelled = true;
+    };
   }, [pdf, currentPage]);
 
   if (loading) {
