@@ -189,7 +189,7 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
     setError(null);
 
     try {
-      // If it's already a full URL (e.g. a signed URL stored in DB), fetch directly
+      // If it's already a full URL (e.g. a signed URL stored in DB), use directly
       let fetchUrl = storagePath;
 
       if (!storagePath.startsWith("http")) {
@@ -206,7 +206,16 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
         fetchUrl = data.signedUrl;
       }
 
-      // Fetch the actual file as a blob (avoids browser blocks on external URLs)
+      // For PDFs, pass the signed URL directly to PdfViewer to avoid blob URL fetch issues.
+      if (isPdf) {
+        setBlobUrl((prev) => {
+          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+          return fetchUrl;
+        });
+        return;
+      }
+
+      // For images, fetch as blob so rendering remains reliable.
       const response = await fetch(fetchUrl);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -214,7 +223,7 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
       const objectUrl = URL.createObjectURL(blob);
 
       setBlobUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
         return objectUrl;
       });
     } catch (e) {
@@ -223,7 +232,7 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
     } finally {
       setLoading(false);
     }
-  }, [storagePath]);
+  }, [storagePath, isPdf]);
 
   useEffect(() => {
     if (storagePath) loadDocument();
@@ -231,7 +240,7 @@ const DocumentPhoto = ({ storagePath, label }: { storagePath: string | null; lab
 
   useEffect(() => {
     return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      if (blobUrl?.startsWith("blob:")) URL.revokeObjectURL(blobUrl);
     };
   }, [blobUrl]);
 
