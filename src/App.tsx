@@ -36,11 +36,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 const queryClient = new QueryClient();
 
-const PageFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="animate-pulse text-muted-foreground text-sm">Loading…</div>
-  </div>
-);
+const PageFallback = () => <PageLoadingBar />;
 
 const App = () => (
   <ErrorBoundary>
