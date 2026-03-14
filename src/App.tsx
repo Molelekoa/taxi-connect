@@ -9,6 +9,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import CookieConsent from "./components/CookieConsent";
+import PageLoadingBar from "./components/PageLoadingBar";
+import OfflineBanner from "./components/OfflineBanner";
 
 // Eagerly load the landing page for instant first paint
 import Index from "./pages/Index";
@@ -34,14 +36,11 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 const queryClient = new QueryClient();
 
-const PageFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="animate-pulse text-muted-foreground text-sm">Loading…</div>
-  </div>
-);
+const PageFallback = () => <PageLoadingBar />;
 
 const App = () => (
   <ErrorBoundary>
+    <OfflineBanner />
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
       <Toaster />
