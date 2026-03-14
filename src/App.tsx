@@ -40,6 +40,7 @@ const PageFallback = () => <PageLoadingBar />;
 
 const App = () => (
   <ErrorBoundary>
+    <OfflineBanner />
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
       <Toaster />
