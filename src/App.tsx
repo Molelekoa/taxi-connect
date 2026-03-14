@@ -9,6 +9,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import CookieConsent from "./components/CookieConsent";
+import PageLoadingBar from "./components/PageLoadingBar";
+import OfflineBanner from "./components/OfflineBanner";
 
 // Eagerly load the landing page for instant first paint
 import Index from "./pages/Index";
