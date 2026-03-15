@@ -79,8 +79,8 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                 </div>
                 <div>
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-0.5">Email</span>
-                  <a href="mailto:hello@parcolo.co.za" className="text-foreground hover:text-primary transition-colors font-medium">
-                    hello@parcolo.co.za
+                  <a href="mailto:hello@parcolo.com" className="text-foreground hover:text-primary transition-colors font-medium">
+                    hello@parcolo.com
                   </a>
                 </div>
               </li>
@@ -89,8 +89,8 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                   <Phone className="w-4 h-4 text-success" />
                 </div>
                 <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-0.5">WhatsApp</span>
-                  <a href="https://wa.me/27115685343" className="text-foreground hover:text-primary transition-colors font-medium">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-0.5">Telephone</span>
+                  <a href="tel:+27115685343" className="text-foreground hover:text-primary transition-colors font-medium">
                     +27 11 568 5343
                   </a>
                 </div>

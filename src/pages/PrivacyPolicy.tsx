@@ -142,7 +142,7 @@ const PrivacyPolicy = () => {
                   If you have any questions about this Privacy Policy or our data practices, please contact us:
                 </p>
                 <ul className="text-muted-foreground space-y-2">
-                  <li><strong>Email:</strong> hello@parcolo.co.za</li>
+                  <li><strong>Email:</strong> hello@parcolo.com</li>
                   <li><strong>Phone:</strong> (011) 568 5343</li>
                   <li><strong>Address:</strong> Johannesburg, South Africa</li>
                 </ul>
