@@ -239,7 +239,7 @@ const TermsContent = () => {
       <Section title="13. Contact Information">
         <P>For questions about these Terms of Use, please contact us:</P>
         <ul className="text-muted-foreground space-y-2">
-          <li><strong className="text-foreground">Email:</strong> hello@parcolo.co.za</li>
+          <li><strong className="text-foreground">Email:</strong> hello@parcolo.com</li>
           <li><strong className="text-foreground">Phone:</strong> (011) 568 5343</li>
           <li><strong className="text-foreground">Address:</strong> Johannesburg, South Africa</li>
         </ul>

@@ -149,9 +149,9 @@ const HowItWorks = () => {
                     Send a Parcel
                   </Button>
                 </Link>
-                <a href="https://wa.me/27115685343">
+                <a href="tel:+27115685343">
                   <Button variant="outline" size="lg">
-                    WhatsApp Us
+                    Call Us
                   </Button>
                 </a>
               </div>
