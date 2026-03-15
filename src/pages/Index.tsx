@@ -40,12 +40,22 @@ const Index = () => {
     });
   };
 
+  const [showScrollCue, setShowScrollCue] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) setShowScrollCue(false);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero — Map + Booking Form */}
-      <section id="main-content" className="relative pt-14 h-screen flex flex-col" aria-label="Send a parcel">
+      <section id="main-content" className="relative pt-14 min-h-[85vh] flex flex-col" aria-label="Send a parcel">
         {/* Map background */}
         <div className="absolute inset-0 pt-14">
           <RouteMap
@@ -57,7 +67,7 @@ const Index = () => {
         </div>
 
         {/* Booking card overlay */}
-        <div className="relative z-10 flex-1 flex items-end pb-8 px-4">
+        <div className="relative z-10 flex-1 flex items-end pb-12 px-4">
           <motion.div
             className="w-full max-w-md mx-auto bg-card/95 backdrop-blur-md rounded-2xl border border-border shadow-elevated p-6 space-y-4"
             initial={{ opacity: 0, y: 30 }}
@@ -106,6 +116,28 @@ const Index = () => {
             </p>
           </motion.div>
         </div>
+
+        {/* Scroll down cue */}
+        <AnimatePresence>
+          {showScrollCue && (
+            <motion.div
+              className="relative z-10 flex justify-center pb-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <button
+                onClick={() => window.scrollBy({ top: 300, behavior: "smooth" })}
+                className="flex flex-col items-center gap-1 text-muted-foreground/70 hover:text-foreground transition-colors touch-manipulation"
+                aria-label="Scroll down for more"
+              >
+                <span className="text-xs font-medium">More below</span>
+                <ChevronDown className="w-5 h-5 animate-bounce-gentle" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       {/* Quick stats strip */}
