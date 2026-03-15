@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -8,7 +8,7 @@ import CommunityStrip from "@/components/CommunityStrip";
 import LocationInput from "@/components/LocationInput";
 import RouteMap from "@/components/RouteMap";
 import { useMapboxDistance } from "@/hooks/useMapboxDistance";
-import { Banknote, Globe, Zap, ArrowRight } from "lucide-react";
+import { Banknote, Globe, Zap, ArrowRight, ChevronDown } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const POPULAR_CITIES = [
