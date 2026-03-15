@@ -79,8 +79,8 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                 </div>
                 <div>
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-0.5">Email</span>
-                  <a href="mailto:hello@parcolo.co.za" className="text-foreground hover:text-primary transition-colors font-medium">
-                    hello@parcolo.co.za
+                  <a href="mailto:hello@parcolo.com" className="text-foreground hover:text-primary transition-colors font-medium">
+                    hello@parcolo.com
                   </a>
                 </div>
               </li>
