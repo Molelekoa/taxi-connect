@@ -50,10 +50,10 @@ const HowItWorks = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="pt-24 pb-16">
+      <main className="pt-20 pb-16 md:pt-24">
         <div className="container-narrow">
           {/* Hero */}
-          <div className="text-center mb-16 max-w-3xl mx-auto">
+          <div className="text-center mb-10 md:mb-16 max-w-3xl mx-auto">
             <h1 className="font-display font-bold text-4xl md:text-5xl text-foreground mb-4">
               How <span className="text-gradient">Parcolo</span> Works
             </h1>

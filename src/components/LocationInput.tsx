@@ -35,6 +35,7 @@ const LocationInput = ({
     : suggestions;
 
   const showDropdown = isOpen && inputFocused && filtered.length > 0;
+  const hasOverflow = filtered.length > 4;
 
   // Close on outside click
   useEffect(() => {
@@ -75,24 +76,32 @@ const LocationInput = ({
       </div>
 
       {showDropdown && (
-        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto" role="listbox">
-          {filtered.map((suggestion) => (
-            <button
-              key={suggestion.value}
-              type="button"
-              className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors first:rounded-t-lg last:rounded-b-lg"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                onChange(suggestion.value);
-                setIsOpen(false);
-              }}
-            >
-              <span className="flex items-center gap-2">
-                <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                {suggestion.label}
-              </span>
-            </button>
-          ))}
+        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden" role="listbox">
+          <div
+            className="max-h-60 overflow-y-auto overscroll-contain mobile-scrollbar"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+            {filtered.map((suggestion) => (
+              <button
+                key={suggestion.value}
+                type="button"
+                className="w-full text-left px-3 py-3 text-sm hover:bg-accent hover:text-accent-foreground transition-colors active:bg-accent/80 touch-manipulation"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(suggestion.value);
+                  setIsOpen(false);
+                }}
+              >
+                <span className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  {suggestion.label}
+                </span>
+              </button>
+            ))}
+          </div>
+          {hasOverflow && (
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent" />
+          )}
         </div>
       )}
     </div>

@@ -1,38 +1,43 @@
+# Plan: Fix Traveler Dashboard Display & Admin Notification Issues
 
+## Problems Identified
 
-## Mobile Scrolling Optimization Plan
+1. **Traveler Dashboard cards lack detail** — the screenshots confirm parcels show minimal info. The Browse and Matched tabs need prominent suburb, addresses, and pickup dates. Sender/recipient details and weight band must be hidden until after acceptance.
+2. **Admin status notifications silently fail** — The `notifications` table RLS policy "Admins can insert notifications" is **RESTRICTIVE** (not PERMISSIVE). PostgreSQL requires at least one PERMISSIVE policy to pass for a given command. With only a RESTRICTIVE INSERT policy and no PERMISSIVE one, all inserts are denied. The admin dashboard code doesn't throw on notification insert failure, so the status update succeeds but the notification is silently swallowed.
 
-### Problems Identified
+## Changes
 
-1. **LocationInput dropdown** — The city picker dropdown (`max-h-48 overflow-y-auto`) has no visible scrollbar on mobile and poor touch scrolling. Users can't tell there are more options or easily scroll through them.
+### 1. Database Migration — Fix notifications INSERT RLS
 
-2. **Homepage hero locks the viewport** — The hero section uses `h-screen`, filling the entire mobile screen. There's no visual cue that more content exists below (stats strip, How It Works, Cross-Border, etc.).
+Drop the existing RESTRICTIVE admin insert policy and recreate it as **PERMISSIVE**. This allows admin-role users to actually insert notifications.
 
-3. **General touch scrolling** — Several pages with long content (HowItWorks, SmallParcelBooking, FAQ, Terms, Privacy) lack momentum scrolling hints on mobile.
+### 2. TravelerDashboard.tsx — Restructure parcel cards
 
-### Changes
+**Browse & Matched tabs (pre-acceptance):** Show:
 
-#### 1. LocationInput — Better mobile dropdown (`src/components/LocationInput.tsx`)
-- Increase touch target size for suggestion buttons (min `py-3` on mobile)
-- Add `-webkit-overflow-scrolling: touch` and visible scrollbar styling
-- Show a subtle fade gradient at the bottom of the dropdown when there are more items to scroll to
-- Add a small "N more cities" indicator at the bottom when list is truncated by the scroll area
+- Route (pickup_location → dropoff_location)
+- Suburb
+- Pickup address & delivery address
+- Pickup window (earliest – latest)
+- Payout estimate
+- Description/dimensions  
+Weight Band
 
-#### 2. Homepage hero — Scroll cue (`src/pages/Index.tsx`)
-- Remove the hard `h-screen` constraint; change to `min-h-[85vh]` so on mobile the stats strip peeks above the fold
-- Add an animated "scroll down" chevron indicator at the bottom of the hero that bounces gently, disappearing once user scrolls
+Hide: sender name/phone, recipient name/phone.
 
-#### 3. Global mobile scroll improvements (`src/index.css`)
-- Add `overscroll-behavior-y: contain` on the body to prevent pull-to-refresh interference in WebView
-- Add a utility class for visible mobile scrollbars (thin, styled) that can be applied to any scrollable container
-- Ensure `scroll-behavior: smooth` is respected but doesn't block momentum scrolling
+**Carrying tab (accepted):** Show all of the above PLUS:
 
-#### 4. HowItWorks page scroll awareness (`src/pages/HowItWorks.tsx`)
-- The page content is fine structurally, but the `pt-24 pb-16` padding plus card heights can make it feel stuck on small screens. Add a subtle scroll indicator after the hero section on mobile.
+- Sender name & phone
+- Recipient name & phone
 
-### Files to modify
-- `src/components/LocationInput.tsx` — larger touch targets, visible scroll indicator, fade hint
-- `src/pages/Index.tsx` — `min-h-[85vh]` instead of `h-screen`, add scroll-down chevron
-- `src/index.css` — mobile scrollbar utility, overscroll containment
-- `src/pages/HowItWorks.tsx` — minor spacing adjustment for mobile scroll flow
+**Delivered tab (accepted):** Same as Carrying — full details visible.
 
+### 3. AdminDashboard.tsx — Handle notification insert errors
+
+Add error checking on the notification insert so failures are surfaced rather than swallowed silently.
+
+## Files Modified
+
+- New migration SQL — fix notifications INSERT RLS policy
+- `src/pages/TravelerDashboard.tsx` — restructure all four tab card layouts
+- `src/pages/AdminDashboard.tsx` — add error handling on notification insert
