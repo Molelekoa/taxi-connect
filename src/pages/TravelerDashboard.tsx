@@ -409,31 +409,31 @@ const TravelerDashboard = () => {
             )}
 
             <Tabs defaultValue={isApproved ? "browse" : "trips"} className="w-full">
-              <TabsList className="mb-6 bg-secondary border border-border">
-                <TabsTrigger value="trips">My Trips</TabsTrigger>
+              <TabsList className="mb-6 bg-secondary border border-border h-auto flex-wrap gap-1 p-1.5 w-full">
+                <TabsTrigger value="trips" className="text-xs sm:text-sm px-2.5 py-1.5 sm:px-3">Trips</TabsTrigger>
                 {isApproved && (
-                  <TabsTrigger value="browse">
-                    Browse Parcels
+                  <TabsTrigger value="browse" className="text-xs sm:text-sm px-2.5 py-1.5 sm:px-3">
+                    Browse
                     {browseParcels.length > 0 && (
-                      <span className="ml-1.5 bg-primary text-primary-foreground text-[10px] rounded-full px-1.5 py-0.5 font-bold">
+                      <span className="ml-1 bg-primary text-primary-foreground text-[10px] rounded-full px-1.5 py-0.5 font-bold">
                         {browseParcels.length}
                       </span>
                     )}
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="available">
+                <TabsTrigger value="available" className="text-xs sm:text-sm px-2.5 py-1.5 sm:px-3">
                   Matched
                   {pendingMatches.length > 0 && (
-                    <span className="ml-1.5 bg-primary text-primary-foreground text-[10px] rounded-full px-1.5 py-0.5 font-bold">
+                    <span className="ml-1 bg-primary text-primary-foreground text-[10px] rounded-full px-1.5 py-0.5 font-bold">
                       {pendingMatches.length}
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="accepted">Carrying</TabsTrigger>
-                <TabsTrigger value="delivered">
+                <TabsTrigger value="accepted" className="text-xs sm:text-sm px-2.5 py-1.5 sm:px-3">Carrying</TabsTrigger>
+                <TabsTrigger value="delivered" className="text-xs sm:text-sm px-2.5 py-1.5 sm:px-3">
                   Delivered
                   {deliveredMatches.length > 0 && (
-                    <span className="ml-1.5 bg-success text-success-foreground text-[10px] rounded-full px-1.5 py-0.5 font-bold">
+                    <span className="ml-1 bg-success text-success-foreground text-[10px] rounded-full px-1.5 py-0.5 font-bold">
                       {deliveredMatches.length}
                     </span>
                   )}
