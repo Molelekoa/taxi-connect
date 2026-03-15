@@ -9,7 +9,7 @@ const steps = [
   {
     step: "01",
     title: "Book & Pay",
-    description: "Book your parcel online or via WhatsApp. Pay securely via card or EFT — then we'll arrange for a traveler on your route to pick up your parcel directly from you.",
+    description: "Book your parcel online or by phone. Pay securely via card or EFT — then we'll arrange for a traveler on your route to pick up your parcel directly from you.",
     details: [
       "Book online in under 2 minutes",
       "Pay via EFT or card (no cash)",
