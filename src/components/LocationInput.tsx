@@ -13,6 +13,9 @@ interface LocationInputProps {
   error?: boolean;
 }
 
+const MIN_DROPDOWN_HEIGHT = 120;
+const MAX_DROPDOWN_HEIGHT = 320;
+
 const LocationInput = ({
   value,
   onChange,
@@ -24,6 +27,8 @@ const LocationInput = ({
 }: LocationInputProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [dropdownDirection, setDropdownDirection] = useState<"up" | "down">("down");
+  const [dropdownMaxHeight, setDropdownMaxHeight] = useState(240);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Filter suggestions based on input
@@ -36,6 +41,43 @@ const LocationInput = ({
 
   const showDropdown = isOpen && inputFocused && filtered.length > 0;
   const hasOverflow = filtered.length > 4;
+
+  useEffect(() => {
+    if (!showDropdown) return;
+
+    const updateDropdownLayout = () => {
+      const input = wrapperRef.current?.querySelector("input");
+      if (!input) return;
+
+      const rect = input.getBoundingClientRect();
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const viewportOffsetTop = window.visualViewport?.offsetTop ?? 0;
+      const spaceAbove = rect.top - viewportOffsetTop;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const shouldOpenUp = spaceBelow < 220 && spaceAbove > spaceBelow;
+      const availableSpace = shouldOpenUp ? spaceAbove - 12 : spaceBelow - 12;
+
+      setDropdownDirection(shouldOpenUp ? "up" : "down");
+      setDropdownMaxHeight(
+        Math.max(MIN_DROPDOWN_HEIGHT, Math.min(MAX_DROPDOWN_HEIGHT, availableSpace)),
+      );
+    };
+
+    updateDropdownLayout();
+
+    const viewport = window.visualViewport;
+    viewport?.addEventListener("resize", updateDropdownLayout);
+    viewport?.addEventListener("scroll", updateDropdownLayout);
+    window.addEventListener("resize", updateDropdownLayout);
+    window.addEventListener("scroll", updateDropdownLayout, true);
+
+    return () => {
+      viewport?.removeEventListener("resize", updateDropdownLayout);
+      viewport?.removeEventListener("scroll", updateDropdownLayout);
+      window.removeEventListener("resize", updateDropdownLayout);
+      window.removeEventListener("scroll", updateDropdownLayout, true);
+    };
+  }, [showDropdown, filtered.length]);
 
   // Close on outside click
   useEffect(() => {
@@ -76,10 +118,19 @@ const LocationInput = ({
       </div>
 
       {showDropdown && (
-        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden" role="listbox">
+        <div
+          className={cn(
+            "absolute z-50 w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden",
+            dropdownDirection === "up" ? "bottom-full mb-1" : "top-full mt-1",
+          )}
+          role="listbox"
+        >
           <div
-            className="max-h-60 overflow-y-auto overscroll-contain mobile-scrollbar"
-            style={{ WebkitOverflowScrolling: "touch" }}
+            className="overflow-y-auto overscroll-contain mobile-scrollbar"
+            style={{
+              maxHeight: `${dropdownMaxHeight}px`,
+              WebkitOverflowScrolling: "touch",
+            }}
           >
             {filtered.map((suggestion) => (
               <button
@@ -98,7 +149,6 @@ const LocationInput = ({
                 </span>
               </button>
             ))}
-            {/* Extra padding so last item isn't hidden behind gradient */}
             {hasOverflow && <div className="h-2" />}
           </div>
         </div>
