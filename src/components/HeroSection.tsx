@@ -24,7 +24,7 @@ const HeroSection = () => {
       <div className="absolute inset-0 pt-14">
         <HeroMap />
         {/* Gradient overlay for text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background from-30% via-background/60 via-60% to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background from-25% via-background/70 via-55% to-background/10" />
       </div>
 
       {/* Content layer */}
