@@ -92,7 +92,7 @@ const FAQ = () => {
       faqs: [
         {
           question: "Can you deliver to other countries?",
-          answer: "Yes! Cross-border delivery is one of our specialties. We have active routes to Lesotho, Zimbabwe, Botswana, Mozambique, and other SADC destinations. Many of our Traveler Partners regularly cross borders and are familiar with the process."
+          answer: "Yes! Cross-border delivery is one of our specialties. We have active routes to Lesotho and Zimbabwe. Many of our Traveler Partners regularly cross borders and are familiar with the process."
         },
         {
           question: "How does customs work?",
