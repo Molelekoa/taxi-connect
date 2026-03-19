@@ -17,7 +17,7 @@ const FAQ = () => {
       faqs: [
         {
           question: "What is Parcolo?",
-          answer: "Parcolo is a community-driven parcel delivery network based in Johannesburg, South Africa. We connect people who need parcels delivered with Traveler Partners who are already traveling to those destinations. It's a win-win: senders get affordable delivery, and travelers offset their petrol and toll costs."
+          answer: "Parcolo is a community-driven parcel delivery network based in Johannesburg, South Africa. We connect people who need parcels delivered with Traveler Partners who are already traveling to those destinations across South Africa, Lesotho, and Zimbabwe. It's a win-win: senders get affordable delivery, and travelers offset their petrol and toll costs."
         },
         {
           question: "How is this different from traditional couriers?",
