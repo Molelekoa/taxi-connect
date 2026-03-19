@@ -25,7 +25,7 @@ const FAQ = () => {
         },
         {
           question: "What areas do you service?",
-          answer: "We service routes throughout South Africa and cross-border destinations including Lesotho, Zimbabwe, Botswana, Mozambique, and other SADC countries. Our network grows as more Traveler Partners join, so route availability expands with our community."
+          answer: "We service routes throughout South Africa and cross-border destinations including Lesotho and Zimbabwe. Our network grows as more Traveler Partners join, so route availability expands with our community."
         },
         {
           question: "Is my parcel safe with a community member?",
