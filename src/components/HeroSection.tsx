@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Package, Car, ArrowRight } from "lucide-react";
+import HeroMap from "@/components/HeroMap";
 
 const ROUTES = [
   { from: "JHB", to: "HRE", label: "Johannesburg → Harare" },
@@ -16,82 +17,87 @@ const HeroSection = () => {
   return (
     <section
       id="main-content"
-      className="relative pt-14 min-h-[85vh] flex flex-col bg-gradient-to-b from-secondary via-background to-background"
+      className="relative pt-14 min-h-[85vh] flex flex-col bg-background overflow-hidden"
       aria-label="Parcolo – peer-to-peer parcel delivery"
     >
-      {/* Main hero content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      {/* Background map — decorative, covers full section */}
+      <div className="absolute inset-0 pt-14">
+        <HeroMap />
+        {/* Gradient overlay for text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/85 to-background/40" />
+      </div>
+
+      {/* Content layer */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-end px-4 pb-8 pt-20 sm:justify-center sm:pb-12">
+        {/* Route corridor label */}
+        <motion.div
+          className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+        >
+          <span>South Africa</span>
+          <ArrowRight className="w-3 h-3" />
+          <span>Lesotho</span>
+          <ArrowRight className="w-3 h-3" />
+          <span>Zimbabwe</span>
+        </motion.div>
+
         {/* Headline */}
         <motion.div
-          className="text-center max-w-2xl mx-auto space-y-4"
-          initial={{ opacity: 0, y: 20 }}
+          className="text-center max-w-xl mx-auto space-y-3"
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
         >
           <h1 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-foreground leading-tight">
             Send parcels with{" "}
             <span className="text-primary">travelers</span> already
             heading your way
           </h1>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-md mx-auto">
-            Affordable, peer-to-peer delivery across South Africa, Lesotho &amp; Zimbabwe.
+          <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
+            Affordable, peer-to-peer delivery across Southern Africa.
+            Up to 60% cheaper than traditional couriers.
           </p>
         </motion.div>
 
-        {/* Route strip */}
+        {/* Route chips — clean, monochrome */}
         <motion.div
-          className="mt-8 w-full max-w-2xl"
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
+          className="mt-6 flex flex-wrap justify-center gap-1.5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
         >
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/15 text-success text-xs font-bold">
-              🇿🇦 South Africa
+          {ROUTES.map((route) => (
+            <span
+              key={route.label}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-card/80 backdrop-blur-sm border border-border text-[11px] font-mono tracking-wide text-muted-foreground"
+            >
+              {route.from}
+              <ArrowRight className="w-2.5 h-2.5 text-primary/60" />
+              {route.to}
             </span>
-            <ArrowRight className="w-3 h-3 text-muted-foreground" />
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-bold">
-              🇱🇸 Lesotho
-            </span>
-            <ArrowRight className="w-3 h-3 text-muted-foreground" />
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/15 text-accent text-xs font-bold">
-              🇿🇼 Zimbabwe
-            </span>
-          </div>
-
-          {/* City pair pills */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {ROUTES.map((route) => (
-              <span
-                key={route.label}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border text-xs font-medium text-foreground shadow-soft"
-              >
-                <span className="font-bold text-primary">{route.from}</span>
-                <ArrowRight className="w-3 h-3 text-muted-foreground" />
-                <span className="font-bold text-accent">{route.to}</span>
-              </span>
-            ))}
-          </div>
+          ))}
         </motion.div>
 
         {/* Dual CTA */}
         <motion.div
-          className="mt-10 w-full max-w-lg mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4"
-          initial={{ opacity: 0, y: 15 }}
+          className="mt-8 w-full max-w-md mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3"
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.35 }}
         >
           <Link to="/freight-estimator" className="block">
             <Button
               variant="coral"
               size="xl"
-              className="w-full flex-col h-auto py-5 gap-1"
+              className="w-full flex-col h-auto py-4 gap-0.5"
             >
-              <span className="flex items-center gap-2 text-base font-bold">
-                <Package className="w-5 h-5" />
+              <span className="flex items-center gap-2 text-sm font-bold">
+                <Package className="w-4 h-4" />
                 Send a Parcel
               </span>
-              <span className="text-xs font-normal opacity-80">
+              <span className="text-[11px] font-normal opacity-75">
                 Need to send something?
               </span>
             </Button>
@@ -101,28 +107,18 @@ const HeroSection = () => {
             <Button
               variant="outline"
               size="xl"
-              className="w-full flex-col h-auto py-5 gap-1 border-primary/30 hover:border-primary hover:bg-primary/5"
+              className="w-full flex-col h-auto py-4 gap-0.5 border-border hover:border-primary hover:bg-primary/5"
             >
-              <span className="flex items-center gap-2 text-base font-bold text-primary">
-                <Car className="w-5 h-5" />
+              <span className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <Car className="w-4 h-4 text-primary" />
                 I'm a Traveler
               </span>
-              <span className="text-xs font-normal text-muted-foreground">
+              <span className="text-[11px] font-normal text-muted-foreground">
                 Traveling soon? Earn on your trip
               </span>
             </Button>
           </Link>
         </motion.div>
-
-        {/* Trust line */}
-        <motion.p
-          className="mt-6 text-xs text-muted-foreground text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.45 }}
-        >
-          Up to 60% cheaper than traditional couriers · Daily departures
-        </motion.p>
       </div>
     </section>
   );
