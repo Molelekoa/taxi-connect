@@ -56,6 +56,12 @@ const HeroMap = () => {
     mapRef.current = map;
 
     map.on("load", () => {
+      // Hide default place labels to avoid text clutter behind hero copy
+      const labelLayers = map.getStyle().layers?.filter(
+        (l) => l.type === "symbol" && l.id.includes("label")
+      );
+      labelLayers?.forEach((l) => map.setLayoutProperty(l.id, "visibility", "none"));
+
       // Route lines
       map.addSource("hero-routes", {
         type: "geojson",
