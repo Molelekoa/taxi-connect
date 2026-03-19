@@ -1,144 +1,18 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CommunityStrip from "@/components/CommunityStrip";
-import LocationInput from "@/components/LocationInput";
-import RouteMap from "@/components/RouteMap";
-import { useMapboxDistance } from "@/hooks/useMapboxDistance";
-import { Banknote, Globe, Zap, ArrowRight, ChevronDown } from "lucide-react";
+import HeroSection from "@/components/HeroSection";
+import { Banknote, Globe, Zap } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-const POPULAR_CITIES = [
-  { value: "Johannesburg", label: "Johannesburg" },
-  { value: "Pretoria", label: "Pretoria" },
-  { value: "Durban", label: "Durban" },
-  { value: "Bloemfontein", label: "Bloemfontein" },
-  { value: "Cape Town", label: "Cape Town" },
-  { value: "Maseru", label: "Maseru (Lesotho)" },
-  { value: "Harare", label: "Harare (Zimbabwe)" },
-  { value: "Bulawayo", label: "Bulawayo (Zimbabwe)" },
-];
-
 const Index = () => {
-  const navigate = useNavigate();
-  const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
-
-  const {
-    pickupCoordinates,
-    deliveryCoordinates,
-    pickupPlace,
-    deliveryPlace,
-  } = useMapboxDistance(origin, destination);
-
-  const handleGetQuote = () => {
-    navigate("/freight-estimator", {
-      state: { pickupLocation: origin, deliveryLocation: destination },
-    });
-  };
-
-  const [showScrollCue, setShowScrollCue] = useState(true);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 50) setShowScrollCue(false);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Hero — Map + Booking Form */}
-      <section id="main-content" className="relative pt-14 min-h-[85vh] flex flex-col" aria-label="Send a parcel">
-        {/* Map background */}
-        <div className="absolute inset-0 pt-14">
-          <RouteMap
-            pickupCoordinates={pickupCoordinates}
-            deliveryCoordinates={deliveryCoordinates}
-            pickupLabel={pickupPlace || "Pickup"}
-            deliveryLabel={deliveryPlace || "Delivery"}
-          />
-        </div>
-
-        {/* Booking card overlay */}
-        <div className="relative z-10 flex-1 flex items-end pb-12 px-4">
-          <motion.div
-            className="w-full max-w-md mx-auto bg-card/95 backdrop-blur-md rounded-2xl border border-border shadow-elevated p-6 space-y-4"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            role="form"
-            aria-label="Get a delivery quote"
-          >
-            <h1 className="font-display font-bold text-xl text-foreground">
-              Where are you sending?
-            </h1>
-
-            <div className="space-y-3">
-              <LocationInput
-                value={origin}
-                onChange={setOrigin}
-                suggestions={POPULAR_CITIES}
-                placeholder="Pickup city or address"
-              />
-              <LocationInput
-                value={destination}
-                onChange={setDestination}
-                suggestions={POPULAR_CITIES}
-                placeholder="Delivery city or address"
-              />
-            </div>
-
-            <Button
-              variant="coral"
-              size="lg"
-              className="w-full"
-              onClick={handleGetQuote}
-              disabled={!origin || !destination}
-            >
-              Get Quote
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
-
-            <p className="text-center text-xs text-muted-foreground">
-              <Link
-                to="/carrier-signup"
-                className="text-primary font-medium hover:underline"
-              >
-                I'm a traveler — earn on your trips →
-              </Link>
-            </p>
-          </motion.div>
-        </div>
-
-        {/* Scroll down cue */}
-        <AnimatePresence>
-          {showScrollCue && (
-            <motion.div
-              className="relative z-10 flex justify-center pb-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <button
-                onClick={() => window.scrollBy({ top: 300, behavior: "smooth" })}
-                className="flex flex-col items-center gap-1 text-muted-foreground/70 hover:text-foreground transition-colors touch-manipulation"
-                aria-label="Scroll down for more"
-              >
-                <span className="text-xs font-medium">More below</span>
-                <ChevronDown className="w-5 h-5 animate-bounce-gentle" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
+      <HeroSection />
 
       {/* Quick stats strip */}
       <section className="py-6 border-b border-border bg-card" aria-label="Key statistics">
@@ -160,7 +34,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* How It Works — compact row */}
+      {/* How It Works */}
       <section className="section-padding bg-mint-section">
         <div className="container-narrow">
           <h2 className="font-display font-extrabold text-2xl text-foreground text-center mb-8">
@@ -170,7 +44,7 @@ const Index = () => {
             {[
               { step: "01", title: "Book & Pay", desc: "Choose your route, pay online — a traveler heading your way picks up." },
               { step: "02", title: "Traveler Delivers", desc: "A verified member carries your parcel on a trip they're already making." },
-              { step: "03", title: "Collect", desc: "SMS on arrival. Show ID, collect your parcel — done." },
+              { step: "03", title: "Delivered", desc: "Your parcel is delivered to the address you provided — done." },
             ].map((item) => (
               <div key={item.step} className="p-6 rounded-2xl bg-card border border-border">
                 <div className="text-accent font-bold text-xs uppercase tracking-wider mb-2">
