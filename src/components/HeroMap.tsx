@@ -45,7 +45,7 @@ const HeroMap = () => {
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: "mapbox://styles/mapbox/navigation-night-v1",
       center: [27, -25],
       zoom: 4.2,
       interactive: false,
