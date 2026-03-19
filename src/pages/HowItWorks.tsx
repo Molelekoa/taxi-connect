@@ -30,12 +30,12 @@ const steps = [
   },
   {
     step: "03",
-    title: "Recipient Collects",
-    description: "The recipient is notified when the parcel arrives. They meet the traveler at an agreed point and show ID to collect.",
+    title: "Delivered to Your Door",
+    description: "Your parcel is delivered directly to the address you provided at booking. The recipient is notified on arrival and verifies with ID for a secure handover.",
     details: [
+      "Delivered to the address you specify",
       "SMS notification on arrival",
-      "ID verification for security",
-      "Meet at a mutually agreed point",
+      "ID verification for secure handover",
     ],
     icon: CheckCircle,
   },

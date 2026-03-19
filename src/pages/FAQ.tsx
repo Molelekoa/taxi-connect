@@ -17,7 +17,7 @@ const FAQ = () => {
       faqs: [
         {
           question: "What is Parcolo?",
-          answer: "Parcolo is a community-driven parcel delivery network based in Johannesburg, South Africa. We connect people who need parcels delivered with Traveler Partners who are already traveling to those destinations. It's a win-win: senders get affordable delivery, and travelers offset their petrol and toll costs."
+          answer: "Parcolo is a community-driven parcel delivery network based in Johannesburg, South Africa. We connect people who need parcels delivered with Traveler Partners who are already traveling to those destinations across South Africa, Lesotho, and Zimbabwe. It's a win-win: senders get affordable delivery, and travelers offset their petrol and toll costs."
         },
         {
           question: "How is this different from traditional couriers?",
@@ -25,7 +25,7 @@ const FAQ = () => {
         },
         {
           question: "What areas do you service?",
-          answer: "We service routes throughout South Africa and cross-border destinations including Lesotho, Zimbabwe, Botswana, Mozambique, and other SADC countries. Our network grows as more Traveler Partners join, so route availability expands with our community."
+          answer: "We service routes throughout South Africa and cross-border destinations including Lesotho and Zimbabwe. Our network grows as more Traveler Partners join, so route availability expands with our community."
         },
         {
           question: "Is my parcel safe with a community member?",
@@ -92,7 +92,7 @@ const FAQ = () => {
       faqs: [
         {
           question: "Can you deliver to other countries?",
-          answer: "Yes! Cross-border delivery is one of our specialties. We have active routes to Lesotho, Zimbabwe, Botswana, Mozambique, and other SADC destinations. Many of our Traveler Partners regularly cross borders and are familiar with the process."
+          answer: "Yes! Cross-border delivery is one of our specialties. We have active routes to Lesotho and Zimbabwe. Many of our Traveler Partners regularly cross borders and are familiar with the process."
         },
         {
           question: "How does customs work?",
