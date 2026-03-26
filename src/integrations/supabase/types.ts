@@ -811,6 +811,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      browse_pending_parcels: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string
+          dimensions: string
+          dropoff_location: string
+          id: string
+          include_tracking: boolean
+          pickup_earliest: string
+          pickup_latest: string
+          pickup_location: string
+          price: number
+          status: string
+          suburb: string
+          weight_band: string
+          weight_kg: number
+        }[]
+      }
       get_profile_id: { Args: { _auth_uid: string }; Returns: string }
       has_role: {
         Args: {
