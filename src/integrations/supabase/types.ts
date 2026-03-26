@@ -149,6 +149,63 @@ export type Database = {
           },
         ]
       }
+      driver_waitlist: {
+        Row: {
+          agreed_to_terms: boolean
+          city: string
+          country: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          license_type: string
+          loads_per_trip: number
+          max_load_kg: number
+          onboarded_at: string | null
+          phone: string
+          route_frequency: string
+          status: string
+          vehicle_description: string
+          years_with_license: string
+        }
+        Insert: {
+          agreed_to_terms?: boolean
+          city: string
+          country: string
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          license_type: string
+          loads_per_trip?: number
+          max_load_kg?: number
+          onboarded_at?: string | null
+          phone: string
+          route_frequency: string
+          status?: string
+          vehicle_description: string
+          years_with_license: string
+        }
+        Update: {
+          agreed_to_terms?: boolean
+          city?: string
+          country?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          license_type?: string
+          loads_per_trip?: number
+          max_load_kg?: number
+          onboarded_at?: string | null
+          phone?: string
+          route_frequency?: string
+          status?: string
+          vehicle_description?: string
+          years_with_license?: string
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           action: string
