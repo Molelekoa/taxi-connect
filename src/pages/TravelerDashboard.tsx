@@ -119,7 +119,7 @@ const TravelerDashboard = () => {
       if (tp?.status === "approved" && tp?.id) {
         const [routesResult, allPendingResult] = await Promise.all([
           supabase.from("traveler_routes").select("route_from, route_to").eq("traveler_profile_id", tp.id).then(r => r),
-          supabase.from("parcels").select("id, pickup_location, dropoff_location, weight_kg, weight_band, price, description, dimensions, pickup_earliest, pickup_latest, status, created_at, include_tracking, suburb, pickup_address, delivery_address").eq("status", "pending").then(r => r),
+          supabase.rpc("browse_pending_parcels").then(r => r),
         ]);
 
         const routes = routesResult.data;
