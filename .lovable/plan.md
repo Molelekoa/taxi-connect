@@ -1,43 +1,63 @@
-# Plan: Fix Traveler Dashboard Display & Admin Notification Issues
 
-## Problems Identified
 
-1. **Traveler Dashboard cards lack detail** — the screenshots confirm parcels show minimal info. The Browse and Matched tabs need prominent suburb, addresses, and pickup dates. Sender/recipient details and weight band must be hidden until after acceptance.
-2. **Admin status notifications silently fail** — The `notifications` table RLS policy "Admins can insert notifications" is **RESTRICTIVE** (not PERMISSIVE). PostgreSQL requires at least one PERMISSIVE policy to pass for a given command. With only a RESTRICTIVE INSERT policy and no PERMISSIVE one, all inserts are denied. The admin dashboard code doesn't throw on notification insert failure, so the status update succeeds but the notification is silently swallowed.
+# Revised Plan: Driver Waitlist with Admin Full Access
 
-## Changes
+## The Question
+Should the admin be able to browse the full platform while `PUBLIC_LAUNCHED=false`, or only see the waitlist + admin dashboard?
 
-### 1. Database Migration — Fix notifications INSERT RLS
+## Recommended Approach
+Give the admin **full platform access** even when the gate is off. This lets you continue testing, editing, and refining every page while the public only sees the waitlist.
 
-Drop the existing RESTRICTIVE admin insert policy and recreate it as **PERMISSIVE**. This allows admin-role users to actually insert notifications.
+## How It Works
 
-### 2. TravelerDashboard.tsx — Restructure parcel cards
+```text
+VITE_PUBLIC_LAUNCHED=false
+  Visitors (not logged in):
+    / → DriverWaitlist
+    * → Redirect to /
 
-**Browse & Matched tabs (pre-acceptance):** Show:
+  Admin (logged in + admin role):
+    / → DriverWaitlist (or Index — your choice)
+    /admin → AdminDashboard (with Waitlist tab)
+    /sender-dashboard, /traveler-dashboard, etc. → ALL accessible
+    Every route works normally
 
-- Route (pickup_location → dropoff_location)
-- Suburb
-- Pickup address & delivery address
-- Pickup window (earliest – latest)
-- Payout estimate
-- Description/dimensions  
-Weight Band
+VITE_PUBLIC_LAUNCHED=true
+  Everyone sees the full platform as normal
+```
 
-Hide: sender name/phone, recipient name/phone.
+## Implementation Detail
 
-**Carrying tab (accepted):** Show all of the above PLUS:
+In `App.tsx`, the launch gate check wraps routes in a component that:
+1. Checks `IS_LAUNCHED` — if `true`, render everything normally
+2. If `false`, checks if the current user has the admin role via `useIsAdmin()`
+3. If admin → render all routes normally
+4. If not admin → render only `/`, `/auth`, and catch-all redirect to `/`
 
-- Sender name & phone
-- Recipient name & phone
+This means **you can browse every page, test every flow, and make changes** while the public sees only the waitlist.
 
-**Delivered tab (accepted):** Same as Carrying — full details visible.
+## What You Get as Admin
 
-### 3. AdminDashboard.tsx — Handle notification insert errors
+| Capability | Available? |
+|---|---|
+| View full website (all pages) | Yes |
+| Make changes and test flows | Yes |
+| View driver waitlist signups | Yes (Admin Dashboard → Waitlist tab) |
+| Mark drivers as "onboarded" | Yes |
+| Filter signups by status | Yes |
+| Access admin dashboard | Yes |
+| Public sees the platform | No (only waitlist) |
 
-Add error checking on the notification insert so failures are surfaced rather than swallowed silently.
+## Files — same as original plan
+| File | Change |
+|---|---|
+| `.env` | Add `VITE_PUBLIC_LAUNCHED=false` |
+| `src/config/launchGate.ts` | New — export `IS_LAUNCHED` boolean |
+| `src/pages/DriverWaitlist.tsx` | New — waitlist landing page with signup form |
+| `src/pages/AdminDashboard.tsx` | Add "Waitlist" tab |
+| `src/App.tsx` | Launch gate logic: admin gets full access, public gets waitlist only |
+| Migration | New `driver_waitlist` table with RLS |
 
-## Files Modified
+## Toggling to Launch
+When you're ready to go live, change `VITE_PUBLIC_LAUNCHED=true` in your environment variables. The waitlist page stays accessible at a dedicated route if you want to keep it, but the full platform becomes public.
 
-- New migration SQL — fix notifications INSERT RLS policy
-- `src/pages/TravelerDashboard.tsx` — restructure all four tab card layouts
-- `src/pages/AdminDashboard.tsx` — add error handling on notification insert
