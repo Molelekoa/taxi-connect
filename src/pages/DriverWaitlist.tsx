@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Truck, Package, MapPin, CheckCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Loader2, Fuel, BadgeDollarSign, Clock, Users, ChevronDown, MapPin, CheckCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
 const COUNTRIES = ["South Africa", "Lesotho", "Zimbabwe"];
 
@@ -30,10 +30,56 @@ const CITIES: Record<string, string[]> = {
 const LICENSE_TYPES = ["Code B (Light vehicle)", "Code C1 (Heavy vehicle)", "Code EC (Articulated)"];
 const ROUTE_FREQUENCIES = ["Daily", "A few times a week", "Weekly", "Monthly", "Occasionally"];
 
+const BENEFITS = [
+  {
+    icon: Fuel,
+    title: "Cover Your Fuel",
+    desc: "Turn empty boot space into income that pays for your petrol and tolls.",
+  },
+  {
+    icon: Clock,
+    title: "Your Schedule, Your Rules",
+    desc: "No shifts, no bosses. Pick up parcels only when you're already traveling.",
+  },
+  {
+    icon: BadgeDollarSign,
+    title: "Get Paid Fast",
+    desc: "Earn per delivery, paid on completion. No waiting around.",
+  },
+  {
+    icon: Users,
+    title: "Community-Powered",
+    desc: "Join a trusted network of drivers across Southern Africa.",
+  },
+];
+
 const DriverWaitlist = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const formRef = useRef<HTMLFormElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // Easter egg: tap logo 5 times to navigate to /auth
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleLogoTap = useCallback(() => {
+    tapCountRef.current += 1;
+    clearTimeout(tapTimerRef.current);
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      navigate("/auth");
+      return;
+    }
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 2000);
+  }, [navigate]);
+
+  const scrollToForm = () => {
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -100,7 +146,7 @@ const DriverWaitlist = () => {
           </div>
           <h1 className="text-3xl font-display font-bold text-foreground">You're on the list!</h1>
           <p className="text-muted-foreground text-lg">
-            Thanks for signing up, <strong className="text-foreground">{fullName}</strong>. 
+            Thanks for signing up, <strong className="text-foreground">{fullName}</strong>.
             We'll reach out when it's time to get you onboarded.
           </p>
           <p className="text-sm text-muted-foreground">
@@ -119,17 +165,19 @@ const DriverWaitlist = () => {
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container-narrow flex items-center justify-between py-4">
-          <div>
+          <button
+            onClick={handleLogoTap}
+            className="text-left focus:outline-none"
+            aria-label="Parcolo"
+            type="button"
+          >
             <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">
               PARCOLO
             </h1>
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
               We Deliver Together
             </p>
-          </div>
-          <Link to="/auth">
-            <Button variant="ghost" size="sm">Admin Login</Button>
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -145,46 +193,57 @@ const DriverWaitlist = () => {
         </div>
       </div>
 
-      {/* Hero + Form */}
-      <main className="container-narrow py-12 md:py-16">
-        <div className="max-w-2xl mx-auto space-y-10">
+      {/* Hero */}
+      <main className="container-narrow py-12 md:py-20">
+        <div className="max-w-2xl mx-auto space-y-12">
           {/* Value Prop */}
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center gap-2 bg-accent/10 text-accent rounded-full px-4 py-1.5 text-sm font-medium">
-              <Truck className="w-4 h-4" />
-              Now recruiting drivers
-            </div>
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground leading-tight">
-              Earn money delivering parcels on routes you already travel
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-lg mx-auto">
-              Parcolo connects travelers with senders. Join our driver network and get paid for 
-              deliveries along your regular routes between South Africa, Lesotho, and Zimbabwe.
+          <div className="text-center space-y-6">
+            <p className="inline-block bg-accent/10 text-accent rounded-full px-4 py-1.5 text-sm font-semibold">
+              Be one of the first 50 drivers in your city
             </p>
+
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground leading-tight">
+              Cover Your Fuel.{" "}
+              <span className="text-gradient-coral">Pay Your Tolls.</span>
+            </h2>
+
+            <p className="text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
+              You're already driving the route — why not earn while you do it?
+              Parcolo matches travelers with senders so you get paid for the trips you're already making.
+            </p>
+
+            <Button
+              variant="coral"
+              size="xl"
+              onClick={scrollToForm}
+              className="mx-auto"
+            >
+              Join the Waitlist
+              <ChevronDown className="w-5 h-5 ml-1" />
+            </Button>
           </div>
 
-          {/* Benefits */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { icon: Package, title: "Flexible loads", desc: "Choose parcels that fit your trip" },
-              { icon: MapPin, title: "Your routes", desc: "No detours — deliver along your way" },
-              { icon: Truck, title: "Get paid", desc: "Earn per delivery, paid on completion" },
-            ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="card-soft p-4 text-center space-y-2">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+          {/* Benefits Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {BENEFITS.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="card-elevated p-5 space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Icon className="w-5 h-5 text-primary" />
                 </div>
-                <p className="font-semibold text-foreground text-sm">{title}</p>
-                <p className="text-xs text-muted-foreground">{desc}</p>
+                <p className="font-bold text-foreground">{title}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
 
           {/* Signup Form */}
-          <form onSubmit={handleSubmit} className="card-elevated p-6 md:p-8 space-y-6">
-            <h3 className="text-xl font-display font-bold text-foreground">
-              Join the driver waitlist
-            </h3>
+          <form ref={formRef} onSubmit={handleSubmit} className="card-elevated p-6 md:p-8 space-y-6 scroll-mt-6">
+            <div className="space-y-1">
+              <h3 className="text-xl font-display font-bold text-foreground">
+                Join the driver waitlist
+              </h3>
+              <p className="text-sm text-muted-foreground">Takes 2 minutes. No commitment.</p>
+            </div>
 
             {/* Personal Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -296,16 +355,18 @@ const DriverWaitlist = () => {
 
             <Button
               type="submit"
+              variant="coral"
+              size="xl"
               disabled={submitting || !agreedToTerms || !fullName || !email || !phone || !country || !city || !licenseType || !yearsWithLicense || !routeFrequency || !vehicleDescription}
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground glow-coral text-base py-6"
+              className="w-full"
             >
               {submitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
                   Submitting…
                 </>
               ) : (
-                "Join the Waitlist"
+                "Join the Waitlist — It's Free"
               )}
             </Button>
           </form>
