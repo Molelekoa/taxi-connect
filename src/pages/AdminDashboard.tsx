@@ -1136,6 +1136,7 @@ const AdminDashboard = () => {
                 <TabsTrigger value="errors" className="flex items-center gap-1.5"><ShieldX className="w-4 h-4" /> Errors</TabsTrigger>
                 <TabsTrigger value="metrics" className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4" /> Metrics</TabsTrigger>
                 <TabsTrigger value="storage" className="flex items-center gap-1.5"><HardDrive className="w-4 h-4" /> Storage</TabsTrigger>
+                <TabsTrigger value="waitlist" className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Waitlist</TabsTrigger>
               </TabsList>
 
               {/* ── TAB 1: OVERVIEW ─────────────────────────────────────────── */}
@@ -1576,6 +1577,11 @@ const AdminDashboard = () => {
               {/* ── TAB 7: STORAGE MANAGER ──────────────────────────────────── */}
               <TabsContent value="storage">
                 <StorageManagerTab parcels={parcels} />
+              </TabsContent>
+
+              {/* ── TAB 8: DRIVER WAITLIST ──────────────────────────────────── */}
+              <TabsContent value="waitlist">
+                <WaitlistTab />
               </TabsContent>
             </Tabs>
           )}
@@ -2063,6 +2069,127 @@ const MetricsTab = () => {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+};
+
+// ── Waitlist Tab ────────────────────────────────────────────────────────────────
+
+const WaitlistTab = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState("pending");
+
+  const { data: signups = [], isLoading } = useQuery({
+    queryKey: ["driver-waitlist", statusFilter],
+    queryFn: async () => {
+      let query = supabase.from("driver_waitlist" as any).select("*").order("created_at", { ascending: false });
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const onboardMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("driver_waitlist" as any)
+        .update({ status: "onboarded", onboarded_at: new Date().toISOString() } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["driver-waitlist"] });
+      toast({ title: "Driver marked as onboarded" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to update", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Driver Waitlist</h2>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="onboarded">Onboarded</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : signups.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            No signups found.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="rounded-lg border border-border overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>License</TableHead>
+                <TableHead>Frequency</TableHead>
+                <TableHead>Load</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {signups.map((s: any) => (
+                <TableRow key={s.id}>
+                  <TableCell className="font-medium">{s.full_name}</TableCell>
+                  <TableCell><CopyButton text={s.email} /></TableCell>
+                  <TableCell><CopyButton text={s.phone} /></TableCell>
+                  <TableCell className="text-xs">{s.city}, {s.country}</TableCell>
+                  <TableCell className="text-xs">{s.license_type}</TableCell>
+                  <TableCell className="text-xs">{s.route_frequency}</TableCell>
+                  <TableCell className="text-xs">{s.max_load_kg}kg × {s.loads_per_trip}</TableCell>
+                  <TableCell>
+                    <Badge variant={s.status === "onboarded" ? "default" : "secondary"}>
+                      {s.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(s.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {s.status === "pending" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onboardMutation.mutate(s.id)}
+                        disabled={onboardMutation.isPending}
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Onboard
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };
