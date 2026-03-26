@@ -1136,6 +1136,7 @@ const AdminDashboard = () => {
                 <TabsTrigger value="errors" className="flex items-center gap-1.5"><ShieldX className="w-4 h-4" /> Errors</TabsTrigger>
                 <TabsTrigger value="metrics" className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4" /> Metrics</TabsTrigger>
                 <TabsTrigger value="storage" className="flex items-center gap-1.5"><HardDrive className="w-4 h-4" /> Storage</TabsTrigger>
+                <TabsTrigger value="waitlist" className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Waitlist</TabsTrigger>
               </TabsList>
 
               {/* ── TAB 1: OVERVIEW ─────────────────────────────────────────── */}
