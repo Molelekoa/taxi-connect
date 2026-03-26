@@ -208,8 +208,9 @@ const DriverWaitlist = () => {
             </h2>
 
             <p className="text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
-              You're already driving the route — why not earn while you do it?
-              Parcolo matches travelers with senders so you get paid for the trips you're already making.
+              Collect parcels, earn extra cash.
+              Help people get things delivered from South Africa, Lesotho and Zimbabwe — without changing your route.
+              Parcolo matches travelers with senders. Get paid for trips you already make.
             </p>
 
             <Button
