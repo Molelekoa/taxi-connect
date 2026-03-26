@@ -1578,6 +1578,11 @@ const AdminDashboard = () => {
               <TabsContent value="storage">
                 <StorageManagerTab parcels={parcels} />
               </TabsContent>
+
+              {/* ── TAB 8: DRIVER WAITLIST ──────────────────────────────────── */}
+              <TabsContent value="waitlist">
+                <WaitlistTab />
+              </TabsContent>
             </Tabs>
           )}
         </div>
