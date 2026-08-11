@@ -318,7 +318,7 @@ const ParcelEstimator = () => {
                   </div>
 
                   <div className="text-4xl md:text-5xl font-display font-black text-primary my-4">
-                    R {priceBreakdown.finalPrice.toLocaleString()}
+                    R {priceBreakdown.finalPrice.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   
 
