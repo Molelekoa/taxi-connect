@@ -1211,7 +1211,7 @@ const SmallParcelBooking = () => {
                   <div className="text-center mb-4">
                     <p className="text-sm text-muted-foreground mb-1">Your Price</p>
                     <p className="font-display font-bold text-4xl text-primary">
-                      R{priceBreakdown.finalPrice.toLocaleString()}
+                      R{priceBreakdown.finalPrice.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   
@@ -1413,7 +1413,7 @@ const SmallParcelBooking = () => {
                         <div className="text-center mb-4">
                           <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
                           <p className="font-display font-bold text-4xl text-primary">
-                            R{priceBreakdown.finalPrice.toLocaleString()}
+                            R{priceBreakdown.finalPrice.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                         </div>
                         <div className="bg-background/50 rounded-lg p-3 text-xs space-y-1">
