@@ -357,6 +357,7 @@ export type Database = {
           delivery_lng: number | null
           description: string | null
           dimensions: string | null
+          distance_km: number | null
           dropoff_location: string | null
           id: string
           include_tracking: boolean | null
@@ -399,6 +400,7 @@ export type Database = {
           delivery_lng?: number | null
           description?: string | null
           dimensions?: string | null
+          distance_km?: number | null
           dropoff_location?: string | null
           id?: string
           include_tracking?: boolean | null
@@ -441,6 +443,7 @@ export type Database = {
           delivery_lng?: number | null
           description?: string | null
           dimensions?: string | null
+          distance_km?: number | null
           dropoff_location?: string | null
           id?: string
           include_tracking?: boolean | null
@@ -587,6 +590,114 @@ export type Database = {
           physical_address?: string | null
           role?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      quote_requests: {
+        Row: {
+          additional_insurance: boolean | null
+          commodity_class: string | null
+          company_name: string | null
+          contact_name: string
+          countries: string | null
+          created_at: string
+          customs_clearance: boolean | null
+          delivery_address: string
+          delivery_date: string | null
+          delivery_location_type: string | null
+          dimensions: string | null
+          email: string
+          hazmat: boolean | null
+          hazmat_class: string | null
+          hazmat_un: string | null
+          id: string
+          insurance_coverage: string | null
+          international: boolean | null
+          liftgate_required: string | null
+          load_description: string
+          pallet_count: string | null
+          phone: string
+          pickup_address: string
+          pickup_date: string | null
+          pickup_location_type: string | null
+          reference_numbers: string | null
+          shipment_type: string
+          special_instructions: string | null
+          stackable: string | null
+          status: string | null
+          temp_controlled: boolean | null
+          temp_range: string | null
+          weight: string
+        }
+        Insert: {
+          additional_insurance?: boolean | null
+          commodity_class?: string | null
+          company_name?: string | null
+          contact_name: string
+          countries?: string | null
+          created_at?: string
+          customs_clearance?: boolean | null
+          delivery_address: string
+          delivery_date?: string | null
+          delivery_location_type?: string | null
+          dimensions?: string | null
+          email: string
+          hazmat?: boolean | null
+          hazmat_class?: string | null
+          hazmat_un?: string | null
+          id?: string
+          insurance_coverage?: string | null
+          international?: boolean | null
+          liftgate_required?: string | null
+          load_description: string
+          pallet_count?: string | null
+          phone: string
+          pickup_address: string
+          pickup_date?: string | null
+          pickup_location_type?: string | null
+          reference_numbers?: string | null
+          shipment_type: string
+          special_instructions?: string | null
+          stackable?: string | null
+          status?: string | null
+          temp_controlled?: boolean | null
+          temp_range?: string | null
+          weight: string
+        }
+        Update: {
+          additional_insurance?: boolean | null
+          commodity_class?: string | null
+          company_name?: string | null
+          contact_name?: string
+          countries?: string | null
+          created_at?: string
+          customs_clearance?: boolean | null
+          delivery_address?: string
+          delivery_date?: string | null
+          delivery_location_type?: string | null
+          dimensions?: string | null
+          email?: string
+          hazmat?: boolean | null
+          hazmat_class?: string | null
+          hazmat_un?: string | null
+          id?: string
+          insurance_coverage?: string | null
+          international?: boolean | null
+          liftgate_required?: string | null
+          load_description?: string
+          pallet_count?: string | null
+          phone?: string
+          pickup_address?: string
+          pickup_date?: string | null
+          pickup_location_type?: string | null
+          reference_numbers?: string | null
+          shipment_type?: string
+          special_instructions?: string | null
+          stackable?: string | null
+          status?: string | null
+          temp_controlled?: boolean | null
+          temp_range?: string | null
+          weight?: string
         }
         Relationships: []
       }
