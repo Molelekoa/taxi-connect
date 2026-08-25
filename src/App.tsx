@@ -81,32 +81,8 @@ const FullPlatformRoutes = () => (
   </Routes>
 );
 
-/** Pre-launch routes — only waitlist, auth, and admin */
-const PreLaunchRoutes = () => (
-  <Routes>
-    <Route path="/" element={<DriverWaitlist />} />
-    <Route path="/auth" element={<Auth />} />
-    <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-    <Route path="/terms-of-service" element={<TermsOfService />} />
-    <Route path="/admin" element={
-      <AdminRoute><AdminDashboard /></AdminRoute>
-    } />
-    <Route path="*" element={<Navigate to="/" replace />} />
-  </Routes>
-);
-
-/** Decides which routes to render based on launch gate + admin status */
-const AppRoutes = () => {
-  const { isAdmin, isLoading } = useIsAdmin();
-
-  if (IS_LAUNCHED) return <FullPlatformRoutes />;
-
-  // Pre-launch: admin gets full access, everyone else gets waitlist
-  if (isLoading) return <PageFallback />;
-  if (isAdmin) return <FullPlatformRoutes />;
-  return <PreLaunchRoutes />;
-};
+/** Platform is fully public */
+const AppRoutes = () => <FullPlatformRoutes />;
 
 const App = () => (
   <ErrorBoundary>
