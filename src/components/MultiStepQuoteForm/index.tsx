@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Send, CheckCircle, RotateCcw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import ProgressIndicator from "./ProgressIndicator";
 import Step1Contact from "./Step1Contact";
@@ -65,6 +66,7 @@ const MultiStepQuoteForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   // Load from session storage
   useEffect(() => {
@@ -144,11 +146,25 @@ const MultiStepQuoteForm = () => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    sessionStorage.removeItem(STORAGE_KEY);
-    setIsSubmitted(true);
-    setIsLoading(false);
+    setSubmitError("");
+    try {
+      const { error } = await supabase.functions.invoke("submit-quote-request", {
+        body: formData,
+      });
+      if (error) {
+        throw new Error(error.message || "Failed to submit your quote request");
+      }
+      sessionStorage.removeItem(STORAGE_KEY);
+      setIsSubmitted(true);
+    } catch (err: unknown) {
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again or contact us directly."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearForm = () => {
@@ -286,6 +302,11 @@ const MultiStepQuoteForm = () => {
               </>
             )}
           </Button>
+        )}
+        {submitError && (
+          <p className="text-sm text-destructive text-center mt-4" role="alert">
+            {submitError}
+          </p>
         )}
       </div>
 

@@ -12,7 +12,7 @@ const ParcelPaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get("payment_id");
   const { user } = useAuth();
-  const [status, setStatus] = useState<"verifying" | "success" | "pending">("verifying");
+  const [status, setStatus] = useState<"verifying" | "success" | "pending" | "error">("verifying");
   const [parcelDetails, setParcelDetails] = useState<any>(null);
 
   useEffect(() => {
@@ -23,18 +23,26 @@ const ParcelPaymentSuccess = () => {
     if (!paymentId || !user) return;
 
     const verify = async () => {
-      // Poll for payment status
+      // Poll for payment status.
+      // NOTE: payment_id in the URL is the payment_records.id (set by
+      // process-parcel-payment), so query by id — NOT yoco_checkout_id.
       let attempts = 0;
       const maxAttempts = 10;
 
       const poll = async () => {
-        const { data } = await supabase
+        let hardError = false;
+        const { data, error } = await supabase
           .from("payment_records")
           .select("*, parcels:parcel_id(pickup_location, dropoff_location, weight_band, price)")
-          .eq("yoco_checkout_id", paymentId)
-          .single() as { data: any };
+          .eq("id", paymentId)
+          .maybeSingle() as { data: any; error: { message: string } | null };
 
-        if (data) {
+        // A genuine query failure (RLS/network) is different from "not visible yet"
+        if (error) {
+          hardError = true;
+        }
+
+        if (!error && data) {
           setParcelDetails(data.parcels);
           if (data.status === "paid") {
             setStatus("success");
@@ -43,10 +51,10 @@ const ParcelPaymentSuccess = () => {
         }
 
         attempts++;
-        if (attempts < maxAttempts) {
+        if (attempts < maxAttempts && !hardError) {
           setTimeout(poll, 2000);
         } else {
-          setStatus(data ? "pending" : "pending");
+          setStatus(hardError ? "error" : data ? "pending" : "pending");
         }
       };
 
@@ -112,6 +120,22 @@ const ParcelPaymentSuccess = () => {
                     <Button variant="outline">Book Another Parcel</Button>
                   </Link>
                 </div>
+              </>
+            )}
+
+            {status === "error" && (
+              <>
+                <Package className="w-16 h-16 text-destructive mx-auto mb-6" />
+                <h1 className="font-display font-bold text-2xl text-foreground mb-4">
+                  Couldn't Verify Payment
+                </h1>
+                <p className="text-muted-foreground mb-6">
+                  We had trouble confirming your payment. If you were charged, don't worry —
+                  check your dashboard or contact support with your payment reference.
+                </p>
+                <Link to="/sender-dashboard">
+                  <Button variant="hero">Go to Dashboard</Button>
+                </Link>
               </>
             )}
 

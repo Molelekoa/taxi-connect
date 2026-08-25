@@ -453,6 +453,7 @@ const SmallParcelBooking = () => {
         calculated_price: displayPrice,
         payment_status: 'unpaid',
         include_tracking: formData.includeTracking || false,
+        distance_km: effectiveDistance ?? null,
         description: formData.description || null,
         photo_url: parcelPhotoUrl,
         sender_name: isVerifiedSender ? (profileData?.full_name || '') : (formData.contactName || ''),

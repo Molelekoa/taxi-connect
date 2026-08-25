@@ -22,7 +22,7 @@ const NotificationBell = () => {
   const { profileId } = useProfileId();
   const queryClient = useQueryClient();
 
-  const { data: notifications = [] } = useQuery({
+  const { data: notifications = [], isError } = useQuery({
     queryKey: ["notifications", profileId],
     queryFn: async () => {
       if (!profileId) return [];
@@ -95,7 +95,9 @@ const NotificationBell = () => {
           )}
         </div>
         <ScrollArea className="max-h-80">
-          {notifications.length === 0 ? (
+          {isError ? (
+            <p className="p-4 text-sm text-destructive text-center">Couldn't load notifications</p>
+          ) : notifications.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground text-center">No notifications yet</p>
           ) : (
             notifications.map(n => (

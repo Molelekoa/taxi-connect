@@ -43,11 +43,11 @@ export const useParcelPaymentHandler = () => {
         } as any)
         .eq("id", parcelId);
 
-      // Call edge function to get Yoco checkout URL
+      // Call edge function to get Yoco checkout URL.
+      // The server derives the charge amount from stored parcel data —
+      // no amount is sent or trusted from the client.
       const { data, error } = await supabase.functions.invoke("process-parcel-payment", {
         body: {
-          amount: Math.round(amount * 100), // Convert to cents
-          currency: "ZAR",
           parcelId,
           paymentRecordId: paymentRecord.id,
         },

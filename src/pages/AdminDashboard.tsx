@@ -941,7 +941,7 @@ const AdminDashboard = () => {
   }, [toast, queryClient]);
 
   // Fetch all profiles
-  const { data: profiles = [], isLoading: profilesLoading } = useQuery({
+  const { data: profiles = [], isLoading: profilesLoading, isError: profilesError, refetch: refetchProfiles } = useQuery({
     queryKey: ["admin-profiles"],
     queryFn: async () => {
       const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
@@ -952,7 +952,7 @@ const AdminDashboard = () => {
   });
 
   // Fetch all parcels
-  const { data: parcels = [], isLoading: parcelsLoading } = useQuery({
+  const { data: parcels = [], isLoading: parcelsLoading, isError: parcelsError, refetch: refetchParcels } = useQuery({
     queryKey: ["admin-parcels"],
     queryFn: async () => {
       const { data, error } = await supabase.from("parcels").select("*").order("created_at", { ascending: false });
@@ -963,7 +963,7 @@ const AdminDashboard = () => {
   });
 
   // Fetch all traveler profiles with routes
-  const { data: travelerProfiles = [], isLoading: travelersLoading } = useQuery({
+  const { data: travelerProfiles = [], isLoading: travelersLoading, isError: travelersError, refetch: refetchTravelers } = useQuery({
     queryKey: ["admin-traveler-profiles"],
     queryFn: async () => {
       const { data, error } = await supabase.from("traveler_profiles").select("*, traveler_routes(*)");
@@ -1102,6 +1102,7 @@ const AdminDashboard = () => {
   const paginatedParcels = filteredParcels.slice(parcelsPage * PARCELS_PER_PAGE, (parcelsPage + 1) * PARCELS_PER_PAGE);
 
   const loading = profilesLoading || parcelsLoading || travelersLoading;
+  const loadError = profilesError || parcelsError || travelersError;
 
   return (
     <div className="min-h-screen bg-background">
@@ -1112,6 +1113,21 @@ const AdminDashboard = () => {
             <h1 className="text-3xl font-display font-bold text-foreground">Operations Hub</h1>
             <p className="text-muted-foreground mt-1">Complete oversight of shipments, users, evidence, and storage.</p>
           </div>
+
+          {loadError && !loading && (
+            <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3">
+              <p className="text-sm text-destructive">
+                Some dashboard data failed to load. Tables below may be incomplete.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { refetchProfiles(); refetchParcels(); refetchTravelers(); }}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center py-24">
