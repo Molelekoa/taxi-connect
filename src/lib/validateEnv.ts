@@ -1,14 +1,18 @@
 /**
- * Validates that all required VITE_ environment variables are set.
+ * Validates that the resolved Supabase configuration is usable.
  * Call this once at app startup (in main.tsx) so the app fails fast
  * with a clear error instead of crashing later with cryptic messages.
+ *
+ * Values resolve through src/integrations/supabase/env.ts, which falls
+ * back to the built-in project credentials when no VITE_ env vars are
+ * set — so a missing .env no longer bricks production builds.
  */
 
-const REQUIRED_VARS = [
-  "VITE_SUPABASE_URL",
-  "VITE_SUPABASE_PUBLISHABLE_KEY",
-  "VITE_SUPABASE_PROJECT_ID",
-] as const;
+import {
+  SUPABASE_PROJECT_ID,
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+} from "@/integrations/supabase/env";
 
 const OPTIONAL_VARS_WITH_WARNINGS = [
   "VITE_APP_URL", // Falls back to window.location.origin
@@ -17,15 +21,17 @@ const OPTIONAL_VARS_WITH_WARNINGS = [
 export function validateEnv(): void {
   const missing: string[] = [];
 
-  for (const key of REQUIRED_VARS) {
-    const value = import.meta.env[key];
-    if (!value || value.trim() === "") {
-      missing.push(key);
-    }
+  if (!SUPABASE_PROJECT_ID) missing.push("VITE_SUPABASE_PROJECT_ID");
+  if (!SUPABASE_URL) missing.push("VITE_SUPABASE_URL");
+  if (!SUPABASE_PUBLISHABLE_KEY) missing.push("VITE_SUPABASE_PUBLISHABLE_KEY");
+
+  if (!SUPABASE_URL.startsWith("https://") || !SUPABASE_URL.includes(".supabase.co")) {
+    console.error(`❌ VITE_SUPABASE_URL does not look like a Supabase URL: ${SUPABASE_URL}`);
+    missing.push("VITE_SUPABASE_URL (invalid format)");
   }
 
   if (missing.length > 0) {
-    const message = `❌ Missing required environment variables:\n${missing.map((k) => `  - ${k}`).join("\n")}\n\nCheck your .env file or Lovable project settings.`;
+    const message = `❌ Invalid Supabase configuration:\n${missing.map((k) => `  - ${k}`).join("\n")}\n\nCheck your .env file or build environment.`;
     console.error(message);
 
     // In production, show a user-friendly error instead of a blank page
@@ -43,7 +49,7 @@ export function validateEnv(): void {
       }
     }
 
-    throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+    throw new Error(`Invalid Supabase configuration: ${missing.join(", ")}`);
   }
 
   // Warn about optional vars that enhance functionality
