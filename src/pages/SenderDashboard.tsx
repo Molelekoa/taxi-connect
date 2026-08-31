@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Package, MapPin, CalendarDays, Scale, CheckCircle, Clock, User, RefreshCw, ArrowRightLeft, ShieldCheck, Trash2, XCircle } from "lucide-react";
 import DashboardErrorState from "@/components/DashboardErrorState";
+import DeliveryRating from "@/components/DeliveryRating";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +14,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useParcelPaymentHandler } from "@/hooks/useParcelPaymentHandler";
 
 const SenderDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { initiatePayment, isProcessing } = useParcelPaymentHandler();
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [parcels, setParcels] = useState<any[]>([]);
   const [matchesByParcel, setMatchesByParcel] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
@@ -28,6 +32,7 @@ const SenderDashboard = () => {
   const [confirmingArrival, setConfirmingArrival] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [cancellingParcel, setCancellingParcel] = useState<string | null>(null);
+  const [ratedParcels, setRatedParcels] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -49,6 +54,7 @@ const SenderDashboard = () => {
     try {
       const { data: pid } = await supabase.rpc("get_profile_id", { _auth_uid: user.id });
       if (!pid) { setLoading(false); return; }
+      setProfileId(pid);
 
       const [parcelsResult, matchesResult, notifsResult] = await Promise.all([
         supabase.from("parcels").select("*").order("created_at", { ascending: false }).then(r => r),
@@ -57,6 +63,17 @@ const SenderDashboard = () => {
       ]);
 
       setParcels(parcelsResult.data || []);
+
+      const ratedIds = new Set<string>();
+      const parcelList = (parcelsResult.data || []).map(p => p.id);
+      if (parcelList.length > 0) {
+        const ratedResult = await supabase
+          .from("delivery_ratings")
+          .select("parcel_id")
+          .in("parcel_id", parcelList);
+        for (const r of ratedResult.data || []) ratedIds.add(r.parcel_id);
+      }
+      setRatedParcels(ratedIds);
 
       const grouped: Record<string, any[]> = {};
       for (const m of matchesResult.data || []) {
@@ -255,6 +272,55 @@ const SenderDashboard = () => {
                           <p className="text-xs font-semibold text-success flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" /> You confirmed arrival — awaiting admin approval
                           </p>
+                        </div>
+                      )}
+
+                      {/* Rate the traveler after delivery is verified */}
+                      {parcel.status === "delivered_verified" && !ratedParcels.has(parcel.id) && profileId && (
+                        <div className="border border-border rounded-lg p-3">
+                          <DeliveryRating
+                            onSubmit={async (rating, feedback) => {
+                              const { error } = await supabase.from("delivery_ratings").insert({
+                                parcel_id: parcel.id,
+                                rated_by: profileId,
+                                rating,
+                                review: feedback || null,
+                              } as any);
+                              if (error) {
+                                toast({ title: "Failed to submit rating", description: error.message, variant: "destructive" });
+                              } else {
+                                setRatedParcels(prev => new Set(prev).add(parcel.id));
+                                toast({ title: "Rating submitted", description: "Thanks for the feedback!" });
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Pay now for unpaid parcels (pay-later flow) */}
+                      {(parcel.payment_status === "unpaid" || parcel.payment_status === "failed") && profileId && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-primary flex items-center gap-1">
+                            Payment pending
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1 mb-3">
+                            Complete payment to secure your delivery.
+                          </p>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            disabled={isProcessing}
+                            onClick={() => {
+                              const amount = Number(parcel.calculated_price ?? parcel.price ?? 0);
+                              if (!amount || amount <= 0) {
+                                toast({ title: "Unable to pay", description: "No amount set for this parcel.", variant: "destructive" });
+                                return;
+                              }
+                              initiatePayment({ parcelId: parcel.id, amount, profileId });
+                            }}
+                          >
+                            {isProcessing ? "Redirecting to payment..." : `Pay Now — R${Number(parcel.calculated_price ?? parcel.price ?? 0).toFixed(0)}`}
+                          </Button>
                         </div>
                       )}
 

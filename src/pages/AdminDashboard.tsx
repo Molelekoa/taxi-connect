@@ -414,6 +414,7 @@ const TravelerSheet = ({ traveler, profile, open, onClose }: { traveler: Travele
             <Row label="Email"><CopyButton text={profile?.email ?? null} /></Row>
             <Row label="Phone"><CopyButton text={profile?.phone ?? null} /></Row>
             <Row label="Country">{profile?.country ?? "—"}</Row>
+            <Row label="ID Number">{traveler.id_number || traveler.passport_number || "—"}</Row>
           </Section>
           <Section title="Vehicle">
             <Row label="Type">{traveler.vehicle_type ?? "—"}</Row>

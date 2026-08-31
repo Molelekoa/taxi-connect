@@ -110,9 +110,11 @@ Deno.serve(async (req) => {
     const phone = formData.get("phone") as string;
     const country = formData.get("country") as string;
     const physicalAddress = formData.get("physicalAddress") as string;
+    const idNumber = formData.get("idNumber") as string;
+    const passportNumber = formData.get("passportNumber") as string;
 
     // Server-side required field validation
-    if (!fullName || !phone || !country || !physicalAddress) {
+    if (!fullName || !phone || !country || !physicalAddress || !idNumber) {
       return new Response(JSON.stringify({ error: "Missing required personal fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -124,7 +126,9 @@ Deno.serve(async (req) => {
       fullName.length > 150 ||
       phone.length > 30 ||
       country.length > 100 ||
-      physicalAddress.length > 500
+      physicalAddress.length > 500 ||
+      idNumber.length > 50 ||
+      (passportNumber ?? "").length > 50
     ) {
       return new Response(JSON.stringify({ error: "Field value too long" }), {
         status: 400,
@@ -255,6 +259,8 @@ Deno.serve(async (req) => {
         license_type: licenseType,
         years_with_license: yearsWithLicense,
         no_criminal_record: noCriminalRecord,
+        id_number: idNumber,
+        passport_number: passportNumber,
         id_copy_url: idCopyUrl,
         license_copy_url: licenseCopyUrl,
         vehicle_photo_url: vehiclePhotoUrl,

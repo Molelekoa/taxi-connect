@@ -11,6 +11,7 @@ const steps = [
   { number: 3, label: "Vehicle" },
   { number: 4, label: "Routes" },
   { number: 5, label: "Review" },
+  { number: 6, label: "Confirm" },
 ];
 
 const ProgressIndicator = ({ currentStep }: ProgressIndicatorProps) => {

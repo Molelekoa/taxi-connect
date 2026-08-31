@@ -37,6 +37,7 @@ const TravelerDashboard = () => {
   const { toast } = useToast();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [travelerStatus, setTravelerStatus] = useState<string>("pending");
+  const travelerStatusRef = useRef<string>("pending");
   const [trips, setTrips] = useState<any[]>([]);
   const [pendingMatches, setPendingMatches] = useState<any[]>([]);
   const [acceptedMatches, setAcceptedMatches] = useState<any[]>([]);
@@ -101,6 +102,7 @@ const TravelerDashboard = () => {
         .eq("profile_id", pid)
         .single() as { data: any };
       setTravelerStatus(tp?.status || "pending");
+      travelerStatusRef.current = tp?.status || "pending";
 
       const [tripsResult, pendingResult, acceptedResult] = await Promise.all([
         supabase.from("trips").select("*").order("travel_date", { ascending: true }).then(r => r),
@@ -165,10 +167,17 @@ const TravelerDashboard = () => {
           { event: "UPDATE", schema: "public", table: "traveler_profiles", filter: `profile_id=eq.${pid}` },
           (payload) => {
             const newStatus = (payload.new as any)?.status;
-            if (newStatus) {
+            const oldStatus = travelerStatusRef.current;
+            if (newStatus && newStatus !== oldStatus) {
               setTravelerStatus(newStatus);
               fetchData(); // re-fetch all data when status changes
+              if (newStatus === "approved") {
+                toast({ title: "Application approved! 🎉", description: "You can now post trips and start earning." });
+              } else if (newStatus === "rejected") {
+                toast({ title: "Application not approved", description: "Please contact support for more details.", variant: "destructive" });
+              }
             }
+            travelerStatusRef.current = newStatus;
           }
         )
         .subscribe();

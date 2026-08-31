@@ -147,6 +147,8 @@ const CarrierRegistrationForm = () => {
       fd.append("phone", formData.phone);
       fd.append("country", formData.country);
       fd.append("physicalAddress", formData.physicalAddress);
+      fd.append("idNumber", formData.idNumber);
+      fd.append("passportNumber", formData.passportNumber);
       // License
       fd.append("licenseType", formData.licenseType);
       fd.append("yearsWithLicense", formData.yearsWithLicense);

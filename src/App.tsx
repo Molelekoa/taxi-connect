@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -17,7 +17,6 @@ import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 
 // Lazy-load all other routes for smaller initial bundle
-const GetQuote = lazy(() => import("./pages/GetQuote"));
 const CarrierSignup = lazy(() => import("./pages/CarrierSignup"));
 const HowItWorks = lazy(() => import("./pages/HowItWorks"));
 const Services = lazy(() => import("./pages/Services"));
@@ -46,7 +45,7 @@ const FullPlatformRoutes = () => (
     <Route path="/" element={<Index />} />
     <Route path="/auth" element={<Auth />} />
     <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/get-quote" element={<GetQuote />} />
+    <Route path="/get-quote" element={<Navigate to="/freight-estimator" replace />} />
     <Route path="/freight-estimator" element={<FreightEstimator />} />
     <Route path="/small-parcel" element={
       <ProtectedRoute><SmallParcelBooking /></ProtectedRoute>

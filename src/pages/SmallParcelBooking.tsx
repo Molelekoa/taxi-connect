@@ -609,8 +609,11 @@ const SmallParcelBooking = () => {
                 <Button onClick={() => setIsSuccess(false)} variant="outline">
                   Book Another Parcel
                 </Button>
+                <Link to="/sender-dashboard">
+                  <Button variant="hero">View My Parcels</Button>
+                </Link>
                 <Link to="/">
-                  <Button variant="hero">Return Home</Button>
+                  <Button variant="outline">Return Home</Button>
                 </Link>
               </div>
             </motion.div>
