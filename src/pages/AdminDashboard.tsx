@@ -110,6 +110,8 @@ type TravelerProfile = {
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_relation: string | null;
+  id_number: string | null;
+  passport_number: string | null;
   id_copy_url: string | null;
   license_copy_url: string | null;
   vehicle_photo_url: string | null;

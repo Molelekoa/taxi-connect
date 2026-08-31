@@ -714,6 +714,7 @@ export type Database = {
           has_valid_insurance: boolean | null
           id: string
           id_copy_url: string | null
+          id_number: string | null
           license_copy_url: string | null
           license_disk_url: string | null
           license_type: string | null
@@ -721,6 +722,7 @@ export type Database = {
           min_load_capacity: string | null
           no_criminal_record: boolean | null
           parcels_per_trip: string | null
+          passport_number: string | null
           profile_id: string
           proof_of_residence_url: string | null
           referral_source: string | null
@@ -749,6 +751,7 @@ export type Database = {
           has_valid_insurance?: boolean | null
           id?: string
           id_copy_url?: string | null
+          id_number?: string | null
           license_copy_url?: string | null
           license_disk_url?: string | null
           license_type?: string | null
@@ -756,6 +759,7 @@ export type Database = {
           min_load_capacity?: string | null
           no_criminal_record?: boolean | null
           parcels_per_trip?: string | null
+          passport_number?: string | null
           profile_id: string
           proof_of_residence_url?: string | null
           referral_source?: string | null
@@ -784,6 +788,7 @@ export type Database = {
           has_valid_insurance?: boolean | null
           id?: string
           id_copy_url?: string | null
+          id_number?: string | null
           license_copy_url?: string | null
           license_disk_url?: string | null
           license_type?: string | null
@@ -791,6 +796,7 @@ export type Database = {
           min_load_capacity?: string | null
           no_criminal_record?: boolean | null
           parcels_per_trip?: string | null
+          passport_number?: string | null
           profile_id?: string
           proof_of_residence_url?: string | null
           referral_source?: string | null
