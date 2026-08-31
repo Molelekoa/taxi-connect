@@ -180,6 +180,13 @@ Deno.serve(async (req) => {
     const emergencyContactPhone = formData.get("emergencyContactPhone") as string;
     const referralSource = formData.get("referralSource") as string;
 
+    // Payout / banking details (optional at signup)
+    const bankName = formData.get("bankName") as string;
+    const bankAccountHolder = formData.get("bankAccountHolder") as string;
+    const bankAccountNumber = formData.get("bankAccountNumber") as string;
+    const bankBranchCode = formData.get("bankBranchCode") as string;
+    const bankAccountType = formData.get("bankAccountType") as string;
+
     // Routes
     const routeFromPrimary = formData.get("routeFromPrimary") as string;
     const routeToPrimary = formData.get("routeToPrimary") as string;
@@ -287,6 +294,11 @@ Deno.serve(async (req) => {
         emergency_contact_relation: emergencyContactRelation,
         emergency_contact_phone: emergencyContactPhone,
         referral_source: referralSource,
+        bank_name: bankName || null,
+        bank_account_holder: bankAccountHolder || null,
+        bank_account_number: bankAccountNumber || null,
+        bank_branch_code: bankBranchCode || null,
+        bank_account_type: bankAccountType || null,
       })
       .select("id")
       .single();

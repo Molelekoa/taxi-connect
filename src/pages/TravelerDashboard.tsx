@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PostTrip from "@/components/PostTrip";
@@ -42,7 +43,17 @@ const TravelerDashboard = () => {
   const [pendingMatches, setPendingMatches] = useState<any[]>([]);
   const [acceptedMatches, setAcceptedMatches] = useState<any[]>([]);
   const [deliveredMatches, setDeliveredMatches] = useState<any[]>([]);
+  const [payoutsByMatch, setPayoutsByMatch] = useState<Record<string, any>>({});
   const [browseParcels, setBrowseParcels] = useState<any[]>([]);
+  const [bankDetails, setBankDetails] = useState({
+    bankName: "",
+    bankAccountHolder: "",
+    bankAccountNumber: "",
+    bankBranchCode: "",
+    bankAccountType: "",
+  });
+  const [showBankDialog, setShowBankDialog] = useState(false);
+  const [savingBank, setSavingBank] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -98,11 +109,18 @@ const TravelerDashboard = () => {
 
       const { data: tp } = await supabase
         .from("traveler_profiles")
-        .select("id, status")
+        .select("id, status, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type")
         .eq("profile_id", pid)
         .single() as { data: any };
       setTravelerStatus(tp?.status || "pending");
       travelerStatusRef.current = tp?.status || "pending";
+      setBankDetails({
+        bankName: tp?.bank_name || "",
+        bankAccountHolder: tp?.bank_account_holder || "",
+        bankAccountNumber: tp?.bank_account_number || "",
+        bankBranchCode: tp?.bank_branch_code || "",
+        bankAccountType: tp?.bank_account_type || "",
+      });
 
       const [tripsResult, pendingResult, acceptedResult] = await Promise.all([
         supabase.from("trips").select("*").order("travel_date", { ascending: true }).then(r => r),
@@ -117,6 +135,12 @@ const TravelerDashboard = () => {
       const carryingStatuses = ["claimed", "matched", "collected", "in_transit", "in-transit", "delivered_pending_verification", "pending"];
       setAcceptedMatches(myAccepted.filter((m: any) => carryingStatuses.includes(m.parcels?.status)));
       setDeliveredMatches(myAccepted.filter((m: any) => m.parcels?.status === "delivered_verified"));
+
+      // Fetch the traveler's payouts (earnings) so they can see status per delivery.
+      const payoutsResult = await supabase.from("payouts").select("*").eq("traveler_id", pid);
+      const payoutsMap: Record<string, any> = {};
+      for (const p of payoutsResult.data || []) payoutsMap[p.match_id] = p;
+      setPayoutsByMatch(payoutsMap);
 
       if (tp?.status === "approved" && tp?.id) {
         const [routesResult, allPendingResult] = await Promise.all([
@@ -376,6 +400,29 @@ const TravelerDashboard = () => {
     );
   };
 
+  const handleSaveBank = async () => {
+    if (!bankDetails.bankAccountHolder || !bankDetails.bankAccountNumber || !bankDetails.bankName) {
+      toast({ title: "Missing details", description: "Bank name, account holder and account number are required.", variant: "destructive" });
+      return;
+    }
+    setSavingBank(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const res = await supabase.functions.invoke("upsert-bank-details", {
+        body: bankDetails,
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data && res.data.success === false) throw new Error(res.data.error || "Failed to save");
+      toast({ title: "Payout details saved", description: "We'll use these for your earnings payments." });
+      setShowBankDialog(false);
+    } catch (err: any) {
+      toast({ title: "Failed to save", description: err.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setSavingBank(false);
+    }
+  };
+
   const statusBadge = (status: string) => {
     const variants: Record<string, string> = {
       active: "bg-success/10 text-success",
@@ -416,6 +463,17 @@ const TravelerDashboard = () => {
                 </div>
               </div>
             )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div className="text-sm text-muted-foreground">
+                {bankDetails.bankName
+                  ? <p>Payout account: <span className="font-medium text-foreground">{bankDetails.bankName}</span> ···{bankDetails.bankAccountNumber.slice(-4) || "····"}</p>
+                  : <p className="text-amber-600 text-xs">No payout account set yet — add one to receive earnings.</p>}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowBankDialog(true)}>
+                <Package className="w-3.5 h-3.5 mr-1.5" /> Payout Settings
+              </Button>
+            </div>
 
             <Tabs defaultValue={isApproved ? "browse" : "trips"} className="w-full">
               <TabsList className="mb-6 bg-secondary border border-border h-auto flex-wrap gap-1 p-1.5 w-full">
@@ -737,13 +795,35 @@ const TravelerDashboard = () => {
                       {match.parcels?.price && (
                         <p className="text-sm">{payoutDisplay(match.parcels.price)}</p>
                       )}
-                      <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-xs">
-                          <p className="font-medium text-success">💰 Payment Information</p>
-                          <p className="text-foreground mt-1">Your delivery has been verified! Payment is being processed.</p>
-                          {match.parcels?.verified_at && (
-                            <p className="text-muted-foreground mt-1">Verified: {new Date(match.parcels.verified_at).toLocaleString()}</p>
-                          )}
-                        </div>
+                      {(() => {
+                        const payout = payoutsByMatch[match.id];
+                        if (!payout) {
+                          return (
+                            <div className="bg-muted/50 border border-border rounded-lg p-3 text-xs">
+                              <p className="font-medium text-muted-foreground">Payment</p>
+                              <p className="text-foreground mt-1">Awaiting admin approval to generate your payout.</p>
+                            </div>
+                          );
+                        }
+                        const paid = payout.status === "paid";
+                        return (
+                          <div className={`${paid ? "bg-success/10 border-success/20" : "bg-amber-50/60 border-amber-200"} border rounded-lg p-3 text-xs`}>
+                            <p className={`font-medium ${paid ? "text-success" : "text-amber-700"}`}>
+                              {paid ? "Payout sent ✓" : "Payout pending"}
+                            </p>
+                            <p className="text-foreground mt-1 font-semibold">R{Number(payout.amount).toFixed(2)}</p>
+                            {paid && payout.paid_at && (
+                              <p className="text-muted-foreground mt-1">Paid: {new Date(payout.paid_at).toLocaleString()}</p>
+                            )}
+                            {!paid && (
+                              <p className="text-muted-foreground mt-1">Payment will be made within 72 hours of approval.</p>
+                            )}
+                            {match.parcels?.verified_at && (
+                              <p className="text-muted-foreground mt-1">Verified: {new Date(match.parcels.verified_at).toLocaleString()}</p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))
                 )}
@@ -777,6 +857,72 @@ const TravelerDashboard = () => {
               onClick={handleCancel}
             >
               {cancelling ? "Cancelling..." : "Confirm Cancel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payout / Bank Details Dialog */}
+      <Dialog open={showBankDialog} onOpenChange={setShowBankDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Payout Details</DialogTitle>
+            <DialogDescription>Add your bank details so we can pay you for completed deliveries.</DialogDescription>
+          </DialogHeader>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <Label htmlFor="bankAccountHolder">Account Holder Name *</Label>
+              <Input
+                id="bankAccountHolder"
+                value={bankDetails.bankAccountHolder}
+                onChange={(e) => setBankDetails(d => ({ ...d, bankAccountHolder: e.target.value }))}
+                placeholder="Full name as on account"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="bankName">Bank Name *</Label>
+              <Input
+                id="bankName"
+                value={bankDetails.bankName}
+                onChange={(e) => setBankDetails(d => ({ ...d, bankName: e.target.value }))}
+                placeholder="e.g. Standard Bank, ABSA"
+              />
+            </div>
+            <div>
+              <Label htmlFor="bankAccountNumber">Account Number *</Label>
+              <Input
+                id="bankAccountNumber"
+                value={bankDetails.bankAccountNumber}
+                onChange={(e) => setBankDetails(d => ({ ...d, bankAccountNumber: e.target.value }))}
+                placeholder="Account number"
+              />
+            </div>
+            <div>
+              <Label htmlFor="bankBranchCode">Branch Code</Label>
+              <Input
+                id="bankBranchCode"
+                value={bankDetails.bankBranchCode}
+                onChange={(e) => setBankDetails(d => ({ ...d, bankBranchCode: e.target.value }))}
+                placeholder="e.g. 051001"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="bankAccountType">Account Type</Label>
+              <RadioGroup
+                value={bankDetails.bankAccountType}
+                onValueChange={(value) => setBankDetails(d => ({ ...d, bankAccountType: value }))}
+                className="flex gap-6"
+              >
+                <div className="flex items-center space-x-2"><RadioGroupItem value="cheque" id="ba-cheque" /><Label htmlFor="ba-cheque">Cheque / Current</Label></div>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="savings" id="ba-savings" /><Label htmlFor="ba-savings">Savings</Label></div>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="international" id="ba-intl" /><Label htmlFor="ba-intl">International</Label></div>
+              </RadioGroup>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBankDialog(false)}>Cancel</Button>
+            <Button variant="hero" onClick={handleSaveBank} disabled={savingBank}>
+              {savingBank ? "Saving..." : "Save Details"}
             </Button>
           </DialogFooter>
         </DialogContent>

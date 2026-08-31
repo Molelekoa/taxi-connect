@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     // Fetch match with trip and parcel
     const { data: match, error: matchErr } = await supabase
       .from("matches")
-      .select("*, trips(traveler_id), parcels(id, pickup_location, dropoff_location, sender_id)")
+      .select("*, trips(traveler_id), parcels(id, pickup_location, dropoff_location, sender_id, calculated_price, price)")
       .eq("id", matchId)
       .single();
 
@@ -84,6 +84,26 @@ Deno.serve(async (req) => {
       const paymentMessage = (dayOfWeek >= 1 && dayOfWeek <= 4)
         ? "Your delivery has been approved! Payment will be made within 72 hours."
         : "Your delivery has been approved! Payment will be made on Wednesday.";
+
+      // Create (or keep existing) payout record for the approved delivery.
+      const payoutAmount = Number(match.parcels?.calculated_price ?? match.parcels?.price ?? 0) * Number(Deno.env.get("PAYOUT_RATE") || 0.65);
+      if (payoutAmount > 0 && match.trips?.traveler_id) {
+        const { data: existingPayout } = await supabase
+          .from("payouts")
+          .select("id")
+          .eq("match_id", matchId)
+          .maybeSingle();
+        if (!existingPayout) {
+          await supabase.from("payouts").insert({
+            match_id: matchId,
+            parcel_id: match.parcel_id,
+            traveler_id: match.trips.traveler_id,
+            amount: Math.round(payoutAmount * 100) / 100,
+            payout_rate: Number(Deno.env.get("PAYOUT_RATE") || 0.65),
+            status: "pending",
+          });
+        }
+      }
 
       // Notify traveler
       if (match.trips?.traveler_id) {

@@ -176,6 +176,12 @@ const CarrierRegistrationForm = () => {
       fd.append("emergencyContactRelation", formData.emergencyContactRelation);
       fd.append("emergencyContactPhone", formData.emergencyContactPhone);
       fd.append("referralSource", formData.referralSource);
+      // Payout / banking
+      fd.append("bankName", formData.bankName ?? "");
+      fd.append("bankAccountHolder", formData.bankAccountHolder ?? "");
+      fd.append("bankAccountNumber", formData.bankAccountNumber ?? "");
+      fd.append("bankBranchCode", formData.bankBranchCode ?? "");
+      fd.append("bankAccountType", formData.bankAccountType ?? "");
       // Routes
       fd.append("routeFromPrimary", formData.primaryRouteFrom);
       fd.append("routeToPrimary", formData.primaryRouteTo);

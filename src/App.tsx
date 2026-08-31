@@ -33,6 +33,7 @@ const SenderDashboard = lazy(() => import("./pages/SenderDashboard"));
 const ParcelPaymentSuccess = lazy(() => import("./pages/ParcelPaymentSuccess"));
 const ParcelPaymentCancelled = lazy(() => import("./pages/ParcelPaymentCancelled"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminPayouts = lazy(() => import("./pages/AdminPayouts"));
 const DriverWaitlist = lazy(() => import("./pages/DriverWaitlist"));
 
 const queryClient = new QueryClient();
@@ -72,6 +73,9 @@ const FullPlatformRoutes = () => (
     } />
     <Route path="/admin" element={
       <AdminRoute><AdminDashboard /></AdminRoute>
+    } />
+    <Route path="/admin/payouts" element={
+      <AdminRoute><AdminPayouts /></AdminRoute>
     } />
     <Route path="/driver-waitlist" element={<DriverWaitlist />} />
     <Route path="*" element={<NotFound />} />

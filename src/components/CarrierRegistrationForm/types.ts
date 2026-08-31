@@ -83,6 +83,13 @@ export const step4Schema = z.object({
     .string()
     .min(10, "Phone number must be at least 10 digits")
     .regex(/^[\d\s\-\(\)\+]+$/, "Please enter a valid phone number"),
+
+  // Payout / banking details (optional at signup, required before first payout)
+  bankName: z.string().optional(),
+  bankAccountHolder: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  bankBranchCode: z.string().optional(),
+  bankAccountType: z.string().optional(),
 });
 
 // Step 5: Review (no validation needed - just viewing data)
@@ -160,4 +167,10 @@ export const initialFormData: CarrierFormData = {
   // Step 5 - Review
   referralSource: "",
   termsAccepted: false,
+  // Payout / banking details
+  bankName: "",
+  bankAccountHolder: "",
+  bankAccountNumber: "",
+  bankBranchCode: "",
+  bankAccountType: "",
 };

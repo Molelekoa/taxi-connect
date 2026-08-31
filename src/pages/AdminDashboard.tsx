@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -1112,9 +1113,16 @@ const AdminDashboard = () => {
       <Navbar />
       <main className="pt-20 pb-12">
         <div className="container-narrow">
-          <div className="mb-8">
-            <h1 className="text-3xl font-display font-bold text-foreground">Operations Hub</h1>
-            <p className="text-muted-foreground mt-1">Complete oversight of shipments, users, evidence, and storage.</p>
+          <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-display font-bold text-foreground">Operations Hub</h1>
+              <p className="text-muted-foreground mt-1">Complete oversight of shipments, users, evidence, and storage.</p>
+            </div>
+            <Link to="/admin/payouts">
+              <Button variant="outline" size="sm">
+                <DollarSign className="w-4 h-4 mr-1.5" /> Traveler Payouts
+              </Button>
+            </Link>
           </div>
 
           {loadError && !loading && (

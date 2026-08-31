@@ -560,6 +560,72 @@ const Step4Operations = ({ formData, updateFormData, errors }: Step4Props) => {
           )}
         </div>
       </div>
+
+      {/* PAYOUT / BANKING DETAILS */}
+      <div className="pt-6 border-t border-border">
+        <Label className="mb-4 block text-lg font-semibold flex items-center gap-2">
+          <Package className="w-5 h-5 text-primary" />
+          Payout Details
+        </Label>
+        <p className="text-sm text-muted-foreground mb-4">
+          Add bank details so we can pay you for completed deliveries. You can add these now or update them later from your dashboard before your first payout.
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <Label htmlFor="bankAccountHolder">Account Holder Name</Label>
+            <Input
+              id="bankAccountHolder"
+              value={formData.bankAccountHolder}
+              onChange={(e) => updateFormData({ bankAccountHolder: e.target.value })}
+              placeholder="Full name as on account"
+            />
+          </div>
+          <div>
+            <Label htmlFor="bankName">Bank Name</Label>
+            <Input
+              id="bankName"
+              value={formData.bankName}
+              onChange={(e) => updateFormData({ bankName: e.target.value })}
+              placeholder="e.g. Standard Bank, ABSA"
+            />
+          </div>
+          <div>
+            <Label htmlFor="bankAccountNumber">Account Number</Label>
+            <Input
+              id="bankAccountNumber"
+              value={formData.bankAccountNumber}
+              onChange={(e) => updateFormData({ bankAccountNumber: e.target.value })}
+              placeholder="Account number"
+            />
+          </div>
+          <div>
+            <Label htmlFor="bankBranchCode">Branch Code</Label>
+            <Input
+              id="bankBranchCode"
+              value={formData.bankBranchCode}
+              onChange={(e) => updateFormData({ bankBranchCode: e.target.value })}
+              placeholder="e.g. 051001"
+            />
+          </div>
+          <div>
+            <Label htmlFor="bankAccountType">Account Type</Label>
+            <Select
+              value={formData.bankAccountType}
+              onValueChange={(value) => updateFormData({ bankAccountType: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select account type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cheque">Cheque / Current</SelectItem>
+                <SelectItem value="savings">Savings</SelectItem>
+                <SelectItem value="international">International</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
