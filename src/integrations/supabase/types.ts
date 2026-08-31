@@ -548,6 +548,70 @@ export type Database = {
           },
         ]
       }
+      payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          match_id: string
+          notes: string | null
+          paid_at: string | null
+          parcel_id: string | null
+          payout_rate: number
+          status: string
+          traveler_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          match_id: string
+          notes?: string | null
+          paid_at?: string | null
+          parcel_id?: string | null
+          payout_rate?: number
+          status?: string
+          traveler_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          match_id?: string
+          notes?: string | null
+          paid_at?: string | null
+          parcel_id?: string | null
+          payout_rate?: number
+          status?: string
+          traveler_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_traveler_id_fkey"
+            columns: ["traveler_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           auth_id: string
@@ -705,6 +769,11 @@ export type Database = {
         Row: {
           advance_notice: string | null
           available_days: string[] | null
+          bank_account_holder: string | null
+          bank_account_number: string | null
+          bank_account_type: string | null
+          bank_branch_code: string | null
+          bank_name: string | null
           cargo_types: string[] | null
           created_at: string
           departure_time: string | null
@@ -742,6 +811,11 @@ export type Database = {
         Insert: {
           advance_notice?: string | null
           available_days?: string[] | null
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
           cargo_types?: string[] | null
           created_at?: string
           departure_time?: string | null
@@ -779,6 +853,11 @@ export type Database = {
         Update: {
           advance_notice?: string | null
           available_days?: string[] | null
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
           cargo_types?: string[] | null
           created_at?: string
           departure_time?: string | null
