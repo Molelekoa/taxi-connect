@@ -1,12 +1,13 @@
 // Mapbox Configuration
-// Public (pk.*) token — safe for client bundles. For production, create a
-// token restricted to your deployed domains in the Mapbox dashboard and set
-// it as VITE_MAPBOX_TOKEN. The fallback below keeps local dev working.
-
-const FALLBACK_PUBLIC_TOKEN = 'pk.eyJ1IjoibW9yYW1vbGxvIiwiYSI6ImNtanN2emF5ejJhZGQzZnNlcmUxZnV4NjUifQ.EQSIcEZQUFhV6mCchcJyKg';
+// The public (pk.*) token is supplied via VITE_MAPBOX_TOKEN. There is NO
+// hardcoded fallback here: if the token is missing or empty, getMapboxToken()
+// returns "" and map components / geocoding gracefully no-op. In production,
+// create a token restricted to your deployed domains in the Mapbox dashboard
+// and set it as VITE_MAPBOX_TOKEN (and in Lovable's env). Never embed a
+// plain-text fallback token in source control.
 
 export function getMapboxToken(): string {
-  return import.meta.env.VITE_MAPBOX_TOKEN || FALLBACK_PUBLIC_TOKEN;
+  return import.meta.env.VITE_MAPBOX_TOKEN || "";
 }
 
 export const MAPBOX_STYLES = {
