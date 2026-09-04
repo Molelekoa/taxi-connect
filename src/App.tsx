@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
+import { usePushNotifications } from "./hooks/usePushNotifications";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import CookieConsent from "./components/CookieConsent";
@@ -85,6 +86,11 @@ const FullPlatformRoutes = () => (
 /** Platform is fully public */
 const AppRoutes = () => <FullPlatformRoutes />;
 
+const PushNotifications = () => {
+  usePushNotifications();
+  return null;
+};
+
 const App = () => (
   <ErrorBoundary>
     <OfflineBanner />
@@ -95,6 +101,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ScrollToTop />
+          <PushNotifications />
           <Suspense fallback={<PageFallback />}>
             <AppRoutes />
           </Suspense>
